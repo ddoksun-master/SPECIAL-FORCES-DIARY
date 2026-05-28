@@ -5601,9 +5601,9 @@ let activeGemLock=0;
 function openGemBox(n){
   const total=calcTotalPersonalMoney();
   const th=GEM_THRESHOLDS[n];
-  const oppM=window.partnerData?window.partnerData.money:(teamData.oppMoney||0);
-  const connOk=window.connectionStatus==='connected'||!window.connectionStatus;
-  const unlocked=total>=th&&oppM>=th&&connOk;
+  const oppM=partnerData?partnerData.money:(teamData.oppMoney||0);
+  const connOk=connectionStatus==='connected';
+  const unlocked=total>=th&&oppM>=th;
   if(!connOk){
     alert('팀원과 연결된 후 특수작전을 진행할 수 있습니다.\n팀작전 탭에서 친구 코드로 연결하세요.');
     return;
@@ -6238,7 +6238,7 @@ function renderStatsRevenueCard(){
   if(codeEl) codeEl.textContent=window.MY_CODE||'------';
   const codeUpEl=document.getElementById('statsCodeUploadStatus');
   if(codeUpEl){
-    const isUploaded=window.connectionStatus==='connected';
+    const isUploaded=connectionStatus==='connected';
     codeUpEl.textContent=isUploaded?'(연결됨)':'(업로드안됨)';
     codeUpEl.style.color=isUploaded?'rgba(127,191,106,.8)':'rgba(255,80,80,.6)';
   }
