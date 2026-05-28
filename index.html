@@ -834,6 +834,7 @@ async function initFirebase(){
         renderConnectCard();
         if(window.renderActiveMissionCard) renderActiveMissionCard();
         if(window.updateGemBoxes) updateGemBoxes();
+        if(window.renderStatsRevenueCard) renderStatsRevenueCard();
       });
       /* 팀미션 실시간 구독 */
       _fbOn(PATH.teamRoom(MY_UID, partnerUid), tmSnap=>{
@@ -942,11 +943,13 @@ async function initFirebase(){
     }
   });
 
-  /* 내 돈 주기적 sync (10초) */
-  setInterval(async()=>{
+  /* 내 돈 주기적 sync (3초) + 즉시 1회 업로드 */
+  const _syncMyMoney = async()=>{
     const m=window.calcTotalPersonalMoney?calcTotalPersonalMoney():0;
     await _fbUpdate(PATH.user(MY_UID),{money:m});
-  },10000);
+  };
+  _syncMyMoney(); /* 즉시 1회 */
+  setInterval(_syncMyMoney, 3000);
 }
 
 /* ── 상태 도트 ── */
@@ -1196,6 +1199,12 @@ function updateGemBoxes(){
   const oppM=partnerData?partnerData.money:0;
   const activeN = window.teamData ? window.teamData.activeGemN : null;
 
+  /* 상대 금액 표시 항상 갱신 */
+  const oppMoneyEl=document.getElementById('teamOppMoney');
+  if(oppMoneyEl) oppMoneyEl.textContent=oppM.toLocaleString()+'원';
+  const myMoneyEl=document.getElementById('teamMyMoney');
+  if(myMoneyEl) myMoneyEl.textContent=myM.toLocaleString()+'원';
+
   /* 특수작전 1~4 */
   [1,2,3,4].forEach(n=>{
     const th=GEM_THRESHOLDS[n];
@@ -1228,6 +1237,11 @@ function updateGemBoxes(){
       } else if(!ok) {
         st.textContent='잠금';st.style.color='rgba(200,168,75,.4)';
         st.style.background='rgba(30,20,5,.5)';st.style.borderColor='rgba(200,130,40,.2)';
+      } else if(ok && !isThisActive) {
+        /* 잠금 해제됨 — activeGemN이 없거나 다른 작전이 활성 중이어도 탭 가능 표시 */
+        st.textContent='탭해서 제안';st.style.color='rgba(255,180,60,.9)';
+        st.style.background='rgba(55,35,5,.6)';st.style.borderColor='rgba(220,150,40,.4)';
+        st.style.fontWeight='700';
       } else {
         st.textContent='탭해서 제안';st.style.color='rgba(255,160,50,.65)';
         st.style.background='rgba(50,30,5,.5)';st.style.borderColor='rgba(200,130,40,.25)';
@@ -4436,7 +4450,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             </div>
             <div style="display:flex;justify-content:space-between;">
               <span style="font-family:var(--orb);font-size:10px;color:rgba(200,168,75,.45);">0</span>
-              <span style="font-family:var(--orb);font-size:10px;color:rgba(200,168,75,.45);">목표 200,000원</span>
+              <span style="font-family:var(--orb);font-size:10px;color:rgba(200,168,75,.45);">목표 100,000원</span>
             </div>
           </div>
         </div>
@@ -4468,12 +4482,12 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
             <div>
               <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.5);">달성 가능 최대 수익</div>
-              <div style="font-family:var(--orb);font-size:20px;font-weight:900;color:var(--gold);">400,000원</div>
+              <div style="font-family:var(--orb);font-size:20px;font-weight:900;color:var(--gold);">300,000원</div>
             </div>
             <div style="text-align:right;">
-              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">개인 최대 200,000</div>
-              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">팀전 특수 1+2+3+4만</div>
-              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">팀전 스페셜 100,000</div>
+              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">개인 최대 100,000</div>
+              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">팀전 (특수) 100,000</div>
+              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">팀전 (스페셜) 100,000</div>
             </div>
           </div>
           <div style="height:1px;background:rgba(200,168,75,.12);margin-bottom:6px;"></div>
@@ -4485,18 +4499,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
       </div>
 
-
-      <!-- 팀전 특수작전 제안 카드 -->
-      <div class="card" id="gemSupportCardStats" style="margin-top:10px;">
-        <div class="card-title" style="margin-bottom:6px;">⚔ 팀 특수작전 제안</div>
-        <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.3);margin-bottom:8px;line-height:1.6;">팀원과 연결 후 → 카드 클릭 → 제안 → 상대 제안 수락 → 작전수행</div>
-
-        <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(200,168,75,.55);margin-bottom:8px;">▎ 나 (제안) — 상대방 (제안)</div>
-        <div id="statsGemProposalGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-          <div style="padding:10px;text-align:center;color:rgba(255,255,255,.2);font-family:var(--kr);font-size:11px;">연결 후 표시됩니다</div>
-        </div>
-      </div>
-    </div>
+    </div><!-- /panelStats -->
 
     <!-- ====== 작전기록 패널 ====== -->
     <div class="panel" id="panelHistory">
@@ -4638,9 +4641,9 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
           <!-- 특수작전 1 -->
           <div id="gemBox1" class="gem-box" onclick="openGemBox(1)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(14,26,16,.7);border:1.5px solid rgba(90,158,72,.2);border-radius:12px;text-align:center;min-height:90px;display:flex;flex-direction:column;justify-content:center;align-items:center;">
-            <div id="gemLock1" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(10,18,12,.75);border-radius:10px;justify-content:center;z-index:2;">
-              <span style="font-size:16px;">🔒</span>
-              <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.4);margin-top:3px;">20,000원</div>
+            <div id="gemLock1" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(5,10,6,.92);border-radius:10px;justify-content:center;z-index:2;">
+              <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
+              <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">20,000원</div>
             </div>
             <div style="font-family:var(--orb);font-size:8px;letter-spacing:1px;color:rgba(127,191,106,.6);margin-bottom:4px;">MISSION 1</div>
             <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:#fff;">특수작전1</div>
@@ -4649,9 +4652,9 @@ document.addEventListener('DOMContentLoaded',()=>{
           </div>
           <!-- 특수작전 2 -->
           <div id="gemBox2" class="gem-box" onclick="openGemBox(2)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(14,26,16,.7);border:1.5px solid rgba(90,158,72,.2);border-radius:12px;text-align:center;min-height:90px;display:flex;flex-direction:column;justify-content:center;align-items:center;">
-            <div id="gemLock2" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(10,18,12,.75);border-radius:10px;justify-content:center;z-index:2;">
-              <span style="font-size:16px;">🔒</span>
-              <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.4);margin-top:3px;">40,000원</div>
+            <div id="gemLock2" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(5,10,6,.92);border-radius:10px;justify-content:center;z-index:2;">
+              <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
+              <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">40,000원</div>
             </div>
             <div style="font-family:var(--orb);font-size:8px;letter-spacing:1px;color:rgba(127,191,106,.6);margin-bottom:4px;">MISSION 2</div>
             <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:#fff;">특수작전2</div>
@@ -4660,9 +4663,9 @@ document.addEventListener('DOMContentLoaded',()=>{
           </div>
           <!-- 특수작전 3 -->
           <div id="gemBox3" class="gem-box" onclick="openGemBox(3)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(14,26,16,.7);border:1.5px solid rgba(90,158,72,.2);border-radius:12px;text-align:center;min-height:90px;display:flex;flex-direction:column;justify-content:center;align-items:center;">
-            <div id="gemLock3" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(10,18,12,.75);border-radius:10px;justify-content:center;z-index:2;">
-              <span style="font-size:16px;">🔒</span>
-              <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.4);margin-top:3px;">60,000원</div>
+            <div id="gemLock3" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(5,10,6,.92);border-radius:10px;justify-content:center;z-index:2;">
+              <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
+              <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">60,000원</div>
             </div>
             <div style="font-family:var(--orb);font-size:8px;letter-spacing:1px;color:rgba(127,191,106,.6);margin-bottom:4px;">MISSION 3</div>
             <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:#fff;">특수작전3</div>
@@ -4671,9 +4674,9 @@ document.addEventListener('DOMContentLoaded',()=>{
           </div>
           <!-- 특수작전 4 -->
           <div id="gemBox4" class="gem-box" onclick="openGemBox(4)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(14,26,16,.7);border:1.5px solid rgba(90,158,72,.2);border-radius:12px;text-align:center;min-height:90px;display:flex;flex-direction:column;justify-content:center;align-items:center;">
-            <div id="gemLock4" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(10,18,12,.75);border-radius:10px;justify-content:center;z-index:2;">
-              <span style="font-size:16px;">🔒</span>
-              <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.4);margin-top:3px;">80,000원</div>
+            <div id="gemLock4" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(5,10,6,.92);border-radius:10px;justify-content:center;z-index:2;">
+              <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
+              <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">80,000원</div>
             </div>
             <div style="font-family:var(--orb);font-size:8px;letter-spacing:1px;color:rgba(127,191,106,.6);margin-bottom:4px;">MISSION 4</div>
             <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:#fff;">특수작전4</div>
@@ -6216,13 +6219,13 @@ function renderStatsRevenueCard(){
   const personal=calcTotalPersonalMoney();
   const teamRew=calcTeamRewardMoney();
   const totalAll=personal+teamRew;
-  const MAX_TOTAL=400000;
+  const MAX_TOTAL=300000;
 
   /* ── 개인 누적 확보자금 ── */
   const pEl=document.getElementById('statsTotalMoney');
   const pBar=document.getElementById('statsPersonalBar');
   if(pEl) pEl.textContent=personal.toLocaleString()+'원';
-  if(pBar) pBar.style.width=Math.min(100,(personal/200000)*100)+'%';
+  if(pBar) pBar.style.width=Math.min(100,(personal/100000)*100)+'%';
 
   /* ── 내 코드 ── */
   const codeEl=document.getElementById('statsMyCode');
