@@ -817,6 +817,8 @@ async function initFirebase(){
   }
 
   /* 내 유저 실시간 구독 */
+  let _subscribedPartnerUid = null;
+
   _fbOn(PATH.user(MY_UID), snap=>{
     if(!snap.exists()) return;
     const d = snap.val();
@@ -824,20 +826,23 @@ async function initFirebase(){
     disconnectRequested = d.disconnectRequest||false;
     const partnerUid    = d.partnerUid||'';
     if(partnerUid && connectionStatus==='connected'){
-      _fbOn(PATH.user(partnerUid), pSnap=>{
-        if(pSnap.exists()){
-          const pd=pSnap.val();
-          partnerData={uid:partnerUid,nickname:pd.nickname||'상대',
-            shareCode:pd.shareCode||'',money:pd.money||0,
-            disconnectRequest:pd.disconnectRequest||false};
-        }
-        renderConnectCard();
-        if(window.renderActiveMissionCard) renderActiveMissionCard();
-        if(window.updateGemBoxes) updateGemBoxes();
-        if(window.renderStatsRevenueCard) renderStatsRevenueCard();
-      });
-      /* 팀미션 실시간 구독 */
-      _fbOn(PATH.teamRoom(MY_UID, partnerUid), tmSnap=>{
+      /* 파트너 구독 — 중복 등록 방지 */
+      if(_subscribedPartnerUid !== partnerUid){
+        _subscribedPartnerUid = partnerUid;
+        _fbOn(PATH.user(partnerUid), pSnap=>{
+          if(pSnap.exists()){
+            const pd=pSnap.val();
+            partnerData={uid:partnerUid,nickname:pd.nickname||'상대',
+              shareCode:pd.shareCode||'',money:pd.money||0,
+              disconnectRequest:pd.disconnectRequest||false};
+          }
+          renderConnectCard();
+          if(window.renderActiveMissionCard) renderActiveMissionCard();
+          if(window.updateGemBoxes) updateGemBoxes();
+          if(window.renderStatsRevenueCard) renderStatsRevenueCard();
+        });
+        /* 팀미션 구독도 한 번만 */
+        _fbOn(PATH.teamRoom(MY_UID, partnerUid), tmSnap=>{
         if(!window.teamData) window.teamData = {};
         const myKey = MY_UID < partnerUid ? 'proposal_a' : 'proposal_b';
         const oppKey = MY_UID < partnerUid ? 'proposal_b' : 'proposal_a';
@@ -925,7 +930,8 @@ async function initFirebase(){
         if(window.renderActiveMissionCard) renderActiveMissionCard();
         if(window.updateGemBoxes) updateGemBoxes();
       });
-    } else { partnerData=null; }
+      } /* end if _subscribedPartnerUid !== partnerUid */
+    } else { partnerData=null; _subscribedPartnerUid=null; }
     renderConnectCard();
   });
 
@@ -5604,7 +5610,7 @@ function openGemBox(n){
   }
   if(!unlocked){
     const label=n==='special'?'스페셜작전':'특수작전'+n;
-    showToast(`🎯 ${label}: 양쪽 모두 ${th.toLocaleString()}원 필요 (나: ${total.toLocaleString()}원)`);
+    showToast(`🎯 ${label}: 양쪽 모두 ${th.toLocaleString()}원 필요 (나: ${total.toLocaleString()}원 / 상대: ${oppM.toLocaleString()}원)`);
     return;
   }
   /* 스페셜작전: 진행중이거나 시작 전 */
