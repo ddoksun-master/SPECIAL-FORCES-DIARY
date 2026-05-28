@@ -198,7 +198,7 @@ html,body{
 /* ===== SCROLL AREA ===== */
 .scroll-area{
   flex:1;overflow-y:auto;overflow-x:hidden;
-  padding:12px 12px 100px;
+  padding:12px 12px 72px;
   position:relative;z-index:1;
   -webkit-overflow-scrolling:touch;
 }
@@ -240,30 +240,49 @@ html,body{
   position:fixed;bottom:0;left:50%;transform:translateX(-50%);
   width:100%;max-width:430px;
   z-index:50;
-  background:rgba(12,22,14,.99);
-  border-top:1px solid rgba(205,160,50,.35);
-  backdrop-filter:blur(14px);
+  background:rgba(10,18,12,.98);
+  border-top:2px solid rgba(200,168,75,.4);
+  backdrop-filter:blur(16px);
   display:flex;
   padding-bottom:env(safe-area-inset-bottom, 0px);
-  box-shadow:0 -4px 24px rgba(0,0,0,.7);
+  box-shadow:0 -2px 16px rgba(0,0,0,.8);
+  gap:2px;
+  padding:2px 4px calc(2px + env(safe-area-inset-bottom, 0px)) 4px;
 }
 .nav-item{
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:10px 2px 9px;cursor:pointer;transition:.18s;
-  color:#ffffff;
-  font-family:var(--kr);font-size:11px;font-weight:700;letter-spacing:.2px;gap:3px;
+  padding:5px 2px 4px;cursor:pointer;transition:.15s;
+  color:var(--gold);
+  font-family:var(--kr);font-size:10px;font-weight:700;letter-spacing:.2px;gap:2px;
+  /* 클리어파일(섹션파일) 탭 디자인 */
+  background:rgba(20,30,18,.7);
+  border:1px solid rgba(200,168,75,.15);
+  border-radius:8px 8px 0 0;
+  border-bottom:none;
+  position:relative;
+  min-height:52px;
 }
-.nav-item:active{opacity:.7;}
+.nav-item:active{opacity:.75;}
 .nav-item.active{
-  color:var(--green-dim);
-  background:rgba(80,60,15,.35);
+  color:var(--gold);
+  background:rgba(45,35,5,.9);
+  border-color:rgba(200,168,75,.5);
+  border-bottom:2px solid rgba(45,35,5,.9);
+  margin-bottom:-2px;
+  box-shadow:0 -2px 10px rgba(200,168,75,.2);
+}
+.nav-item.active::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  border-radius:8px 8px 0 0;
 }
 .nav-icon{font-size:0;line-height:1;display:flex;align-items:center;justify-content:center;}
-.nav-icon svg{width:36px;height:36px;display:block;}
-.nav-item.active .nav-icon{filter:drop-shadow(0 0 6px rgba(90,158,72,.8));}
-.nav-icon svg{filter:brightness(0) invert(1) opacity(1);}
-.nav-item.active .nav-icon svg{filter:brightness(0) invert(1) opacity(1) drop-shadow(0 0 4px rgba(90,180,70,.85));}
-.nav-label{font-size:11px;font-weight:700;white-space:nowrap;}
+.nav-icon svg{width:20px;height:20px;display:block;}
+.nav-item.active .nav-icon{filter:drop-shadow(0 0 4px rgba(200,168,75,.6));}
+.nav-icon svg{filter:brightness(0) saturate(100%) invert(80%) sepia(50%) saturate(400%) hue-rotate(5deg) brightness(95%);}
+.nav-item.active .nav-icon svg{filter:brightness(0) saturate(100%) invert(80%) sepia(60%) saturate(500%) hue-rotate(5deg) brightness(110%) drop-shadow(0 0 3px rgba(200,168,75,.6));}
+.nav-label{font-size:9px;font-weight:700;white-space:nowrap;color:var(--gold);}
+.nav-item.active .nav-label{color:var(--gold-dim);}
 
 /* ===== 요일 탭 ===== */
 .day-tabs{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
@@ -272,7 +291,7 @@ html,body{
   padding:8px 1px;background:transparent;
   border:1px solid transparent;border-radius:8px;cursor:pointer;transition:.15s;
 }
-.dtab-nm{font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(212,168,67,.6);}
+.dtab-nm{display:none;}
 .dtab-dt{font-size:11px;font-weight:500;color:rgba(212,168,67,.5);}
 /* 수요일: 골드 배경 강조 */
 .dtab.wed{border-color:rgba(210,165,50,.4);background:rgba(65,50,10,.55);}
@@ -925,7 +944,7 @@ function renderConnectCard(){
   const card=document.getElementById('teamConnectCard');
   if(!card)return;
   const vsCard  = document.getElementById('teamVsCard');
-  const gemCard = document.getElementById('gemSupportCard');
+  const gemCard = document.getElementById('teamLockTableCard');
 
   /* 내 돈 갱신 */
   const myMoney=window.calcTotalPersonalMoney?calcTotalPersonalMoney():0;
@@ -1172,6 +1191,7 @@ function updateGemBoxes(){
 
   /* 스페셜 5DAY 진행바 업데이트 */
   updateSpecialDayBar();
+  if(window.renderStatsGemProposalGrid) renderStatsGemProposalGrid();
 }
 
 /* ============================================================
@@ -1184,9 +1204,9 @@ function renderActiveMissionCard(){
   if(!ac){
     ac=document.createElement('div');ac.id='activeMissionCard';ac.className='card';
     ac.style.cssText='margin-top:0;border:1.5px solid rgba(200,168,75,.35);box-shadow:0 0 18px rgba(200,168,75,.1);';
-    const gc=document.getElementById('gemSupportCard');
+    const gc=document.getElementById('teamLockTableCard');
     if(gc&&gc.nextSibling)gc.parentNode.insertBefore(ac,gc.nextSibling);
-    else if(gc)gc.parentNode.appendChild(ac);
+    else if(tcCard)tcCard.parentNode.appendChild(ac);
   }
   const fb=td.acceptedFrom==='opp'
     ?'<span style="padding:2px 7px;background:rgba(255,140,50,.18);border:1px solid rgba(255,140,50,.4);border-radius:10px;font-family:var(--orb);font-size:9px;color:rgba(255,165,60,.9);">상대 제안 수락</span>'
@@ -4023,6 +4043,18 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div id="diaryProgBar" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-dim));transition:width .5s;width:0%;"></div>
         </div>
 
+        <!-- 날짜 이동 컨트롤 -->
+        <div id="dateNavRow" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <button onclick="navDate(-1)" style="width:32px;height:32px;background:rgba(40,30,5,.7);border:1px solid rgba(200,168,75,.25);border-radius:8px;color:rgba(200,168,75,.8);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">◁</button>
+          <div style="flex:1;text-align:center;">
+            <div id="dateNavLabel" style="font-family:var(--orb);font-size:11px;color:rgba(200,168,75,.8);letter-spacing:1.5px;"></div>
+          </div>
+          <button onclick="navDate(1)" style="width:32px;height:32px;background:rgba(40,30,5,.7);border:1px solid rgba(200,168,75,.25);border-radius:8px;color:rgba(200,168,75,.8);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">▶</button>
+          <button onclick="navToToday()" style="margin-left:6px;padding:6px 10px;background:rgba(90,68,15,.75);border:1px solid rgba(210,165,50,.45);border-radius:8px;color:rgba(240,192,96,.9);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;">오늘</button>
+        </div>
+        <!-- 날짜 탭 (요일 없이 날짜만) -->
+        <div id="dayTabs" class="day-tabs" style="margin-bottom:10px;"></div>
+
         <div class="card-title cat-toggle" id="catToggleBtn" onclick="toggleCatCard()">
           작전 분류
           <span class="cat-toggle-arrow" id="catToggleArrow">▶</span>
@@ -4031,7 +4063,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div id="catCardBody" style="display:none;">
         <div style="height:14px;"></div>
         <div class="view-row">
-          <button class="vtbtn active" onclick="copyYesterday()">전일복사</button>
+          <button class="vtbtn active" onclick="copyYesterday()" style="color:#ffffff!important;">전일복사</button>
         </div>
 
         <div class="cat-tabs" style="grid-template-columns:repeat(3,1fr);">
@@ -4168,32 +4200,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     <!-- ====== 통계분석 패널 ====== -->
     <div class="panel" id="panelStats">
-      <div class="card">
-        <div class="card-title">전투 기록 캘린더</div>
-        <div class="cal-hd">
-          <div>
-            <div class="cal-sum-txt" id="calSumTxt"></div>
-            <div class="cal-sum-mon" id="calSumMon"></div>
-          </div>
-          <div class="cal-ctrls">
-            <button class="cal-nav-btn" id="calPrev" onclick="shiftCalMonth(-1)">&#8249;</button>
-            <span class="cal-month-lbl" id="calMonthLbl"></span>
-            <button class="cal-nav-btn" id="calNext" onclick="shiftCalMonth(1)">&#8250;</button>
-
-          </div>
-        </div>
-        <div class="cal-dow-row">
-          <div class="cal-dow sun">일</div>
-          <div class="cal-dow">월</div>
-          <div class="cal-dow">화</div>
-          <div class="cal-dow">수</div>
-          <div class="cal-dow">목</div>
-          <div class="cal-dow">금</div>
-          <div class="cal-dow sat">토</div>
-        </div>
-        <div id="calGrid" class="cal-grid"></div>
-      </div>
-
       <!-- 수익구조 요약 카드 -->
       <div class="card" style="margin-top:10px;">
         <div class="card-title">💰 수익 구조 현황</div>
@@ -4221,7 +4227,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
             <!-- 내 공유코드 -->
             <div style="background:rgba(10,20,10,.6);border:1px solid rgba(90,158,72,.18);border-radius:10px;padding:10px 12px;">
-              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;">내 공유코드</div>
+              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;">내 코드 <span id="statsCodeUploadStatus" style="color:rgba(255,80,80,.6);font-size:9px;">(업로드안됨)</span></div>
               <div id="statsMyCode" style="font-family:var(--orb);font-size:15px;font-weight:900;color:var(--gold);letter-spacing:2px;">------</div>
             </div>
             <!-- 팀전 누적 보상 -->
@@ -4240,166 +4246,36 @@ document.addEventListener('DOMContentLoaded',()=>{
           </div>
         </div>
 
-        <!-- 팀전 잠금 해제 현황표 -->
-        <div>
-          <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(200,168,75,.7);letter-spacing:.5px;margin-bottom:8px;">▎ 팀전 잠금 해제 조건</div>
-          <div style="display:flex;flex-direction:column;gap:5px;">
-
-            <!-- 잠금1 ~ 5 : 동적 생성 -->
-            <div id="teamLock1Card" style="background:rgba(14,26,16,.7);border:1px solid rgba(90,158,72,.15);border-radius:10px;padding:9px 12px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-                <div style="display:flex;align-items:center;gap:7px;">
-                  <span style="font-size:14px;">⚔</span>
-                  <div>
-                    <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(255,255,255,.8);">특수작전1</div>
-                    <div style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.55);">누적 20,000원 달성</div>
-                  </div>
-                </div>
-                <div style="text-align:right;">
-                  <div style="font-family:var(--orb);font-size:12px;font-weight:700;color:var(--green);">+20,000원</div>
-                  <div id="lock1Status" style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.5);">🔒 대기</div>
-                </div>
-              </div>
-              <div style="height:3px;background:rgba(40,60,40,.6);border-radius:2px;overflow:hidden;">
-                <div id="lock1Bar" style="height:100%;background:linear-gradient(90deg,var(--green),var(--green-dim));transition:width .6s;width:0%;"></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;margin-top:3px;">
-                <span id="lock1Label" style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.45);">0 / 20,000원</span>
-              </div>
+        <!-- 달성률 요약 -->
+        <div style="padding:11px 14px;background:rgba(30,50,25,.5);border:1px solid rgba(200,168,75,.2);border-radius:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div>
+              <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.5);">달성 가능 최대 수익</div>
+              <div style="font-family:var(--orb);font-size:20px;font-weight:900;color:var(--gold);">350,000원</div>
             </div>
-
-            <div id="teamLock2Card" style="background:rgba(14,26,16,.7);border:1px solid rgba(90,158,72,.15);border-radius:10px;padding:9px 12px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-                <div style="display:flex;align-items:center;gap:7px;">
-                  <span style="font-size:14px;">⚔</span>
-                  <div>
-                    <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(255,255,255,.8);">특수작전2</div>
-                    <div style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.55);">누적 40,000원 달성</div>
-                  </div>
-                </div>
-                <div style="text-align:right;">
-                  <div style="font-family:var(--orb);font-size:12px;font-weight:700;color:var(--green);">+20,000원</div>
-                  <div id="lock2Status" style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.5);">🔒 대기</div>
-                </div>
-              </div>
-              <div style="height:3px;background:rgba(40,60,40,.6);border-radius:2px;overflow:hidden;">
-                <div id="lock2Bar" style="height:100%;background:linear-gradient(90deg,var(--green),var(--green-dim));transition:width .6s;width:0%;"></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;margin-top:3px;">
-                <span id="lock2Label" style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.45);">0 / 40,000원</span>
-              </div>
-            </div>
-
-            <div id="teamLock3Card" style="background:rgba(14,26,16,.7);border:1px solid rgba(90,158,72,.15);border-radius:10px;padding:9px 12px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-                <div style="display:flex;align-items:center;gap:7px;">
-                  <span style="font-size:14px;">⚔</span>
-                  <div>
-                    <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(255,255,255,.8);">특수작전3</div>
-                    <div style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.55);">누적 60,000원 달성</div>
-                  </div>
-                </div>
-                <div style="text-align:right;">
-                  <div style="font-family:var(--orb);font-size:12px;font-weight:700;color:var(--green);">+20,000원</div>
-                  <div id="lock3Status" style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.5);">🔒 대기</div>
-                </div>
-              </div>
-              <div style="height:3px;background:rgba(40,60,40,.6);border-radius:2px;overflow:hidden;">
-                <div id="lock3Bar" style="height:100%;background:linear-gradient(90deg,var(--green),var(--green-dim));transition:width .6s;width:0%;"></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;margin-top:3px;">
-                <span id="lock3Label" style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.45);">0 / 60,000원</span>
-              </div>
-            </div>
-
-            <div id="teamLock4Card" style="background:rgba(14,26,16,.7);border:1px solid rgba(90,158,72,.15);border-radius:10px;padding:9px 12px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-                <div style="display:flex;align-items:center;gap:7px;">
-                  <span style="font-size:14px;">⚔</span>
-                  <div>
-                    <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(255,255,255,.8);">특수작전4</div>
-                    <div style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.55);">누적 80,000원 달성</div>
-                  </div>
-                </div>
-                <div style="text-align:right;">
-                  <div style="font-family:var(--orb);font-size:12px;font-weight:700;color:var(--green);">+20,000원</div>
-                  <div id="lock4Status" style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.5);">🔒 대기</div>
-                </div>
-              </div>
-              <div style="height:3px;background:rgba(40,60,40,.6);border-radius:2px;overflow:hidden;">
-                <div id="lock4Bar" style="height:100%;background:linear-gradient(90deg,var(--green),var(--green-dim));transition:width .6s;width:0%;"></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;margin-top:3px;">
-                <span id="lock4Label" style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.45);">0 / 80,000원</span>
-              </div>
-            </div>
-
-            <div id="teamLock5Card" style="background:rgba(14,26,16,.7);border:1px solid rgba(90,158,72,.15);border-radius:10px;padding:9px 12px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-                <div style="display:flex;align-items:center;gap:7px;">
-                  <span style="font-size:14px;">⚔</span>
-                  <div>
-                    <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(255,255,255,.8);">특수작전5</div>
-                    <div style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.55);">누적 100,000원 달성</div>
-                  </div>
-                </div>
-                <div style="text-align:right;">
-                  <div style="font-family:var(--orb);font-size:12px;font-weight:700;color:var(--green);">+20,000원</div>
-                  <div id="lock5Status" style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.5);">🔒 대기</div>
-                </div>
-              </div>
-              <div style="height:3px;background:rgba(40,60,40,.6);border-radius:2px;overflow:hidden;">
-                <div id="lock5Bar" style="height:100%;background:linear-gradient(90deg,var(--green),var(--green-dim));transition:width .6s;width:0%;"></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;margin-top:3px;">
-                <span id="lock5Label" style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.45);">0 / 100,000원</span>
-              </div>
-            </div>
-
-            <!-- 스페셜작전 잠금 -->
-            <div id="teamLockSpecialCard" style="background:rgba(25,18,5,.75);border:1px solid rgba(200,168,75,.18);border-radius:10px;padding:9px 12px;margin-top:2px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-                <div style="display:flex;align-items:center;gap:7px;">
-                  <span style="font-size:16px;">🌟</span>
-                  <div>
-                    <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(200,168,75,.9);">스페셜작전</div>
-                    <div style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.5);">누적 200,000원 달성 · 5일</div>
-                  </div>
-                </div>
-                <div style="text-align:right;">
-                  <div style="font-family:var(--orb);font-size:12px;font-weight:700;color:rgba(200,168,75,.9);">+50,000원</div>
-                  <div id="lockSpecialStatus" style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.45);">🔒 대기</div>
-                </div>
-              </div>
-              <div style="height:3px;background:rgba(70,50,8,.6);border-radius:2px;overflow:hidden;">
-                <div id="lockSpecialBar" style="height:100%;background:linear-gradient(90deg,rgba(200,168,75,.7),rgba(230,198,100,.9));transition:width .6s;width:0%;"></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;margin-top:3px;">
-                <span id="lockSpecialLabel" style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.4);">0 / 200,000원</span>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- 총합 요약 -->
-          <div style="margin-top:10px;padding:11px 14px;background:rgba(30,50,25,.5);border:1px solid rgba(200,168,75,.2);border-radius:10px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <div>
-                <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.5);">달성 가능 최대 수익</div>
-                <div style="font-family:var(--orb);font-size:20px;font-weight:900;color:var(--gold);">300,000원</div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">개인 최대 200,000</div>
-                <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">팀전 특수 ×5 100,000</div>
-                <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">팀전 스페셜 50,000</div>
-              </div>
-            </div>
-            <div style="height:1px;background:rgba(200,168,75,.12);margin-bottom:6px;"></div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.5);">현재 달성률</span>
-              <span id="statsTotalPct" style="font-family:var(--orb);font-size:13px;font-weight:700;color:rgba(127,191,106,.8);">0%</span>
+            <div style="text-align:right;">
+              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">개인 최대 200,000</div>
+              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">팀전 특수 ×5 100,000</div>
+              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">팀전 스페셜 50,000+</div>
             </div>
           </div>
+          <div style="height:1px;background:rgba(200,168,75,.12);margin-bottom:6px;"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.5);">현재 달성률</span>
+            <span id="statsTotalPct" style="font-family:var(--orb);font-size:13px;font-weight:700;color:rgba(127,191,106,.8);">0%</span>
+          </div>
+        </div>
+
+      </div>
+
+
+      <!-- 팀전 특수작전 제안 카드 -->
+      <div class="card" id="gemSupportCardStats" style="margin-top:10px;">
+        <div class="card-title" style="margin-bottom:6px;">⚔ 팀 특수작전 제안</div>
+        <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.3);margin-bottom:12px;line-height:1.6;">카드 클릭 → 제안 · 상대방 제안 수락 시 미션 카드로 전환</div>
+        <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(200,168,75,.55);margin-bottom:8px;">▎ 나 (제안) — 상대방 (제안)</div>
+        <div id="statsGemProposalGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div style="padding:10px;text-align:center;color:rgba(255,255,255,.2);font-family:var(--kr);font-size:11px;">연결 후 표시됩니다</div>
         </div>
       </div>
     </div>
@@ -4409,6 +4285,31 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="card">
         <div class="card-title">전투 기록</div>
         <div id="histContent" style="color:rgba(215,172,80,.38);font-size:13px;text-align:center;padding:28px 0;">전투 기록이 없습니다</div>
+      </div>
+      <!-- 전투기록 캘린더 (작전기록 아래) -->
+      <div class="card" style="margin-top:10px;">
+        <div class="card-title">전투 기록 캘린더</div>
+        <div class="cal-hd">
+          <div>
+            <div class="cal-sum-txt" id="calSumTxt"></div>
+            <div class="cal-sum-mon" id="calSumMon"></div>
+          </div>
+          <div class="cal-ctrls">
+            <button class="cal-nav-btn" id="calPrev" onclick="shiftCalMonth(-1)">&#8249;</button>
+            <span class="cal-month-lbl" id="calMonthLbl"></span>
+            <button class="cal-nav-btn" id="calNext" onclick="shiftCalMonth(1)">&#8250;</button>
+          </div>
+        </div>
+        <div class="cal-dow-row">
+          <div class="cal-dow sun">일</div>
+          <div class="cal-dow">월</div>
+          <div class="cal-dow">화</div>
+          <div class="cal-dow">수</div>
+          <div class="cal-dow">목</div>
+          <div class="cal-dow">금</div>
+          <div class="cal-dow sat">토</div>
+        </div>
+        <div id="calGrid" class="cal-grid"></div>
       </div>
     </div>
 
@@ -4493,91 +4394,140 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div id="disconnectArea" style="margin-top:12px;"></div>
       </div>
 
-      <!-- ④ 작전지원 (연결 후만 표시) -->
-      <div class="card" id="gemSupportCard" style="display:none;margin-top:0;">
-        <div class="card-title" style="margin-bottom:6px;">🎯 팀 특수작전</div>
-        <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.3);margin-bottom:12px;line-height:1.6;">위험임무에서 서로 제안 · 선택 · 양쪽 완료 시 보상</div>
-
-        <!-- 특수작전 1~5 : 2만 단위 누적 달성 -->
-        <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(200,168,75,.55);margin-bottom:8px;">▎ SPECIAL OPS 1–5</div>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px;">
-          <!-- 특수작전 1 -->
-          <div id="gemBox1" class="gem-box" onclick="openGemBox(1)" style="cursor:pointer;text-align:center;padding:12px 4px 10px;background:rgba(14,26,16,.7);border:1px solid rgba(90,158,72,.2);border-radius:12px;transition:.3s;position:relative;overflow:hidden;">
-            <div class="gem-lock-overlay" id="gemLock1" style="position:absolute;inset:0;background:rgba(0,0,0,.5);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;">🔒</div>
-            <div style="font-size:16px;margin-bottom:3px;">⚔</div>
-            <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.8);font-weight:700;letter-spacing:.3px;">OPS-1</div>
-            <div style="font-family:var(--orb);font-size:10px;color:var(--green);margin-top:2px;font-weight:700;">+1만</div>
-            <div style="font-family:var(--kr);font-size:8px;color:rgba(255,255,255,.3);margin-top:2px;line-height:1.3;">2만 달성</div>
-            <div id="gemOppStatus1" style="margin-top:5px;padding:2px 3px;border:1px solid rgba(90,158,72,.3);border-radius:5px;font-family:var(--kr);font-size:8px;font-weight:700;color:rgba(200,168,75,.5);">-</div>
-          </div>
-          <!-- 특수작전 2 -->
-          <div id="gemBox2" class="gem-box" onclick="openGemBox(2)" style="cursor:pointer;text-align:center;padding:12px 4px 10px;background:rgba(14,26,16,.7);border:1px solid rgba(90,158,72,.2);border-radius:12px;transition:.3s;position:relative;overflow:hidden;">
-            <div class="gem-lock-overlay" id="gemLock2" style="position:absolute;inset:0;background:rgba(0,0,0,.5);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;">🔒</div>
-            <div style="font-size:16px;margin-bottom:3px;">⚔</div>
-            <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.8);font-weight:700;letter-spacing:.3px;">OPS-2</div>
-            <div style="font-family:var(--orb);font-size:10px;color:var(--green);margin-top:2px;font-weight:700;">+1만</div>
-            <div style="font-family:var(--kr);font-size:8px;color:rgba(255,255,255,.3);margin-top:2px;line-height:1.3;">4만 달성</div>
-            <div id="gemOppStatus2" style="margin-top:5px;padding:2px 3px;border:1px solid rgba(90,158,72,.3);border-radius:5px;font-family:var(--kr);font-size:8px;font-weight:700;color:rgba(200,168,75,.5);">-</div>
-          </div>
-          <!-- 특수작전 3 -->
-          <div id="gemBox3" class="gem-box" onclick="openGemBox(3)" style="cursor:pointer;text-align:center;padding:12px 4px 10px;background:rgba(14,26,16,.7);border:1px solid rgba(90,158,72,.2);border-radius:12px;transition:.3s;position:relative;overflow:hidden;">
-            <div class="gem-lock-overlay" id="gemLock3" style="position:absolute;inset:0;background:rgba(0,0,0,.5);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;">🔒</div>
-            <div style="font-size:16px;margin-bottom:3px;">⚔</div>
-            <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.8);font-weight:700;letter-spacing:.3px;">OPS-3</div>
-            <div style="font-family:var(--orb);font-size:10px;color:var(--green);margin-top:2px;font-weight:700;">+1만</div>
-            <div style="font-family:var(--kr);font-size:8px;color:rgba(255,255,255,.3);margin-top:2px;line-height:1.3;">6만 달성</div>
-            <div id="gemOppStatus3" style="margin-top:5px;padding:2px 3px;border:1px solid rgba(90,158,72,.3);border-radius:5px;font-family:var(--kr);font-size:8px;font-weight:700;color:rgba(200,168,75,.5);">-</div>
-          </div>
-          <!-- 특수작전 4 -->
-          <div id="gemBox4" class="gem-box" onclick="openGemBox(4)" style="cursor:pointer;text-align:center;padding:12px 4px 10px;background:rgba(14,26,16,.7);border:1px solid rgba(90,158,72,.2);border-radius:12px;transition:.3s;position:relative;overflow:hidden;">
-            <div class="gem-lock-overlay" id="gemLock4" style="position:absolute;inset:0;background:rgba(0,0,0,.5);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;">🔒</div>
-            <div style="font-size:16px;margin-bottom:3px;">⚔</div>
-            <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.8);font-weight:700;letter-spacing:.3px;">OPS-4</div>
-            <div style="font-family:var(--orb);font-size:10px;color:var(--green);margin-top:2px;font-weight:700;">+1만</div>
-            <div style="font-family:var(--kr);font-size:8px;color:rgba(255,255,255,.3);margin-top:2px;line-height:1.3;">8만 달성</div>
-            <div id="gemOppStatus4" style="margin-top:5px;padding:2px 3px;border:1px solid rgba(90,158,72,.3);border-radius:5px;font-family:var(--kr);font-size:8px;font-weight:700;color:rgba(200,168,75,.5);">-</div>
-          </div>
-          <!-- 특수작전 5 -->
-          <div id="gemBox5" class="gem-box" onclick="openGemBox(5)" style="cursor:pointer;text-align:center;padding:12px 4px 10px;background:rgba(14,26,16,.7);border:1px solid rgba(90,158,72,.2);border-radius:12px;transition:.3s;position:relative;overflow:hidden;">
-            <div class="gem-lock-overlay" id="gemLock5" style="position:absolute;inset:0;background:rgba(0,0,0,.5);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;">🔒</div>
-            <div style="font-size:16px;margin-bottom:3px;">⚔</div>
-            <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.8);font-weight:700;letter-spacing:.3px;">OPS-5</div>
-            <div style="font-family:var(--orb);font-size:10px;color:var(--green);margin-top:2px;font-weight:700;">+1만</div>
-            <div style="font-family:var(--kr);font-size:8px;color:rgba(255,255,255,.3);margin-top:2px;line-height:1.3;">10만 달성</div>
-            <div id="gemOppStatus5" style="margin-top:5px;padding:2px 3px;border:1px solid rgba(90,158,72,.3);border-radius:5px;font-family:var(--kr);font-size:8px;font-weight:700;color:rgba(200,168,75,.5);">-</div>
-          </div>
-        </div>
-
-        <!-- 스페셜작전 : 20만 달성 -->
-        <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(200,168,75,.55);margin-bottom:8px;">▎ SPECIAL OPS ★</div>
-        <div id="gemBoxSpecial" class="gem-box" onclick="openGemBox('special')" style="cursor:pointer;padding:14px 16px;background:rgba(30,20,5,.8);border:1px solid rgba(200,168,75,.2);border-radius:14px;transition:.3s;position:relative;overflow:hidden;">
-          <div class="gem-lock-overlay" id="gemLockSpecial" style="position:absolute;inset:0;background:rgba(0,0,0,.55);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">
-            <div style="font-size:20px;">🔒</div>
-            <div style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.5);">20만원 달성 시 해방</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="font-size:26px;">🌟</div>
-            <div style="flex:1;">
-              <div style="font-family:var(--orb);font-size:10px;color:rgba(200,168,75,.9);font-weight:700;letter-spacing:1px;margin-bottom:4px;">SPECIAL OPERATION</div>
-              <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.8);font-weight:700;">5일 연속 특수임무</div>
-              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,200,80,.6);margin-top:2px;">완료 시 +50,000원 보상</div>
+      <!-- 팀전 잠금 해제 현황표 (통계분석에서 이동) -->
+      <div class="card" id="teamLockTableCard" style="margin-top:0;">
+        <div class="card-title">🔐 잠금 해제 현황</div>
+        <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(200,168,75,.7);letter-spacing:.5px;margin-bottom:8px;">▎ 팀전 잠금 해제 조건</div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div id="teamLock1Card" style="background:rgba(14,26,16,.7);border:1px solid rgba(90,158,72,.15);border-radius:10px;padding:9px 12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                <span style="font-size:14px;">⚔</span>
+                <div>
+                  <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(255,255,255,.8);">특수작전1</div>
+                  <div style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.55);">누적 20,000원 달성</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-family:var(--orb);font-size:12px;font-weight:700;color:var(--green);">+20,000원</div>
+                <div id="lock1Status" style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.5);">🔒 대기</div>
+              </div>
             </div>
-            <div style="text-align:right;">
-              <div id="gemOppStatusSpecial" style="padding:3px 6px;border:1px solid rgba(200,168,75,.3);border-radius:6px;font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(200,168,75,.5);">-</div>
+            <div style="height:3px;background:rgba(40,60,40,.6);border-radius:2px;overflow:hidden;">
+              <div id="lock1Bar" style="height:100%;background:linear-gradient(90deg,var(--green),var(--green-dim));transition:width .6s;width:0%;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:3px;">
+              <span id="lock1Label" style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.45);">0 / 20,000원</span>
             </div>
           </div>
-          <!-- 5DAY 진행바 (스페셜 진행중일 때 표시) -->
-          <div id="specialDayBar" style="display:none;margin-top:12px;">
-            <div style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.5);letter-spacing:1px;margin-bottom:6px;">MISSION PROGRESS</div>
-            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;" id="specialDayGrid"></div>
+          <div id="teamLock2Card" style="background:rgba(14,26,16,.7);border:1px solid rgba(90,158,72,.15);border-radius:10px;padding:9px 12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                <span style="font-size:14px;">⚔</span>
+                <div>
+                  <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(255,255,255,.8);">특수작전2</div>
+                  <div style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.55);">누적 40,000원 달성</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-family:var(--orb);font-size:12px;font-weight:700;color:var(--green);">+20,000원</div>
+                <div id="lock2Status" style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.5);">🔒 대기</div>
+              </div>
+            </div>
+            <div style="height:3px;background:rgba(40,60,40,.6);border-radius:2px;overflow:hidden;">
+              <div id="lock2Bar" style="height:100%;background:linear-gradient(90deg,var(--green),var(--green-dim));transition:width .6s;width:0%;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:3px;">
+              <span id="lock2Label" style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.45);">0 / 40,000원</span>
+            </div>
           </div>
-        </div>
-
-        <div style="margin-top:10px;padding:8px 12px;background:rgba(10,20,10,.5);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.3);text-align:center;line-height:1.6;">
-          위험임무 목록에서 상호 제안 · 양쪽 모두 조건 달성 시 개방
+          <div id="teamLock3Card" style="background:rgba(14,26,16,.7);border:1px solid rgba(90,158,72,.15);border-radius:10px;padding:9px 12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                <span style="font-size:14px;">⚔</span>
+                <div>
+                  <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(255,255,255,.8);">특수작전3</div>
+                  <div style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.55);">누적 60,000원 달성</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-family:var(--orb);font-size:12px;font-weight:700;color:var(--green);">+20,000원</div>
+                <div id="lock3Status" style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.5);">🔒 대기</div>
+              </div>
+            </div>
+            <div style="height:3px;background:rgba(40,60,40,.6);border-radius:2px;overflow:hidden;">
+              <div id="lock3Bar" style="height:100%;background:linear-gradient(90deg,var(--green),var(--green-dim));transition:width .6s;width:0%;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:3px;">
+              <span id="lock3Label" style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.45);">0 / 60,000원</span>
+            </div>
+          </div>
+          <div id="teamLock4Card" style="background:rgba(14,26,16,.7);border:1px solid rgba(90,158,72,.15);border-radius:10px;padding:9px 12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                <span style="font-size:14px;">⚔</span>
+                <div>
+                  <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(255,255,255,.8);">특수작전4</div>
+                  <div style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.55);">누적 80,000원 달성</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-family:var(--orb);font-size:12px;font-weight:700;color:var(--green);">+20,000원</div>
+                <div id="lock4Status" style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.5);">🔒 대기</div>
+              </div>
+            </div>
+            <div style="height:3px;background:rgba(40,60,40,.6);border-radius:2px;overflow:hidden;">
+              <div id="lock4Bar" style="height:100%;background:linear-gradient(90deg,var(--green),var(--green-dim));transition:width .6s;width:0%;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:3px;">
+              <span id="lock4Label" style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.45);">0 / 80,000원</span>
+            </div>
+          </div>
+          <div id="teamLock5Card" style="background:rgba(14,26,16,.7);border:1px solid rgba(90,158,72,.15);border-radius:10px;padding:9px 12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                <span style="font-size:14px;">⚔</span>
+                <div>
+                  <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(255,255,255,.8);">특수작전5</div>
+                  <div style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.55);">누적 100,000원 달성</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-family:var(--orb);font-size:12px;font-weight:700;color:var(--green);">+20,000원</div>
+                <div id="lock5Status" style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.5);">🔒 대기</div>
+              </div>
+            </div>
+            <div style="height:3px;background:rgba(40,60,40,.6);border-radius:2px;overflow:hidden;">
+              <div id="lock5Bar" style="height:100%;background:linear-gradient(90deg,var(--green),var(--green-dim));transition:width .6s;width:0%;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:3px;">
+              <span id="lock5Label" style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.45);">0 / 100,000원</span>
+            </div>
+          </div>
+          <!-- 스페셜작전 잠금 -->
+          <div id="teamLockSpecialCard" style="background:rgba(25,18,5,.75);border:1px solid rgba(200,168,75,.18);border-radius:10px;padding:9px 12px;margin-top:2px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                <span style="font-size:16px;">🌟</span>
+                <div>
+                  <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(200,168,75,.9);">스페셜작전</div>
+                  <div style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.5);">누적 200,000원 달성 · 5일</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-family:var(--orb);font-size:12px;font-weight:700;color:rgba(200,168,75,.9);">+100,000원</div>
+                <div id="lockSpecialStatus" style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.45);">🔒 대기</div>
+              </div>
+            </div>
+            <div style="height:3px;background:rgba(70,50,8,.6);border-radius:2px;overflow:hidden;">
+              <div id="lockSpecialBar" style="height:100%;background:linear-gradient(90deg,rgba(200,168,75,.7),rgba(230,198,100,.9));transition:width .6s;width:0%;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:3px;">
+              <span id="lockSpecialLabel" style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.4);">0 / 200,000원</span>
+            </div>
+          </div>
         </div>
       </div>
-
       <!-- ⑤ 작전 미션 제안 모달 -->
       <div id="gemModal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.8);align-items:center;justify-content:center;padding:20px;">
         <div style="background:var(--card);border:1px solid rgba(200,168,75,.3);border-radius:16px;padding:20px;max-width:360px;width:100%;max-height:85vh;overflow-y:auto;">
@@ -4621,23 +4571,23 @@ document.addEventListener('DOMContentLoaded',()=>{
   <!-- BOTTOM NAV -->
   <div class="bottom-nav">
     <div class="nav-item active" onclick="switchPanel('diary',this)">
-      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/><line x1="7" y1="6" x2="7" y2="6" stroke-width="2.5"/></svg></div>
+      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/><line x1="7" y1="6" x2="7" y2="6" stroke-width="2.5"/></svg></div>
       <div class="nav-label">작전수첩</div>
     </div>
     <div class="nav-item" onclick="switchPanel('stats',this)">
-      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
       <div class="nav-label">통계분석</div>
     </div>
     <div class="nav-item" onclick="switchPanel('history',this)">
-      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
       <div class="nav-label">작전기록</div>
     </div>
     <div class="nav-item" onclick="switchPanel('team',this)">
-      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <div class="nav-label">팀작전</div>
     </div>
     <div class="nav-item" onclick="switchPanel('shop',this)">
-      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
       <div class="nav-label">전술본부</div>
     </div>
   </div>
@@ -4708,8 +4658,8 @@ function switchPanel(name,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('panel'+name[0].toUpperCase()+name.slice(1)).classList.add('active');
   if(el) el.classList.add('active');
-  if(name==='stats'){renderCal();renderStatsRevenueCard();}
-  if(name==='history') renderHist();
+  if(name==='stats'){renderCal();renderStatsRevenueCard();renderStatsGemProposalGrid();}
+  if(name==='history'){renderHist();renderCal();}
   if(name==='team'){
     /* Firebase 모듈의 renderConnectCard가 있으면 우선 사용, 없으면 fallback */
     if(window.renderConnectCard) renderConnectCard();
@@ -4763,6 +4713,16 @@ function renderDayTabs(){
       renderDayTabs();renderQ();showCat(curCat,document.querySelector('.ctab.active'));
     });
     wrap.appendChild(el);
+  }
+  /* 날짜이동 레이블 업데이트 */
+  const navLbl=document.getElementById('dateNavLabel');
+  if(navLbl){
+    const sd=new Date(selDate);
+    const DN2=['일','월','화','수','목','금','토'];
+    const isToday2=selDate===todayStr;
+    navLbl.textContent=isToday2?'오늘':
+      (sd.getMonth()+1)+'월'+sd.getDate()+'일('+DN2[sd.getDay()]+')';
+    navLbl.style.color=isToday2?'rgba(240,192,96,.95)':'rgba(200,168,75,.7)';
   }
 }
 
@@ -5372,7 +5332,7 @@ let teamData = JSON.parse(localStorage.getItem('teamData')||'null')||{
 const saveTeam=()=>localStorage.setItem('teamData',JSON.stringify(teamData));
 /* 특수작전1~5: 2만/4만/6만/8만/10만 누적 달성 시 개방, 보상 10000 */
 const GEM_THRESHOLDS={1:20000,2:40000,3:60000,4:80000,5:100000,special:200000};
-const GEM_REWARDS={1:10000,2:10000,3:10000,4:10000,5:10000,special:50000};
+const GEM_REWARDS={1:20000,2:20000,3:20000,4:20000,5:20000,special:100000};
 
 function calcTotalPersonalMoney(){
   /* allData 전체 합산 */
@@ -5387,6 +5347,7 @@ function renderTeamPanel(){
   if(myMoneyEl) myMoneyEl.textContent=calcTotalPersonalMoney().toLocaleString()+'원';
   renderStatsRevenueCard();
   if(window.renderActiveMissionCard) renderActiveMissionCard();
+  if(window.renderStatsGemProposalGrid) renderStatsGemProposalGrid();
 }
 
 
@@ -5780,13 +5741,18 @@ function completeSpecialDay(dayIdx){
       /* 5일 모두 양쪽 완료 체크 */
       const myD=window.teamData.specialDays.my;
       const oppD=window.teamData.specialDays.opp;
+      /* 한 쪽이라도 완료한 DAY 수 계산 → 달성일수만큼 보상 */
+      const myDone=myD.filter(Boolean).length;
+      const oppDone=oppD.filter(Boolean).length;
+      const commonDone=myD.filter((v,i)=>v&&oppD[i]).length; /* 양쪽 모두 완료한 날 */
       if(myD.every(Boolean)&&oppD.every(Boolean)){
         setTimeout(()=>{
-          alert('🌟 스페셜작전 5일 완료!\n50,000원 보상이 지급됩니다!');
+          const earned=commonDone*20000;
+          alert('🌟 스페셜작전 5일 완료!\n양쪽 모두 완료한 날: '+commonDone+'일\n보상: '+earned.toLocaleString()+'원');
           _fbUpdate(PATH.teamRoom(MY_UID,partnerData.uid),{specialMission:null,spdays_a:null,spdays_b:null,specialStartedAt:null});
           window.teamData.specialMission=null;
           window.teamData.specialDays={my:[false,false,false,false,false],opp:[false,false,false,false,false]};
-          window.teamData.specialUsed=(window.teamData.specialUsed||0)+1;
+          window.teamData.specialUsed=(window.teamData.specialUsed||0)+commonDone;
           saveTeam();
           renderTeamPanel();
           updateGemBoxes();
@@ -5883,6 +5849,25 @@ function showToast(msg, duration=3000){
 }
 
 
+
+/* ── 날짜 이동 ── */
+function navDate(delta){
+  const d=new Date(selDate);
+  d.setDate(d.getDate()+delta);
+  selDate=dateStr(d);
+  if(!allData[selDate]) allData[selDate]=[];
+  quests=allData[selDate];
+  renderDayTabs();renderQ();showCat(curCat,document.querySelector('.ctab.active'));
+  updateHUD();
+}
+function navToToday(){
+  selDate=todayStr;
+  if(!allData[selDate]) allData[selDate]=[];
+  quests=allData[selDate];
+  renderDayTabs();renderQ();showCat(curCat,document.querySelector('.ctab.active'));
+  updateHUD();
+}
+
 /* ====================================================
    수익구조 통계 패널 렌더
    ==================================================== */
@@ -5894,7 +5879,7 @@ function calcTeamRewardMoney(){
   for(let n=1;n<=5;n++){
     sum+=(td['gem'+n+'Used']||0)*20000;
   }
-  sum+=(td['specialUsed']||0)*50000;
+  sum+=(td['specialUsed']||0)*20000; /* 스페셜: 완료일수×2만 */
   return sum;
 }
 
@@ -5902,7 +5887,7 @@ function renderStatsRevenueCard(){
   const personal=calcTotalPersonalMoney();
   const teamRew=calcTeamRewardMoney();
   const totalAll=personal+teamRew;
-  const MAX_TOTAL=300000;
+  const MAX_TOTAL=350000;
 
   /* ── 개인 누적 확보자금 ── */
   const pEl=document.getElementById('statsTotalMoney');
@@ -5913,6 +5898,12 @@ function renderStatsRevenueCard(){
   /* ── 내 코드 ── */
   const codeEl=document.getElementById('statsMyCode');
   if(codeEl) codeEl.textContent=window.MY_CODE||'------';
+  const codeUpEl=document.getElementById('statsCodeUploadStatus');
+  if(codeUpEl){
+    const isUploaded=window.connectionStatus==='connected';
+    codeUpEl.textContent=isUploaded?'(연결됨)':'(업로드안됨)';
+    codeUpEl.style.color=isUploaded?'rgba(127,191,106,.8)':'rgba(255,80,80,.6)';
+  }
 
   /* ── 팀전 누적 보상 ── */
   const tmEl=document.getElementById('statsTeamMoney');
@@ -5963,6 +5954,78 @@ function renderStatsRevenueCard(){
       if(spSt){spSt.textContent='🔒 대기';spSt.style.color='rgba(200,168,75,.45)';}
     }
   }
+}
+
+
+/* ============================================================
+   통계분석 특수작전 제안 그리드 렌더
+   ============================================================ */
+function renderStatsGemProposalGrid(){
+  const grid=document.getElementById('statsGemProposalGrid');
+  if(!grid) return;
+  const ops=[1,2,3,4,5,'special'];
+  const labels={1:'특수작전1',2:'특수작전2',3:'특수작전3',4:'특수작전4',5:'특수작전5',special:'스페셜작전'};
+  const thresholds=GEM_THRESHOLDS;
+  const myM=window.calcTotalPersonalMoney?calcTotalPersonalMoney():0;
+  const oppM=window.partnerData?window.partnerData.money:0;
+  const td=window.teamData||{};
+
+  grid.innerHTML=ops.map(n=>{
+    const th=thresholds[n];
+    const unlocked=myM>=th&&oppM>=th;
+    const myProp=(td.myProposal&&String(td.activeGemN)===String(n))?td.myProposal:null;
+    const oppProp=((td.oppGemProposal||{})[n])||null;
+    const isActive=td.todayMission&&String(td.activeGemN)===String(n);
+    const label=labels[n];
+    const isSpecial=n==='special';
+
+    /* 활성 미션인 경우 미션 카드로 표시 */
+    if(isActive){
+      return `<div style="grid-column:span 2;padding:12px 14px;background:linear-gradient(135deg,rgba(30,60,20,.85),rgba(45,35,5,.85));border:1.5px solid rgba(200,168,75,.5);border-radius:12px;">
+        <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.7);letter-spacing:1.5px;margin-bottom:4px;">▶ ACTIVE MISSION — ${label}</div>
+        <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#fff;">⚔ ${td.todayMission}</div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <div style="flex:1;padding:6px;background:rgba(20,50,20,.5);border:1px solid rgba(90,158,72,.3);border-radius:8px;text-align:center;">
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.7);">나</div>
+            <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:${td.myDone?'rgba(127,191,106,.9)':'rgba(255,255,255,.4)'};">${td.myDone?'✅완료':'⏳대기'}</div>
+          </div>
+          <div style="flex:1;padding:6px;background:rgba(20,20,40,.5);border:1px solid rgba(100,80,160,.3);border-radius:8px;text-align:center;">
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(180,150,220,.7);">상대</div>
+            <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:${td.oppDone?'rgba(180,220,180,.9)':'rgba(255,255,255,.4)'};">${td.oppDone?'✅완료':'⏳대기'}</div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    /* 잠금 상태 */
+    if(!unlocked){
+      return `<div style="padding:10px 8px;background:rgba(10,18,12,.6);border:1px dashed rgba(90,158,72,.15);border-radius:10px;text-align:center;opacity:.5;">
+        <div style="font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(255,255,255,.4);">${label}</div>
+        <div style="font-size:14px;margin-top:3px;">🔒</div>
+        <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.35);margin-top:2px;">${th.toLocaleString()}원</div>
+      </div>`;
+    }
+
+    /* 나의 제안 카드 */
+    const myCard=`<div onclick="openGemBox(${isSpecial?"'special'":n})" style="cursor:pointer;padding:10px 8px;background:${myProp?'rgba(20,50,20,.8)':'rgba(14,26,16,.7)'};border:1px solid ${myProp?'rgba(90,158,72,.5)':'rgba(90,158,72,.2)'};border-radius:10px;text-align:center;transition:.2s;">
+      <div style="font-family:var(--orb);font-size:7px;color:rgba(127,191,106,.6);letter-spacing:1px;margin-bottom:3px;">나 (제안)</div>
+      ${myProp
+        ? `<div style="font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(127,191,106,.95);">${myProp}</div>`
+        : `<div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.3);">${label}<br><span style="font-size:9px;">+ 제안하기</span></div>`
+      }
+    </div>`;
+
+    /* 상대방 제안 카드 */
+    const oppCard=`<div style="padding:10px 8px;background:${oppProp?'rgba(60,35,10,.7)':'rgba(20,15,5,.5)'};border:1px solid ${oppProp?'rgba(255,165,50,.4)':'rgba(200,168,75,.15)'};border-radius:10px;text-align:center;">
+      <div style="font-family:var(--orb);font-size:7px;color:rgba(255,165,50,.6);letter-spacing:1px;margin-bottom:3px;">상대방 (제안)</div>
+      ${oppProp
+        ? `<div style="font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(255,200,100,.95);">${oppProp}</div>`
+        : `<div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.25);">미등록</div>`
+      }
+    </div>`;
+
+    return myCard+oppCard;
+  }).join('');
 }
 
 /* switchPanel 후크 제거됨 - 원본 함수에 통합 */
