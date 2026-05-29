@@ -5105,13 +5105,43 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div id="specialOpArea" style="display:none;"></div>
       </div>
 
-      <!-- 팀 미션 카드 컨테이너 (JS가 동적 생성) -->
+      <!-- 팀 미션 카드 컨테이너 (숨김 — 기존 JS 호환용) -->
       <div id="tmCardsWrap" style="display:none;">
-        <div id="tmCard1" class="card" style="padding:0;overflow:hidden;margin-bottom:0;"></div>
-        <div id="tmCard2" class="card" style="padding:0;overflow:hidden;margin-bottom:0;"></div>
-        <div id="tmCard3" class="card" style="padding:0;overflow:hidden;margin-bottom:0;"></div>
-        <div id="tmCard4" class="card" style="padding:0;overflow:hidden;margin-bottom:0;"></div>
+        <div id="tmCard1" style="display:none;"></div>
+        <div id="tmCard2" style="display:none;"></div>
+        <div id="tmCard3" style="display:none;"></div>
+        <div id="tmCard4" style="display:none;"></div>
       </div>
+
+      <!-- 특수임무 개시 버튼 (연결 후 표시) -->
+      <div id="tmLaunchBanner" style="display:none;">
+        <div class="card" style="padding:0;overflow:hidden;cursor:pointer;" onclick="tmOpenLaunch()">
+          <div style="position:relative;background:linear-gradient(160deg,rgba(30,22,5,.97),rgba(20,14,3,.99));border-radius:14px;overflow:hidden;">
+            <!-- 배경 패턴 -->
+            <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 12px,rgba(200,168,75,.03) 12px,rgba(200,168,75,.03) 13px);pointer-events:none;"></div>
+            <!-- 상단 라인 -->
+            <div style="height:2px;background:linear-gradient(90deg,transparent,rgba(200,168,75,.7),transparent);"></div>
+            <div style="padding:22px 18px;display:flex;align-items:center;gap:16px;">
+              <!-- 아이콘 -->
+              <div style="flex-shrink:0;width:60px;height:60px;border-radius:50%;background:rgba(200,168,75,.1);border:2px solid rgba(200,168,75,.4);display:flex;align-items:center;justify-content:center;box-shadow:0 0 18px rgba(200,168,75,.2);animation:tmPulseGold 2s ease-in-out infinite;">
+                <span style="font-size:28px;">⚡</span>
+              </div>
+              <div style="flex:1;">
+                <div style="font-family:var(--orb);font-size:9px;letter-spacing:3px;color:rgba(200,168,75,.6);margin-bottom:4px;">SPECIAL OPERATION</div>
+                <div style="font-family:var(--kr);font-size:20px;font-weight:900;color:#fff;letter-spacing:.5px;text-shadow:0 0 18px rgba(200,168,75,.3);">특수임무 개시</div>
+                <div id="tmLaunchStatus" style="font-family:var(--kr);font-size:12px;color:rgba(200,168,75,.65);margin-top:4px;">탭하여 임무를 확인하세요</div>
+              </div>
+              <div style="font-size:22px;color:rgba(200,168,75,.5);">›</div>
+            </div>
+            <div style="height:1px;background:rgba(200,168,75,.1);margin:0 18px;"></div>
+            <!-- 하단 미션 뱃지 행 -->
+            <div id="tmLaunchBadges" style="padding:12px 18px;display:flex;gap:8px;"></div>
+          </div>
+        </div>
+      </div>
+      <style>
+        @keyframes tmPulseGold{0%,100%{box-shadow:0 0 18px rgba(200,168,75,.2);}50%{box-shadow:0 0 28px rgba(200,168,75,.45);}}
+      </style>
 
       <!-- 보물상자 보상 팝업 -->
       <div id="tmRewardOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;">
@@ -5133,6 +5163,141 @@ document.addEventListener('DOMContentLoaded',()=>{
     </div>
 
   </div><!-- /scroll-area -->
+
+<!-- ================================================================
+     특수임무 통합 팝업 — 개시 선택 → Q&A → 보물상자 → 완료
+     ================================================================ -->
+<div id="tmLaunchOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9998;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+  <div style="min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px 14px 40px;">
+    <div style="width:100%;max-width:400px;">
+      <!-- 헤더 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div>
+          <div style="font-family:var(--orb);font-size:9px;letter-spacing:3px;color:rgba(200,168,75,.6);">SPECIAL OPERATION HQ</div>
+          <div style="font-family:var(--kr);font-size:20px;font-weight:900;color:#fff;">특수임무 사령부</div>
+        </div>
+        <button onclick="tmCloseLaunch()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:50%;width:36px;height:36px;color:rgba(255,255,255,.6);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
+
+      <!-- 미션 선택 화면 -->
+      <div id="tmLaunchSelect" style="">
+        <div style="font-family:var(--kr);font-size:13px;color:rgba(255,255,255,.5);margin-bottom:14px;text-align:center;">진행할 특수임무를 선택하세요</div>
+        <div id="tmMissionBtnList" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+
+      <!-- 미션 상세 화면 (Q&A + 보물상자) -->
+      <div id="tmLaunchDetail" style="display:none;">
+        <!-- 뒤로가기 -->
+        <button onclick="tmLaunchBack()" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:rgba(200,168,75,.7);font-family:var(--kr);font-size:13px;cursor:pointer;padding:0;margin-bottom:16px;">‹ 임무 목록</button>
+
+        <!-- 미션 타이틀 배너 -->
+        <div id="tmDetailBanner" style="padding:14px 16px;border-radius:12px;margin-bottom:16px;"></div>
+
+        <!-- 단계 표시 -->
+        <div id="tmDetailSteps" style="display:flex;align-items:center;gap:0;margin-bottom:20px;">
+          <div class="tm-step" id="tmStep1" data-active="true">
+            <div class="tm-step-dot active">1</div>
+            <div class="tm-step-lbl">미션 답글</div>
+          </div>
+          <div class="tm-step-line"></div>
+          <div class="tm-step" id="tmStep2">
+            <div class="tm-step-dot">2</div>
+            <div class="tm-step-lbl">보물상자</div>
+          </div>
+          <div class="tm-step-line"></div>
+          <div class="tm-step" id="tmStep3">
+            <div class="tm-step-dot">3</div>
+            <div class="tm-step-lbl">완료</div>
+          </div>
+        </div>
+
+        <!-- STEP 1: Q&A -->
+        <div id="tmDetailQA" style="">
+          <div id="tmDetailQBox" style="padding:14px;background:rgba(10,25,18,.8);border:1.5px solid rgba(200,168,75,.3);border-radius:12px;margin-bottom:14px;">
+            <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(200,168,75,.6);margin-bottom:8px;">Q. MISSION</div>
+            <div id="tmDetailQText" style="font-family:var(--kr);font-size:15px;font-weight:900;color:#fff;line-height:1.6;"></div>
+          </div>
+          <!-- 나의 답글 -->
+          <div style="margin-bottom:12px;">
+            <div style="font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(127,191,106,.65);margin-bottom:6px;">▎ 나의 답글</div>
+            <div id="tmDetailMyDisplay" style="display:none;padding:11px 13px;background:rgba(18,50,16,.7);border:1.5px solid rgba(90,158,72,.5);border-radius:10px;flex-direction:row;align-items:center;justify-content:space-between;gap:8px;">
+              <div style="display:flex;align-items:center;gap:8px;flex:1;"><span>✅</span><div id="tmDetailMyText" style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,240,180,.95);flex:1;"></div></div>
+              <button onclick="tmDetailClear()" style="padding:3px 8px;background:rgba(40,20,10,.6);border:1px solid rgba(180,100,50,.3);border-radius:6px;color:rgba(200,130,70,.7);font-family:var(--kr);font-size:10px;cursor:pointer;flex-shrink:0;">수정</button>
+            </div>
+            <div id="tmDetailMyInput" style="display:flex;flex-direction:column;gap:8px;">
+              <textarea id="tmDetailTA" placeholder="답글을 입력하세요..." maxlength="200" rows="3"
+                style="width:100%;padding:11px 13px;background:rgba(10,20,15,.6);border:1.5px solid rgba(200,168,75,.3);border-radius:10px;color:#fff;font-family:var(--kr);font-size:13px;resize:none;outline:none;line-height:1.5;"></textarea>
+              <button onclick="tmDetailSave()" style="width:100%;padding:12px;background:linear-gradient(135deg,rgba(200,168,75,.9),rgba(150,110,30,.9));border:2px solid rgba(200,168,75,.6);border-radius:10px;color:#000;font-family:var(--kr);font-size:14px;font-weight:900;cursor:pointer;">✅ 답글 저장</button>
+            </div>
+          </div>
+          <!-- 상대방 답글 -->
+          <div style="margin-bottom:4px;">
+            <div style="font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(200,168,75,.55);margin-bottom:6px;">▎ 상대방의 답글</div>
+            <div id="tmDetailOppBox" style="padding:11px 13px;background:rgba(10,15,10,.5);border:1px dashed rgba(200,168,75,.25);border-radius:10px;">
+              <div style="display:flex;align-items:center;gap:8px;"><span>⏳</span><div id="tmDetailOppText" style="font-family:var(--kr);font-size:12px;color:rgba(200,168,75,.65);font-weight:600;">상대방 임무수행중...</div></div>
+            </div>
+          </div>
+          <!-- 둘 다 완료 시 보물상자로 이동 버튼 -->
+          <div id="tmDetailBothDoneBar" style="display:none;margin-top:14px;padding:14px;background:rgba(20,55,18,.85);border:1.5px solid rgba(90,158,72,.5);border-radius:12px;text-align:center;">
+            <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:rgba(127,191,106,.95);margin-bottom:10px;">🎉 미션 수행완료!</div>
+            <button onclick="tmDetailGoBoxes()" style="width:100%;padding:13px;background:linear-gradient(135deg,rgba(200,168,75,.9),rgba(160,120,30,.9));border:2px solid rgba(200,168,75,.6);border-radius:12px;color:#000;font-family:var(--kr);font-size:15px;font-weight:900;cursor:pointer;letter-spacing:.3px;box-shadow:0 0 16px rgba(200,168,75,.3);">📦 보물상자 선택하기</button>
+          </div>
+        </div>
+
+        <!-- STEP 2: 보물상자 -->
+        <div id="tmDetailBoxes" style="display:none;">
+          <div id="tmDetailBoxBanner" style="padding:12px;background:rgba(200,168,75,.07);border:1px solid rgba(200,168,75,.25);border-radius:10px;margin-bottom:16px;text-align:center;">
+            <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(200,168,75,.6);margin-bottom:4px;">SECRET BOX</div>
+            <div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(255,255,255,.8);">보물상자 하나를 선택하세요</div>
+          </div>
+          <!-- 우선권 안내 -->
+          <div id="tmDetailPriorityBadge" style="padding:9px 12px;background:rgba(200,168,75,.07);border:1px solid rgba(200,168,75,.2);border-radius:10px;margin-bottom:12px;text-align:center;">
+            <div style="font-family:var(--orb);font-size:8px;letter-spacing:1.5px;color:rgba(200,168,75,.55);margin-bottom:2px;">우선권</div>
+            <div id="tmDetailPriorityText" style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(255,220,100,.9);"></div>
+          </div>
+          <!-- 상태 메시지 -->
+          <div id="tmDetailBoxStatus" style="font-family:var(--kr);font-size:12px;color:rgba(200,168,75,.8);margin-bottom:12px;text-align:center;font-weight:700;"></div>
+          <!-- 보물상자 3개 -->
+          <div id="tmDetailBoxRow" style="display:flex;gap:10px;margin-bottom:16px;"></div>
+          <!-- 진행 상태 -->
+          <div id="tmDetailPickStatus" style="display:flex;gap:6px;"></div>
+        </div>
+
+        <!-- STEP 3: 완료 -->
+        <div id="tmDetailComplete" style="display:none;text-align:center;padding:20px 0;">
+          <div style="font-size:52px;margin-bottom:14px;">🏆</div>
+          <div style="font-family:var(--orb);font-size:9px;letter-spacing:3px;color:rgba(200,168,75,.6);margin-bottom:8px;">MISSION ACCOMPLISHED</div>
+          <div style="font-family:var(--kr);font-size:22px;font-weight:900;color:#fff;margin-bottom:6px;">특수임무 완료</div>
+          <div id="tmDetailCompleteSub" style="font-family:var(--kr);font-size:13px;color:rgba(255,255,255,.45);margin-bottom:28px;"></div>
+          <button onclick="tmDetailShowReward()" style="width:100%;padding:16px;background:linear-gradient(135deg,rgba(200,168,75,.95),rgba(160,120,30,.95));border:2px solid rgba(200,168,75,.7);border-radius:14px;color:#000;font-family:var(--kr);font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.5px;box-shadow:0 0 24px rgba(200,168,75,.4);">🎁 보상보기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 전체화면 보상 팡 오버레이 -->
+<div id="tmRewardFlash" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:10000;display:none;align-items:center;justify-content:center;">
+  <div id="tmRewardFlashInner" style="text-align:center;padding:30px;transform:scale(.5);opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1);">
+    <div style="font-size:64px;margin-bottom:16px;">🎊</div>
+    <div style="font-family:var(--orb);font-size:10px;letter-spacing:3px;color:rgba(200,168,75,.7);margin-bottom:10px;">REWARD</div>
+    <div id="tmFlashAmount" style="font-family:var(--orb);font-size:52px;font-weight:900;color:rgba(200,168,75,1);text-shadow:0 0 30px rgba(200,168,75,.6),0 0 60px rgba(200,168,75,.3);margin-bottom:6px;"></div>
+    <div id="tmFlashLabel" style="font-family:var(--kr);font-size:16px;color:rgba(255,255,255,.7);margin-bottom:30px;"></div>
+    <button onclick="tmFlashConfirm()" style="padding:14px 40px;background:linear-gradient(135deg,rgba(90,158,72,.9),rgba(50,110,35,.9));border:2px solid rgba(90,158,72,.6);border-radius:14px;color:#fff;font-family:var(--kr);font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 0 20px rgba(90,158,72,.3);">✅ 확인</button>
+  </div>
+</div>
+
+<style>
+.tm-step{display:flex;flex-direction:column;align-items:center;gap:4px;flex:0 0 auto;}
+.tm-step-dot{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-family:var(--orb);font-size:12px;font-weight:900;color:rgba(255,255,255,.3);transition:all .3s;}
+.tm-step-dot.active{background:rgba(200,168,75,.2);border-color:rgba(200,168,75,.8);color:rgba(200,168,75,1);box-shadow:0 0 10px rgba(200,168,75,.3);}
+.tm-step-dot.done{background:rgba(90,158,72,.2);border-color:rgba(90,158,72,.8);color:rgba(127,191,106,1);}
+.tm-step-lbl{font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.3);transition:color .3s;}
+.tm-step[data-active="true"] .tm-step-lbl{color:rgba(200,168,75,.9);}
+.tm-step[data-done="true"] .tm-step-lbl{color:rgba(127,191,106,.8);}
+.tm-step-line{flex:1;height:2px;background:rgba(255,255,255,.1);margin:0 6px;margin-bottom:14px;transition:background .3s;}
+.tm-step-line.done{background:rgba(90,158,72,.5);}
+</style>
 
   <!-- BOTTOM NAV -->
   <div class="bottom-nav">
@@ -8483,12 +8648,14 @@ function teamQAUpdateBox(){
       try{ _fbGet(path).then(snap=>tmRender(snap.exists()?snap.val():null,n)).catch(()=>{}); }catch(e){}
     } else { tmRender(null,n); }
   });
+  /* 배너 뱃지 갱신 */
+  if(typeof tmRefreshLaunchBanner==='function') tmRefreshLaunchBanner();
 }
 
 /* 연결 시 */
 function teamQAOnConnect(){
   const wrap=document.getElementById('tmCardsWrap');
-  if(wrap) wrap.style.display='block';
+  if(wrap) wrap.style.display='none'; /* 기존 카드 숨김 유지 */
   [1,2,3,4].forEach(n=>{
     window['tmSub'+n]=false;
     window['tmUnlockToasted'+n]=false;
@@ -8502,13 +8669,475 @@ function teamQAOnConnect(){
     const ol=document.getElementById('tmOppNameLock'+n);
     if(ol) ol.textContent=pName;
   });
+  /* 특수임무 개시 배너 표시 */
+  tmRefreshLaunchBanner();
+  const banner=document.getElementById('tmLaunchBanner');
+  if(banner) banner.style.display='block';
 }
 
 /* 연결 해제 시 */
 function teamQAOnDisconnect(){
   const wrap=document.getElementById('tmCardsWrap');
   if(wrap) wrap.style.display='none';
+  const banner=document.getElementById('tmLaunchBanner');
+  if(banner) banner.style.display='none';
   [1,2,3,4].forEach(n=>{ window['tmSub'+n]=false; window['tmUnlockToasted'+n]=false; });
+}
+
+/* ──────────────────────────────────────────
+   특수임무 개시 배너 상태 갱신
+────────────────────────────────────────── */
+function tmRefreshLaunchBanner(){
+  const badges = document.getElementById('tmLaunchBadges');
+  const status = document.getElementById('tmLaunchStatus');
+  if(!badges) return;
+  const cfg_list = [1,2,3,4];
+  let unlockedCount=0, completedCount=0;
+  badges.innerHTML = cfg_list.map(n=>{
+    const cfg=TM[n];
+    const unlocked=_tmUnlocked(n);
+    const done=!!window['tmRewardDone'+n];
+    if(unlocked) unlockedCount++;
+    if(done) completedCount++;
+    const color = done ? 'rgba(127,191,106,.9)' : unlocked ? cfg.color.replace('1)','.9)') : 'rgba(255,255,255,.2)';
+    const bg    = done ? 'rgba(18,50,16,.7)' : unlocked ? cfg.glow : 'rgba(255,255,255,.04)';
+    const bdr   = done ? 'rgba(90,158,72,.5)' : unlocked ? cfg.border : 'rgba(255,255,255,.1)';
+    const icon  = done ? '✅' : unlocked ? '🔓' : '🔒';
+    return `<div style="flex:1;text-align:center;padding:8px 4px;background:${bg};border:1px solid ${bdr};border-radius:8px;">
+      <div style="font-size:14px;margin-bottom:2px;">${icon}</div>
+      <div style="font-family:var(--kr);font-size:9px;color:${color};font-weight:700;">${cfg.label}</div>
+    </div>`;
+  }).join('');
+  if(status){
+    if(completedCount===4) status.textContent='✅ 모든 특수임무 완료!';
+    else if(unlockedCount>0) status.textContent=`${unlockedCount}개 임무 해제됨 — 탭하여 진행`;
+    else status.textContent='조건 달성 시 임무가 해제됩니다';
+  }
+}
+
+/* ──────────────────────────────────────────
+   특수임무 통합 팝업 — 개시 선택 화면
+────────────────────────────────────────── */
+let _tmLaunchN = 0; /* 현재 선택된 미션 번호 */
+let _tmDetailUnsubFn = null;
+
+function tmOpenLaunch(){
+  const ov=document.getElementById('tmLaunchOverlay');
+  if(ov){ ov.style.display='flex'; ov.scrollTop=0; }
+  tmLaunchShowSelect();
+}
+
+function tmCloseLaunch(){
+  const ov=document.getElementById('tmLaunchOverlay');
+  if(ov) ov.style.display='none';
+  _tmDetailUnsubClean();
+}
+
+function tmLaunchBack(){
+  tmLaunchShowSelect();
+  _tmDetailUnsubClean();
+}
+
+function tmLaunchShowSelect(){
+  document.getElementById('tmLaunchSelect').style.display='';
+  document.getElementById('tmLaunchDetail').style.display='none';
+  _tmRenderMissionBtnList();
+}
+
+function _tmRenderMissionBtnList(){
+  const wrap=document.getElementById('tmMissionBtnList');
+  if(!wrap) return;
+  wrap.innerHTML=[1,2,3,4].map(n=>{
+    const cfg=TM[n];
+    const unlocked=_tmUnlocked(n);
+    const done=!!window['tmRewardDone'+n];
+    const myM=_tmMyM(), oppM=_tmOppM();
+    const myPct=Math.min(100,Math.round(myM/cfg.th*100));
+    const oppPct=Math.min(100,Math.round(oppM/cfg.th*100));
+    const statusLabel = done ? '✅ 완료' : unlocked ? '🔓 진행 가능' : `🔒 ${(cfg.th/10000).toFixed(0)}만원 조건`;
+    const statusColor = done ? 'rgba(127,191,106,.9)' : unlocked ? cfg.color.replace('1)','.9)') : 'rgba(255,255,255,.3)';
+    const bg = done ? 'rgba(18,50,16,.5)' : unlocked ? cfg.glow : 'rgba(20,20,20,.3)';
+    const bdr = done ? 'rgba(90,158,72,.4)' : unlocked ? cfg.border : 'rgba(255,255,255,.1)';
+    const cursor = (unlocked&&!done) ? 'pointer' : done ? 'default' : 'not-allowed';
+    const onclick = (unlocked&&!done) ? `onclick="tmLaunchMission(${n})"` : '';
+    const myReward = window['tmMyReward'+n]||0;
+    return `<div ${onclick} style="padding:16px;background:${bg};border:1.5px solid ${bdr};border-radius:12px;cursor:${cursor};${(unlocked&&!done)?'transition:transform .15s;':''}"
+      ${(unlocked&&!done)?'onmouseover="this.style.transform=\'scale(1.01)\'" onmouseout="this.style.transform=\'scale(1)\'"':''}>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:18px;">${done?'✅':unlocked?'⚡':'🔒'}</span>
+          <div style="font-family:var(--kr);font-size:15px;font-weight:900;color:${done?'rgba(127,191,106,.9)':'#fff'};">${cfg.label}</div>
+        </div>
+        <div style="font-family:var(--kr);font-size:11px;color:${statusColor};font-weight:700;">${done?'+'+myReward.toLocaleString()+'원 획득':statusLabel}</div>
+      </div>
+      ${!done ? `<div style="margin-bottom:4px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+          <div style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.6);">나 ${myPct}%</div>
+          <div style="font-family:var(--kr);font-size:9px;color:rgba(180,150,220,.6);">상대 ${oppPct}%</div>
+        </div>
+        <div style="height:4px;background:rgba(20,40,15,.5);border-radius:2px;overflow:hidden;margin-bottom:3px;">
+          <div style="height:100%;width:${myPct}%;background:linear-gradient(90deg,var(--green),var(--green-dim));border-radius:2px;transition:width .5s;"></div>
+        </div>
+        <div style="height:4px;background:rgba(20,15,35,.5);border-radius:2px;overflow:hidden;">
+          <div style="height:100%;width:${oppPct}%;background:linear-gradient(90deg,${cfg.color.replace('1)','.6)')},${cfg.color.replace('1)','.85)')});border-radius:2px;transition:width .5s;"></div>
+        </div>
+      </div>` : ''}
+      ${(unlocked&&!done)?`<div style="text-align:right;font-family:var(--orb);font-size:8px;letter-spacing:1px;color:${cfg.color.replace('1)','.5)')};margin-top:4px;">TAP TO START ›</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+/* ──────────────────────────────────────────
+   미션 상세 팝업 진입
+────────────────────────────────────────── */
+function tmLaunchMission(n){
+  _tmLaunchN = n;
+  document.getElementById('tmLaunchSelect').style.display='none';
+  const detail=document.getElementById('tmLaunchDetail');
+  detail.style.display='';
+
+  const cfg=TM[n];
+  /* 배너 */
+  const banner=document.getElementById('tmDetailBanner');
+  if(banner){
+    banner.style.background=`linear-gradient(135deg,${cfg.glow},rgba(10,15,10,.8))`;
+    banner.style.border=`1.5px solid ${cfg.border}`;
+    banner.innerHTML=`<div style="font-family:var(--orb);font-size:8px;letter-spacing:2px;color:${cfg.color.replace('1)','.6)')};margin-bottom:4px;">⚡ SPECIAL OPERATION</div>
+      <div style="font-family:var(--kr);font-size:18px;font-weight:900;color:#fff;">${cfg.label}</div>
+      <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;">보상 ${cfg.rewards.map(r=>r.toLocaleString()).join(' / ')}원 중 하나</div>`;
+  }
+
+  /* 미션 질문 */
+  const qPath=_tmPath(n);
+  _fbGet(qPath).then(snap=>{
+    const d=snap.exists()?snap.val():{};
+    const q=d.question||_tmQ(n);
+    const mk=_tmMK(), ok=_tmOK();
+    const myAns=d[mk]||null;
+    const oppAns=d[ok]||null;
+    /* 질문이 없으면 저장 */
+    if(!d.question){
+      _fbUpdate(qPath,{question:q}).catch(()=>{});
+    }
+    _tmDetailRenderQA(n, q, myAns, oppAns, d);
+    /* 실시간 구독 */
+    _tmDetailSubscribe(n);
+  }).catch(()=>{
+    const q=_tmQ(n);
+    _tmDetailRenderQA(n, q, null, null, {});
+    _tmDetailSubscribe(n);
+  });
+
+  /* 스텝 초기화 */
+  _tmDetailSetStep(1);
+}
+
+function _tmDetailRenderQA(n, q, myAns, oppAns, d){
+  const el=document.getElementById('tmDetailQText');
+  if(el) el.textContent=q;
+
+  const myDisp=document.getElementById('tmDetailMyDisplay');
+  const myInp=document.getElementById('tmDetailMyInput');
+  const myTxt=document.getElementById('tmDetailMyText');
+  const oppBox=document.getElementById('tmDetailOppBox');
+  const bothBar=document.getElementById('tmDetailBothDoneBar');
+
+  if(myAns){
+    if(myDisp){myDisp.style.display='flex';}
+    if(myInp){myInp.style.display='none';}
+    if(myTxt){myTxt.textContent=myAns;}
+  } else {
+    if(myDisp){myDisp.style.display='none';}
+    if(myInp){myInp.style.display='flex';}
+    const ta=document.getElementById('tmDetailTA');
+    if(ta) ta.value='';
+  }
+  if(oppBox){
+    if(oppAns){
+      oppBox.innerHTML=`<div style="display:flex;align-items:center;gap:8px;"><span>✅</span><div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(240,200,100,.95);">${oppAns}</div></div>`;
+      oppBox.style.border='1.5px solid rgba(200,168,75,.4)';
+    } else {
+      oppBox.innerHTML=`<div style="display:flex;align-items:center;gap:8px;"><span>⏳</span><div style="font-family:var(--kr);font-size:12px;color:rgba(200,168,75,.65);font-weight:600;">${_tmPN()} 임무수행중...</div></div>`;
+      oppBox.style.border='1px dashed rgba(200,168,75,.25)';
+    }
+  }
+  const bothDone=!!(myAns&&oppAns);
+  if(bothBar) bothBar.style.display=bothDone?'block':'none';
+
+  /* 둘 다 완료면 보물상자 단계로 자동 진행 여부 확인 */
+  if(bothDone && !window['tmDetailBoxShown'+n]){
+    /* 이미 상자 선택됐는지 확인 */
+    const mk=_tmMK();
+    const rpath=_tmPath(n)+'/reward_pick';
+    _fbGet(rpath).then(rs=>{
+      const rd=rs.exists()?rs.val():{};
+      if(rd[mk+'_pick']!==undefined){
+        /* 내가 이미 선택한 경우 → 완료 여부 */
+        if(window['tmRewardDone'+n]){
+          _tmDetailShowComplete(n);
+        } else {
+          window['tmDetailBoxShown'+n]=true;
+          tmDetailGoBoxes();
+        }
+      }
+    }).catch(()=>{});
+  }
+}
+
+function _tmDetailSubscribe(n){
+  _tmDetailUnsubClean();
+  const path=_tmPath(n);
+  if(!path||!FB_READY||!_fbDb) return;
+  _fbOn(path, snap=>{
+    const d=snap.exists()?snap.val():{};
+    const mk=_tmMK(), ok=_tmOK();
+    const q=d.question||_tmQ(n);
+    const myAns=d[mk]||null;
+    const oppAns=d[ok]||null;
+    /* QA 갱신 (상세 화면 열려 있으면) */
+    const detail=document.getElementById('tmLaunchDetail');
+    if(detail&&detail.style.display!=='none'){
+      _tmDetailRenderQA(n, q, myAns, oppAns, d);
+    }
+    /* 완료 체크 */
+    if(window['tmRewardDone'+n]){
+      _tmDetailShowComplete(n);
+    }
+  });
+  _tmDetailUnsubFn=()=>{};
+}
+
+function _tmDetailUnsubClean(){
+  if(_tmDetailUnsubFn){ try{_tmDetailUnsubFn();}catch(e){} _tmDetailUnsubFn=null; }
+}
+
+/* 답글 저장 */
+async function tmDetailSave(){
+  const n=_tmLaunchN;
+  const ta=document.getElementById('tmDetailTA');
+  const val=ta?ta.value.trim():'';
+  if(!val){ showToast('답글을 입력해주세요'); return; }
+  const path=_tmPath(n);
+  if(!path){ showToast('⚠ 연결 필요'); return; }
+  const mk=_tmMK();
+  const u={}; u[mk]=val; u[mk+'_at']=Date.now();
+  const q=document.getElementById('tmDetailQText')?.textContent||_tmQ(n);
+  u.question=q;
+  try{
+    await _fbUpdate(path, u);
+    /* 기존 tmSave도 동기화 */
+    showToast('✅ 답글이 저장되었습니다!');
+  } catch(e){ showToast('⚠ 저장 실패'); }
+}
+
+function tmDetailClear(){
+  const n=_tmLaunchN;
+  const myDisp=document.getElementById('tmDetailMyDisplay');
+  const myInp=document.getElementById('tmDetailMyInput');
+  const ta=document.getElementById('tmDetailTA');
+  if(myDisp) myDisp.style.display='none';
+  if(myInp) myInp.style.display='flex';
+  if(ta){ ta.value=''; ta.focus(); }
+}
+
+/* 보물상자 화면으로 이동 */
+function tmDetailGoBoxes(){
+  const n=_tmLaunchN;
+  window['tmDetailBoxShown'+n]=true;
+  document.getElementById('tmDetailQA').style.display='none';
+  document.getElementById('tmDetailBoxes').style.display='';
+  document.getElementById('tmDetailComplete').style.display='none';
+  _tmDetailSetStep(2);
+
+  /* 보물상자 초기화 */
+  const cfg=TM[n];
+  _tmRewardN=n;
+  _tmRewardBoxes=cfg.rewards.map(amt=>({amt}));
+
+  /* Firebase 우선권 + 현재 선택 로드 */
+  const path=_tmPath(n);
+  _fbGet(path).then(snap=>{
+    const d=snap.exists()?snap.val():{};
+    const myTime=d[_tmMK()+'_at']||0;
+    const oppTime=d[_tmOK()+'_at']||Infinity;
+    window._tmIPriority=(myTime<=oppTime);
+    _tmDetailRenderBoxes(null);
+    _tmDetailSubBoxes(n);
+  }).catch(()=>{
+    window._tmIPriority=true;
+    _tmDetailRenderBoxes(null);
+    _tmDetailSubBoxes(n);
+  });
+}
+
+/* 보물상자 실시간 구독 */
+let _tmDetailBoxUnsubFn=null;
+function _tmDetailSubBoxes(n){
+  if(_tmDetailBoxUnsubFn){ try{_tmDetailBoxUnsubFn();}catch(e){} _tmDetailBoxUnsubFn=null; }
+  const rpath=_tmPath(n)+'/reward_pick';
+  if(!rpath||!FB_READY||!_fbDb) return;
+  _fbOn(rpath, snap=>{
+    const d=snap.exists()?snap.val():null;
+    _tmDetailRenderBoxes(d);
+    /* 둘 다 선택 완료 */
+    if(d && d[_tmMK()+'_pick']!==undefined && d[_tmOK()+'_pick']!==undefined){
+      const myIdx=d[_tmMK()+'_pick'];
+      const oppIdx=d[_tmOK()+'_pick'];
+      if(!window['tmRewardDone'+n]){
+        window['tmRewardDone'+n]=true;
+        window['tmMyReward'+n]=_tmRewardBoxes[myIdx]?.amt||0;
+        _tmSaveRewardFinal(n, myIdx, oppIdx);
+      }
+      /* 완료 화면 전환 */
+      setTimeout(()=>_tmDetailShowComplete(n), 600);
+    }
+  });
+  _tmDetailBoxUnsubFn=()=>{};
+}
+
+/* 보물상자 렌더 */
+function _tmDetailRenderBoxes(fbData){
+  const n=_tmLaunchN;
+  const boxes=_tmRewardBoxes;
+  const pName=_tmPN();
+  const myName=(myNickname&&myNickname!=='')?myNickname:'나';
+  const iPriority=window._tmIPriority;
+  const first=iPriority?myName:pName;
+
+  const myPickIdx=fbData?fbData[_tmMK()+'_pick']:undefined;
+  const oppPickIdx=fbData?fbData[_tmOK()+'_pick']:undefined;
+  const myChosen=myPickIdx!==undefined&&myPickIdx!==null;
+  const oppChosen=oppPickIdx!==undefined&&oppPickIdx!==null;
+  const isMyTurn=(!myChosen)&&(iPriority?true:oppChosen);
+  const waitingForOpp=myChosen&&!oppChosen;
+  const oppGoingFirst=!myChosen&&!oppChosen&&!iPriority;
+
+  /* 우선권 */
+  const pt=document.getElementById('tmDetailPriorityText');
+  if(pt) pt.textContent=`🏅 ${first}님에게 우선권이 주어집니다`;
+
+  /* 상태 메시지 */
+  let statusMsg='', statusColor='rgba(255,255,255,.5)';
+  if(isMyTurn&&iPriority){ statusMsg='🏅 우선권! 먼저 선택해보세요'; statusColor='rgba(200,168,75,.9)'; }
+  else if(isMyTurn&&!iPriority){ statusMsg=pName+'이(가) 선택했어요! 이제 내 차례입니다'; statusColor='rgba(127,191,106,.9)'; }
+  else if(waitingForOpp){ statusMsg='✅ 선택 완료! '+pName+' 선택 대기중...'; statusColor='rgba(255,184,71,.8)'; }
+  else if(oppGoingFirst){ statusMsg=pName+'이(가) 먼저 선택합니다. 대기해주세요...'; statusColor='rgba(160,128,204,.8)'; }
+  const bs=document.getElementById('tmDetailBoxStatus');
+  if(bs){ bs.textContent=statusMsg; bs.style.color=statusColor; }
+
+  /* 보물상자 */
+  const row=document.getElementById('tmDetailBoxRow');
+  if(row){
+    row.innerHTML=boxes.map((b,i)=>{
+      const isMyPick=myPickIdx===i, isOppPick=oppPickIdx===i;
+      const taken=isMyPick||isOppPick;
+      const canPick=!taken&&isMyTurn;
+      const boxBg=isMyPick?'rgba(18,50,16,.85)':isOppPick?'rgba(50,35,8,.8)':'rgba(15,25,18,.7)';
+      const boxBdr=isMyPick?'rgba(90,158,72,.8)':isOppPick?'rgba(200,168,75,.7)':canPick?'rgba(200,168,75,.5)':'rgba(200,168,75,.2)';
+      const boxShadow=canPick?'0 0 14px rgba(200,168,75,.25)':'none';
+      const icon=isMyPick?'✅':isOppPick?'🎊':canPick?'📦':'📦';
+      return `<div style="flex:1;text-align:center;cursor:${canPick?'pointer':'default'};"
+        onclick="${canPick?'tmDetailPickBox('+i+')':''}"
+        ${canPick?'onmouseover="this.firstElementChild.style.transform=\'scale(1.06)\'" onmouseout="this.firstElementChild.style.transform=\'scale(1)\'"':''}>
+        <div style="padding:16px 6px;background:${boxBg};border:2px solid ${boxBdr};border-radius:13px;transition:all .25s;box-shadow:${boxShadow};">
+          <div style="font-size:${taken?28:32}px;margin-bottom:6px;transition:all .2s;">${icon}</div>
+          <div style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.55);margin-bottom:3px;">BOX ${i+1}</div>
+          ${taken?`<div style="font-family:var(--kr);font-size:10px;color:${isMyPick?'rgba(127,191,106,.9)':'rgba(200,168,75,.85)'};font-weight:700;margin-bottom:2px;">${isMyPick?myName:pName}</div>
+            <div style="font-family:var(--orb);font-size:13px;font-weight:900;color:${isMyPick?'rgba(127,191,106,.95)':'rgba(200,168,75,.95)'};">+${b.amt.toLocaleString()}</div>`
+            :`<div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.2);">???</div>`}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  /* 선택 상태 */
+  const ps=document.getElementById('tmDetailPickStatus');
+  if(ps){
+    ps.innerHTML=`<div style="flex:1;padding:7px;background:${myChosen?'rgba(18,50,16,.7)':'rgba(20,20,20,.4)'};border:1px solid ${myChosen?'rgba(90,158,72,.5)':'rgba(255,255,255,.1)'};border-radius:8px;text-align:center;">
+      <div style="font-family:var(--kr);font-size:10px;color:${myChosen?'rgba(127,191,106,.9)':'rgba(255,255,255,.4)'};">${myChosen?'✅ '+myName:'⏳ '+myName}</div>
+    </div>
+    <div style="flex:1;padding:7px;background:${oppChosen?'rgba(50,35,8,.7)':'rgba(20,20,20,.4)'};border:1px solid ${oppChosen?'rgba(200,168,75,.5)':'rgba(255,255,255,.1)'};border-radius:8px;text-align:center;">
+      <div style="font-family:var(--kr);font-size:10px;color:${oppChosen?'rgba(200,168,75,.9)':'rgba(255,255,255,.4)'};">${oppChosen?'✅ '+pName:'⏳ '+pName}</div>
+    </div>`;
+  }
+}
+
+/* 보물상자 선택 (새 팝업용) */
+async function tmDetailPickBox(idx){
+  const n=_tmLaunchN;
+  const rpath=_tmPath(n)+'/reward_pick';
+  if(!rpath) return;
+  const mk=_tmMK();
+  const u={}; u[mk+'_pick']=idx;
+  try{
+    await _fbUpdate(rpath, u);
+  } catch(e){ showToast('⚠ 선택 저장 실패.'); }
+}
+
+/* 완료 화면 전환 */
+function _tmDetailShowComplete(n){
+  document.getElementById('tmDetailQA').style.display='none';
+  document.getElementById('tmDetailBoxes').style.display='none';
+  document.getElementById('tmDetailComplete').style.display='';
+  _tmDetailSetStep(3);
+  const sub=document.getElementById('tmDetailCompleteSub');
+  if(sub) sub.textContent=TM[n].label+' 임무가 성공적으로 완료되었습니다!';
+  /* 배너 갱신 */
+  tmRefreshLaunchBanner();
+}
+
+/* 보상보기 — 전체화면 팡 */
+function tmDetailShowReward(){
+  const n=_tmLaunchN;
+  const myAmt=window['tmMyReward'+n]||0;
+  const flash=document.getElementById('tmRewardFlash');
+  const inner=document.getElementById('tmRewardFlashInner');
+  const amt=document.getElementById('tmFlashAmount');
+  const lbl=document.getElementById('tmFlashLabel');
+  if(!flash) return;
+  if(amt) amt.textContent='+'+myAmt.toLocaleString()+'원';
+  if(lbl) lbl.textContent=TM[n].label+' 보상 획득!';
+  flash.style.display='flex';
+  /* 팡 애니메이션 */
+  setTimeout(()=>{
+    if(inner){ inner.style.transform='scale(1)'; inner.style.opacity='1'; }
+  }, 30);
+}
+
+/* 확인 버튼 → 통계분석으로 이동 */
+function tmFlashConfirm(){
+  const flash=document.getElementById('tmRewardFlash');
+  const inner=document.getElementById('tmRewardFlashInner');
+  if(inner){ inner.style.transform='scale(.5)'; inner.style.opacity='0'; }
+  setTimeout(()=>{
+    if(flash) flash.style.display='none';
+    /* 팝업 닫기 */
+    tmCloseLaunch();
+    /* 통계분석 패널로 이동 */
+    const statsNav=document.querySelector('.nav-item[onclick*="stats"]');
+    if(statsNav){ statsNav.click(); }
+    else { switchPanel && switchPanel('stats', null); }
+  }, 350);
+}
+
+/* 스텝 표시 갱신 */
+function _tmDetailSetStep(step){
+  [1,2,3].forEach(s=>{
+    const dot=document.querySelector(`#tmStep${s} .tm-step-dot`);
+    const stepEl=document.getElementById('tmStep${s}');
+    if(dot){
+      dot.className='tm-step-dot'+(s<step?' done':s===step?' active':'');
+    }
+    const si=document.getElementById('tmStep'+s);
+    if(si){
+      si.dataset.active=(s===step)?'true':'false';
+      si.dataset.done=(s<step)?'true':'false';
+    }
+  });
+  /* 라인 */
+  document.querySelectorAll('.tm-step-line').forEach((l,i)=>{
+    l.className='tm-step-line'+(step>i+1?' done':'');
+  });
 }
 
 /* 하위 호환 */
