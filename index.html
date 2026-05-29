@@ -5193,7 +5193,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div id="teamQAOppAnswerBox" style="padding:11px 13px;background:rgba(20,15,5,.5);border:1px dashed rgba(200,168,75,.25);border-radius:10px;">
             <div style="display:flex;align-items:center;gap:8px;">
               <span style="font-size:16px;">⏳</span>
-              <div style="font-family:var(--kr);font-size:12px;color:rgba(200,168,75,.45);">상대방 답글 대기중...</div>
+              <div style="font-family:var(--kr);font-size:12px;color:rgba(200,168,75,.6);font-weight:600;" id="teamQAOppWaitingTxt">상대방 임무수행중...</div>
             </div>
           </div>
         </div>
@@ -7749,20 +7749,23 @@ window._mpHandleAccepted = async function(n){
 
 window._teamQASubscribed = false;
 
-/* Firebase 경로 헬퍼 */
+/* Firebase 경로 헬퍼
+   ※ partnerData 는 let 선언이므로 window 가 아닌 직접 참조 */
+function _qaPartnerUid(){ return partnerData ? partnerData.uid : null; }
 function _qaPath(){
-  const pUid = window.partnerData && window.partnerData.uid;
+  const pUid = _qaPartnerUid();
   if(!pUid || !MY_UID) return null;
   return PATH.teamRoom(MY_UID, pUid) + '/qa_mission';
 }
 function _qaMyKey(){
-  const pUid = window.partnerData && window.partnerData.uid;
+  const pUid = _qaPartnerUid();
   return MY_UID < pUid ? 'ans_a' : 'ans_b';
 }
 function _qaOppKey(){
-  const pUid = window.partnerData && window.partnerData.uid;
+  const pUid = _qaPartnerUid();
   return MY_UID < pUid ? 'ans_b' : 'ans_a';
 }
+function _qaPName(){ return (partnerData && partnerData.nickname) || '상대방'; }
 
 /* 팀 미션 질문 목록 */
 const TEAM_QA_QUESTIONS = [
@@ -7790,7 +7793,7 @@ function renderTeamQAMission(qaData){
   const card = document.getElementById('teamQAMissionCard');
   if(!card) return;
 
-  const pName = (window.partnerData && window.partnerData.nickname) || '상대방';
+  const pName = _qaPName();
   const oppLbl = document.getElementById('teamQAOppNickLabel');
   if(oppLbl) oppLbl.textContent = `▎ ${pName}의 답글`;
 
@@ -7816,7 +7819,7 @@ function renderTeamQAMission(qaData){
 
 /* 나의 답글 UI 업데이트 */
 function _updateQAAnswerUI(myAns, oppAns){
-  const pName = (window.partnerData && window.partnerData.nickname) || '상대방';
+  const pName = _qaPName();
   const displayEl  = document.getElementById('teamQAMyAnswerDisplay');
   const inputEl    = document.getElementById('teamQAMyAnswerInput');
   const ansTextEl  = document.getElementById('teamQAMyAnswerText');
@@ -7846,7 +7849,7 @@ function _updateQAAnswerUI(myAns, oppAns){
     } else {
       oppBox.innerHTML=`<div style="display:flex;align-items:center;gap:8px;">
         <span style="font-size:16px;">⏳</span>
-        <div style="font-family:var(--kr);font-size:12px;color:rgba(200,168,75,.45);">${pName} 답글 대기중...</div>
+        <div style="font-family:var(--kr);font-size:12px;color:rgba(200,168,75,.6);font-weight:600;">${pName} 임무수행중...</div>
       </div>`;
       oppBox.style.background='rgba(20,15,5,.5)';
       oppBox.style.border='1px dashed rgba(200,168,75,.25)';
@@ -7858,7 +7861,7 @@ function _updateQAAnswerUI(myAns, oppAns){
 function _updateQAStatus(myAns, oppAns){
   const badge  = document.getElementById('teamQAStatusBadge');
   const banner = document.getElementById('teamQAStatusBanner');
-  const pName  = (window.partnerData && window.partnerData.nickname) || '상대방';
+  const pName  = _qaPName();
 
   const bothDone = !!(myAns && oppAns);
   const myOnly   = !!(myAns && !oppAns);
@@ -7978,7 +7981,7 @@ function teamQASubscribe(){
       showToast('🎉 팀 미션 수행완료! 둘 다 답글을 남겼습니다.');
     } else if(oppAns && !myAns && !window._qaOppNotified){
       window._qaOppNotified = true;
-      const pName = (window.partnerData && window.partnerData.nickname) || '상대방';
+      const pName = _qaPName();
       showToast('💬 '+pName+'이(가) 팀 미션에 답글을 달았어요!');
     }
     if(!oppAns){ window._qaOppNotified = false; }
@@ -7990,6 +7993,14 @@ function teamQASubscribe(){
 function teamQAOnConnect(){
   const card = document.getElementById('teamQAMissionCard');
   if(card) card.style.display='block';
+
+  /* 닉네임 즉시 반영 */
+  const pName = _qaPName();
+  const oppLbl = document.getElementById('teamQAOppNickLabel');
+  if(oppLbl) oppLbl.textContent = `▎ ${pName}의 답글`;
+  const waitTxt = document.getElementById('teamQAOppWaitingTxt');
+  if(waitTxt) waitTxt.textContent = `${pName} 임무수행중...`;
+
   window._teamQASubscribed = false;
   window._qaOppNotified = false;
   window._qaCompleteNotified = false;
