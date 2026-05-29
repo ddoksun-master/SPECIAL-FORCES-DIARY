@@ -965,6 +965,7 @@ let myNickname       = localStorage.getItem('myNickname')||'';
 let partnerData      = null;
 let connectionStatus = 'none';
 let disconnectRequested = false;
+let specialOpRequested = false;   /* 내가 특수작전 연결 요청을 보낸 상태 */
 window._pendingFromUid  = null;
 window._pendingFromNick = '';
 window._pendingFromCode = '';
@@ -1011,6 +1012,8 @@ async function initFirebase(){
     const d = snap.val();
     connectionStatus    = d.connectionStatus||'none';
     disconnectRequested = d.disconnectRequest||false;
+    specialOpRequested  = d.specialOpRequest||false;
+    if(d.specialOpAccepted) window._specialOpAccepted = true;
     const partnerUid    = d.partnerUid||'';
     if(partnerUid && connectionStatus==='connected'){
       /* 파트너 구독 — 중복 등록 방지 */
@@ -1021,7 +1024,8 @@ async function initFirebase(){
             const pd=pSnap.val();
             partnerData={uid:partnerUid,nickname:pd.nickname||'상대',
               shareCode:pd.shareCode||'',money:pd.money||0,
-              disconnectRequest:pd.disconnectRequest||false};
+              disconnectRequest:pd.disconnectRequest||false,
+              specialOpRequest:pd.specialOpRequest||false};
           }
           renderConnectCard();
           if(window.renderActiveMissionCard) renderActiveMissionCard();
@@ -1391,6 +1395,10 @@ function renderConnectCard(){
         da.innerHTML=`<button onclick="requestDisconnect()" style="width:100%;padding:8px;background:transparent;border:1px solid rgba(200,80,80,.25);border-radius:8px;color:rgba(255,100,100,.55);font-family:var(--kr);font-size:11px;cursor:pointer;">공유 해지 요청</button>`;
       }
     }
+
+    /* ── 특수작전 연결 요청 영역 ── */
+    renderSpecialOpArea();
+
     updateGemBoxes();
     renderActiveMissionCard();
     renderStatsRevenueCard();
@@ -1493,6 +1501,125 @@ async function rejectDisconnect(){
 }
 
 /* ============================================================
+   특수작전1 연결 요청 — disconnectRequest와 동일 패턴
+   ============================================================ */
+function renderSpecialOpArea(){
+  const sa = document.getElementById('specialOpArea');
+  if(!sa) return;
+
+  /* 연결 상태가 아니면 숨김 */
+  if(connectionStatus !== 'connected' || !partnerData){
+    sa.style.display='none'; sa.innerHTML=''; return;
+  }
+
+  /* 잠금 해제 조건 확인 (특수작전1 = 20,000원) */
+  const myM  = window.calcTotalPersonalMoney ? calcTotalPersonalMoney() : 0;
+  const oppM = partnerData.money||0;
+  const th   = (window.GEM_THRESHOLDS && window.GEM_THRESHOLDS[1]) || 20000;
+  const unlocked = myM >= th && oppM >= th;
+
+  /* 이미 수락됐으면 → gemBox1에 열기 버튼만 노출, 여기는 숨김 */
+  const acceptedState = window._specialOpAccepted;
+  if(acceptedState){
+    sa.style.display='none'; sa.innerHTML='';
+    renderSpecialOpOpenBtn();
+    return;
+  }
+
+  if(!unlocked){
+    sa.style.display='none'; sa.innerHTML=''; return;
+  }
+
+  sa.style.display='block';
+  const partnerNick = partnerData.nickname||'상대방';
+  const iGotRequest = partnerData.specialOpRequest && !specialOpRequested;
+
+  if(iGotRequest){
+    /* 상대방이 요청한 경우 — 수락/거절 배너 */
+    sa.innerHTML=`
+<div style="padding:12px 14px;background:linear-gradient(135deg,rgba(15,35,50,.97),rgba(20,45,30,.95));border:1.5px solid rgba(74,127,168,.5);border-radius:12px;margin-top:4px;position:relative;overflow:hidden;">
+  <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(74,127,168,.7),transparent);"></div>
+  <div style="font-family:var(--orb);font-size:8px;letter-spacing:2px;color:rgba(74,127,168,.7);margin-bottom:5px;">⚡ SPECIAL OP REQUEST</div>
+  <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:#fff;margin-bottom:2px;">특수작전 연결 요청</div>
+  <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.45);margin-bottom:10px;"><span style="color:rgba(114,168,204,.85);font-weight:700;">${partnerNick}</span> 님이 특수작전을 연결하시겠습니까?</div>
+  <div style="display:flex;gap:8px;">
+    <button onclick="acceptSpecialOp()" style="flex:1;padding:10px;background:linear-gradient(135deg,rgba(50,120,35,.9),rgba(30,80,20,.95));border:1.5px solid rgba(90,158,72,.5);border-radius:9px;color:#9de870;font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 10px rgba(90,158,72,.2);">✅ 수락</button>
+    <button onclick="rejectSpecialOp()" style="flex:1;padding:10px;background:rgba(40,15,15,.7);border:1.5px solid rgba(180,50,50,.3);border-radius:9px;color:rgba(255,100,100,.7);font-family:var(--kr);font-size:12px;font-weight:700;cursor:pointer;">❌ 거절</button>
+  </div>
+</div>`;
+  } else if(specialOpRequested){
+    /* 내가 요청 보낸 상태 — 대기 배너 */
+    sa.innerHTML=`
+<div style="padding:10px 14px;background:rgba(30,50,20,.6);border:1px dashed rgba(255,184,71,.3);border-radius:10px;text-align:center;margin-top:4px;">
+  <div style="font-family:var(--kr);font-size:11px;color:rgba(255,184,71,.65);">⏳ 특수작전 연결 요청 전송됨 — 상대 수락 대기 중</div>
+  <button onclick="cancelSpecialOp()" style="margin-top:6px;padding:5px 14px;background:rgba(40,40,40,.6);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:rgba(255,255,255,.4);font-family:var(--kr);font-size:11px;cursor:pointer;">요청 취소</button>
+</div>`;
+  } else {
+    /* 아직 요청 안 한 상태 — 요청 버튼 */
+    sa.innerHTML=`
+<button onclick="requestSpecialOp()" style="width:100%;padding:9px;background:linear-gradient(135deg,rgba(74,127,168,.15),rgba(56,150,138,.1));border:1px solid rgba(74,127,168,.35);border-radius:9px;color:rgba(114,168,204,.85);font-family:var(--kr);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.3px;">⚔ 특수작전을 연결하시겠습니까?</button>`;
+  }
+}
+
+/* 특수작전1 열기 버튼을 gemBox1 내부에 렌더 */
+function renderSpecialOpOpenBtn(){
+  const bx = document.getElementById('gemBox1');
+  if(!bx) return;
+  if(bx.querySelector('#specialOpOpenBtn')) return; /* 이미 있으면 skip */
+  const btn = document.createElement('button');
+  btn.id = 'specialOpOpenBtn';
+  btn.textContent = '⚔ 특수작전1 열기';
+  btn.style.cssText = `
+    margin-top:6px;padding:7px 12px;
+    background:linear-gradient(135deg,rgba(74,127,168,.25),rgba(56,150,138,.2));
+    border:1.5px solid rgba(74,127,168,.5);border-radius:9px;
+    color:rgba(114,200,220,.95);font-family:var(--kr);font-size:11px;font-weight:900;
+    cursor:pointer;width:100%;letter-spacing:.3px;
+    box-shadow:0 0 10px rgba(74,127,168,.2);
+    animation:mpPulse 2s ease-in-out infinite;
+  `;
+  btn.onclick = function(e){
+    e.stopPropagation();
+    if(typeof openGemBoxWithMission === 'function') openGemBoxWithMission(1);
+  };
+  bx.appendChild(btn);
+}
+
+async function requestSpecialOp(){
+  if(!confirm('특수작전을 연결하시겠습니까?\n상대방이 수락하면 특수작전1이 열립니다.')) return;
+  if(!FB_READY||!_fbDb) return;
+  await _fbUpdate(PATH.user(MY_UID),{specialOpRequest:true});
+  specialOpRequested = true;
+  renderSpecialOpArea();
+}
+
+async function cancelSpecialOp(){
+  if(!FB_READY||!_fbDb) return;
+  await _fbUpdate(PATH.user(MY_UID),{specialOpRequest:false});
+  specialOpRequested = false;
+  renderSpecialOpArea();
+}
+
+async function acceptSpecialOp(){
+  if(!FB_READY||!_fbDb||!partnerData) return;
+  /* 양쪽 모두 specialOpRequest 초기화, accepted 플래그 설정 */
+  await _fbUpdate(PATH.user(MY_UID),{specialOpRequest:false,specialOpAccepted:true});
+  await _fbUpdate(PATH.user(partnerData.uid),{specialOpRequest:false,specialOpAccepted:true});
+  window._specialOpAccepted = true;
+  showToast('✅ 특수작전1이 연결되었습니다!');
+  renderSpecialOpArea();
+  renderSpecialOpOpenBtn();
+}
+
+async function rejectSpecialOp(){
+  if(!FB_READY||!_fbDb||!partnerData) return;
+  await _fbUpdate(PATH.user(partnerData.uid),{specialOpRequest:false});
+  showToast('특수작전 연결 요청을 거절했습니다.');
+  if(partnerData) partnerData.specialOpRequest = false;
+  renderSpecialOpArea();
+}
+
+/* ============================================================
    gemBox 잠금/상태 업데이트 (특수작전 4개 + 스페셜 1개)
    ============================================================ */
 function updateGemBoxes(){
@@ -1555,6 +1682,11 @@ function updateGemBoxes(){
       }
     }
   });
+
+  /* 특수작전 연결 수락 상태면 gemBox1 열기 버튼 유지 */
+  if(window._specialOpAccepted && typeof renderSpecialOpOpenBtn === 'function'){
+    renderSpecialOpOpenBtn();
+  }
 
   /* 스페셜작전 */
   const spTh=GEM_THRESHOLDS['special'];
@@ -4944,6 +5076,8 @@ document.addEventListener('DOMContentLoaded',()=>{
         </div>
         <!-- 공유 해지 요청 버튼 -->
         <div id="disconnectArea" style="margin-top:6px;"></div>
+        <!-- 특수작전 연결 요청 영역 -->
+        <div id="specialOpArea" style="margin-top:6px;display:none;"></div>
       </div>
 
       <!-- ⚔ 특수작전 임무 제안 배너 (동적 렌더) -->
