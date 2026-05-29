@@ -1299,6 +1299,7 @@ function renderConnectCard(){
     }
     updateGemBoxes();
     renderActiveMissionCard();
+    renderStatsRevenueCard();
   }
 }
 
@@ -1345,7 +1346,17 @@ async function acceptConnectRequest(){
   await _fbUpdate(PATH.user(MY_UID),{connectionStatus:'connected',partnerUid:fromUid,disconnectRequest:false});
   await _fbUpdate(PATH.user(fromUid),{connectionStatus:'connected',partnerUid:MY_UID,disconnectRequest:false});
   await _fbRemove(`connRequests/${MY_UID}/${fromUid}`);
-  connectionStatus='connected'; renderConnectCard();
+  connectionStatus='connected';
+  /* 파트너 데이터 즉시 로드 후 UI 갱신 */
+  const pSnap = await _fbGet(PATH.user(fromUid));
+  if(pSnap.exists()){
+    const pd = pSnap.val();
+    partnerData = {uid:fromUid, nickname:pd.nickname||'상대',
+      shareCode:pd.shareCode||'', money:pd.money||0,
+      disconnectRequest:pd.disconnectRequest||false};
+  }
+  renderConnectCard();
+  renderStatsRevenueCard();
 }
 
 async function rejectConnectRequest(){
