@@ -1023,6 +1023,7 @@ async function initFirebase(){
           renderConnectCard();
           if(window.renderActiveMissionCard) renderActiveMissionCard();
           if(window.updateGemBoxes) updateGemBoxes();
+          if(window._refreshLockCards) _refreshLockCards();
           if(window.renderStatsRevenueCard) renderStatsRevenueCard();
         });
         /* 팀미션 구독도 한 번만 */
@@ -1214,6 +1215,8 @@ async function initFirebase(){
   const _syncMyMoney = async()=>{
     const m=window.calcTotalPersonalMoney?calcTotalPersonalMoney():0;
     await _fbUpdate(PATH.user(MY_UID),{money:m});
+    /* 내 돈 변경 시 잠금카드 즉시 갱신 */
+    if(window._refreshLockCards) _refreshLockCards();
   };
   _syncMyMoney(); /* 즉시 1회 */
   setInterval(_syncMyMoney, 3000);
@@ -6632,6 +6635,63 @@ function calcTeamRewardMoney(){
   /* 스페셜: 완료 일수 × 2만원 */
   sum+=(td['specialUsed']||0)*SPECIAL_DAY_REWARD;
   return sum;
+}
+
+/* ============================================================
+   _refreshLockCards — 탭/DOM 상태와 무관하게 잠금 카드 즉시 갱신
+   partnerData.money 또는 내 돈이 바뀔 때마다 직접 호출
+   ============================================================ */
+function _refreshLockCards(){
+  const personal = window.calcTotalPersonalMoney ? calcTotalPersonalMoney() : 0;
+  const oppMoney = window.partnerData ? (window.partnerData.money||0) : 0;
+  const thresholds = [20000,40000,60000,80000];
+
+  /* 특수작전 1~4 잠금카드 */
+  thresholds.forEach((th, i)=>{
+    const n = i+1;
+    const bar  = document.getElementById('lock'+n+'Bar');
+    const lbl  = document.getElementById('lock'+n+'Label');
+    const st   = document.getElementById('lock'+n+'Status');
+    const card = document.getElementById('teamLock'+n+'Card');
+    if(!bar) return; /* 탭 미열림 시 skip — renderStatsRevenueCard가 탭 열릴 때 처리 */
+    const pct = Math.min(100, Math.round(personal/th*100));
+    bar.style.width = pct+'%';
+    if(lbl) lbl.textContent = personal.toLocaleString()+' / '+th.toLocaleString()+'원';
+    const bothUnlocked = personal>=th && oppMoney>=th;
+    if(bothUnlocked){
+      if(st){st.textContent='✅ 해방';st.style.color='rgba(127,191,106,.9)';}
+      if(card){card.style.borderColor='rgba(127,191,106,.4)';card.style.background='rgba(10,30,12,.8)';}
+    } else if(personal>=th && oppMoney<th){
+      if(st){st.textContent='⏳ 상대 대기';st.style.color='rgba(255,184,71,.75)';}
+      if(card){card.style.borderColor='rgba(200,168,75,.25)';card.style.background='rgba(14,26,16,.7)';}
+    } else {
+      if(st){st.textContent='🔒 대기';st.style.color='rgba(200,168,75,.5)';}
+      if(card){card.style.borderColor='rgba(90,158,72,.15)';card.style.background='rgba(14,26,16,.7)';}
+    }
+  });
+
+  /* 스페셜작전 잠금카드 */
+  const spTh = (window.GEM_THRESHOLDS&&window.GEM_THRESHOLDS['special'])||200000;
+  const spBar  = document.getElementById('lockSpecialBar');
+  const spLbl  = document.getElementById('lockSpecialLabel');
+  const spSt   = document.getElementById('lockSpecialStatus');
+  const spCard = document.getElementById('teamLockSpecialCard');
+  if(spBar){
+    spBar.style.width = Math.min(100,(personal/spTh)*100)+'%';
+    if(spLbl) spLbl.textContent = personal.toLocaleString()+' / '+spTh.toLocaleString()+'원';
+    const spBoth = personal>=spTh && oppMoney>=spTh;
+    if(spBoth){
+      if(spSt){spSt.textContent='✅ 해방';spSt.style.color='rgba(200,168,75,.95)';}
+      if(spCard){spCard.style.borderColor='rgba(200,168,75,.5)';spCard.style.background='rgba(30,22,5,.85)';}
+    } else if(personal>=spTh && oppMoney<spTh){
+      if(spSt){spSt.textContent='⏳ 상대 대기';spSt.style.color='rgba(255,184,71,.75)';}
+    } else {
+      if(spSt){spSt.textContent='🔒 대기';spSt.style.color='rgba(200,168,75,.45)';}
+    }
+  }
+
+  /* gemBox 잠금 오버레이도 같이 갱신 */
+  if(window.updateGemBoxes) updateGemBoxes();
 }
 
 function renderStatsRevenueCard(){
