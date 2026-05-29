@@ -1301,6 +1301,8 @@ function renderConnectCard(){
   if(connectionStatus==='none'){
     if(vsCard)vsCard.style.display='none';
     if(gemCard)gemCard.style.display='none';
+    const bannerSlot2 = document.getElementById('mpProposalBanner');
+    if(bannerSlot2){ bannerSlot2.style.display='none'; bannerSlot2.innerHTML=''; }
     if(!FB_READY){
       card.innerHTML=`<div style="text-align:center;padding:20px 0;">
         <div style="font-size:28px;margin-bottom:8px;">📡</div>
@@ -1350,6 +1352,9 @@ function renderConnectCard(){
   } else if(connectionStatus==='connected'&&partnerData){
     if(vsCard)vsCard.style.display='block';
     if(gemCard)gemCard.style.display='block';
+    /* 배너 슬롯 — connected 상태에서만 표시 가능하도록 block으로 전환 (내용은 renderMpProposalBanner가 제어) */
+    const bannerSlot = document.getElementById('mpProposalBanner');
+    if(bannerSlot) bannerSlot.style.removeProperty('display');
     card.innerHTML=`<div style="display:flex;align-items:center;gap:10px;">
       <div style="width:10px;height:10px;border-radius:50%;background:#5aaf46;box-shadow:0 0 8px #5aaf46;flex-shrink:0;animation:blink 2s ease-in-out infinite;"></div>
       <div style="flex:1;">
@@ -7377,10 +7382,12 @@ window.openGemBoxWithMission = async function(n){
   }
   if(n==='special'){ if(typeof openSpecialModal === 'function') openSpecialModal(); return; }
 
-  if(!FB_READY||!_fbDb||!window.partnerData){ showToast('Firebase 연결 오류'); return; }
+  if(!FB_READY||!_fbDb||!window.partnerData){ showToast('팀원 연결 상태를 확인해주세요.'); return; }
 
   const mpPropPath = PATH.teamRoom(MY_UID, partnerData.uid)+'/mp_proposal';
-  const snap = await _fbGet(mpPropPath);
+  let snap;
+  try { snap = await _fbGet(mpPropPath); }
+  catch(e){ showToast('⚠ 네트워크 오류. 잠시 후 다시 시도해주세요.'); return; }
   const existing = snap.exists() ? snap.val() : null;
 
   /* 이미 수락된 작전이면 바로 팝업 열기 */
@@ -7396,21 +7403,28 @@ window.openGemBoxWithMission = async function(n){
     showToast('⚠ 상대방이 다른 작전을 제안 중입니다. 배너를 확인하세요.'); return;
   }
 
-  /* 키워드/질문 미리 생성해서 Firebase에 저장 (레이스 컨디션 차단) */
-  const days = mpGetDays(n);
-  const kws = Array.from({length:days}, ()=>mpRandKw());
-  const qs  = kws.map(k=>mpRandItems(MP_MISSIONS[k].questions,3));
+  /* 키워드/질문 — Firebase에 이미 있으면 재사용, 없으면 새로 생성 */
   const mpRoomPath = PATH.teamRoom(MY_UID, partnerData.uid)+`/mp_${n}`;
-  await _fbSet(mpRoomPath, {kws, qs, days, createdAt:Date.now()});
+  let roomSnap;
+  try { roomSnap = await _fbGet(mpRoomPath); } catch(e){ roomSnap = null; }
+  if(!roomSnap || !roomSnap.exists()){
+    const days = mpGetDays(n);
+    const kws = Array.from({length:days}, ()=>mpRandKw());
+    const qs  = kws.map(k=>mpRandItems(MP_MISSIONS[k].questions,3));
+    try { await _fbSet(mpRoomPath, {kws, qs, days, createdAt:Date.now()}); }
+    catch(e){ showToast('⚠ 임무 데이터 저장 실패. 잠시 후 다시 시도해주세요.'); return; }
+  }
 
   /* 제안 저장 */
-  await _fbSet(mpPropPath, {
-    missionId: n,
-    proposerUid: MY_UID,
-    proposerNickname: window.myNickname||'나',
-    status: 'pending',
-    createdAt: Date.now()
-  });
+  try {
+    await _fbSet(mpPropPath, {
+      missionId: n,
+      proposerUid: MY_UID,
+      proposerNickname: window.myNickname||'나',
+      status: 'pending',
+      createdAt: Date.now()
+    });
+  } catch(e){ showToast('⚠ 제안 전송 실패. 잠시 후 다시 시도해주세요.'); return; }
   showToast(`⚔ 특수작전${n} 임무 제안을 전송했습니다!`);
 };
 
@@ -7434,6 +7448,8 @@ function renderMpProposalBanner(pv, partnerUid){
 
   if(pv.status !== 'pending') return;
 
+  /* pending 상태 — 배너 표시 */
+  el.style.display='block';
   const n = pv.missionId;
   const label = '특수작전'+n;
   const iAmProposer = pv.proposerUid === MY_UID;
