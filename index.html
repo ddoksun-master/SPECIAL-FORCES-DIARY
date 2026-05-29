@@ -6738,19 +6738,58 @@ function mpGetDays(id){
   return cfg||1;
 }
 
-function mpInit(id){
+async function mpInit(id){
   if(mpData[id]) return;
   const days = mpGetDays(id);
-  const kws  = Array.from({length:days}, ()=>mpRandKw());
-  const qs   = kws.map(k=>mpRandItems(MP_MISSIONS[k].questions,3));
+
+  /* Firebase에서 공유 질문 로드 — 없으면 내가 생성해서 업로드 */
+  let kws, qs;
+  const mpPath = FB_READY&&_fbDb&&window.partnerData
+    ? PATH.teamRoom(MY_UID, partnerData.uid)+`/mp_${id}`
+    : null;
+
+  if(mpPath){
+    const snap = await _fbGet(mpPath);
+    if(snap.exists()){
+      const shared = snap.val();
+      kws = shared.kws;
+      qs  = shared.qs;
+    } else {
+      kws = Array.from({length:days}, ()=>mpRandKw());
+      qs  = kws.map(k=>mpRandItems(MP_MISSIONS[k].questions,3));
+      await _fbSet(mpPath, {kws, qs, days, createdAt:Date.now()});
+    }
+  } else {
+    kws = Array.from({length:days}, ()=>mpRandKw());
+    qs  = kws.map(k=>mpRandItems(MP_MISSIONS[k].questions,3));
+  }
+
   mpData[id] = { kws, qs, days, curDay:1, completed:[], myAnswer:'', myQ:'', partnerAnswer:'', partnerQ:'', status:'open' };
+
+  /* 파트너 답변 실시간 리스닝 */
+  if(mpPath && partnerData){
+    const oppKey = MY_UID < partnerData.uid ? 'ans_b' : 'ans_a';
+    _fbOn(mpPath+`/day_${mpData[id].curDay}`, snap=>{
+      if(!snap.exists()) return;
+      const v = snap.val();
+      const d = mpData[id];
+      if(d && v[oppKey]){
+        d.partnerQ      = v[oppKey+'_q']||'';
+        d.partnerAnswer = v[oppKey]||'';
+        /* 제출완료 뷰에서 파트너 답변 수신 → 완료로 전환 */
+        if(d.status==='checking' && mpCurrent===id){
+          mpHandlePartnerAnswer(id);
+        }
+      }
+    });
+  }
 }
 
 /* gemBox 클릭 시 팝업 열기 - 기존 openGemBox와 연동 */
-function mpOpen(id){
+async function mpOpen(id){
   /* 연결 상태·잠금 체크는 기존 openGemBox에서 이미 통과한 상태로 호출됨 */
   mpCurrent = id;
-  mpInit(id);
+  await mpInit(id);
   const d = mpData[id];
 
   /* 헤더 */
@@ -6874,25 +6913,68 @@ function mpSubmit(){
   d.myAnswer=txt;
   d.myQ=qs[mpSelQ];
 
-  /* 파트너 답변 시뮬레이션 (실제 Firebase 연동 시 교체) */
-  const pIdx=(mpSelQ+1)%qs.length;
-  d.partnerQ=qs[pIdx];
-  d.partnerAnswer='함께하는 시간이 가장 소중해요. 매일 쌓이는 소소한 순간들이 행복이 된다고 생각해요.';
+  /* Firebase에 내 답변 저장 */
+  if(FB_READY&&_fbDb&&window.partnerData){
+    const mpPath = PATH.teamRoom(MY_UID, partnerData.uid)+`/mp_${mpCurrent}`;
+    const myKey  = MY_UID < partnerData.uid ? 'ans_a' : 'ans_b';
+    const myQKey = myKey+'_q';
+    const dayRef = `day_${d.curDay}`;
+    const update = {};
+    update[myKey]  = txt;
+    update[myQKey] = d.myQ;
+    _fbUpdate(mpPath+'/'+dayRef, update).then(()=>{
+      showToast('✅ 답변 저장! 상대방 답변을 기다리는 중...');
+    });
+
+    /* 상대 답변 실시간 감지 (혹시 아직 리스닝 안 된 경우 보완) */
+    const oppKey = MY_UID < partnerData.uid ? 'ans_b' : 'ans_a';
+    _fbOn(mpPath+'/'+dayRef, snap=>{
+      if(!snap.exists()) return;
+      const v = snap.val();
+      if(v[oppKey] && mpData[mpCurrent] && mpData[mpCurrent].status==='checking'){
+        mpData[mpCurrent].partnerQ      = v[oppKey+'_q']||'';
+        mpData[mpCurrent].partnerAnswer = v[oppKey]||'';
+        mpHandlePartnerAnswer(mpCurrent);
+      }
+    });
+  }
+
+  /* 상태를 checking(파트너 대기)으로 변경 */
+  d.status='checking';
+  mpUpdateGemBox(mpCurrent);
+  mpShowSubmitted(d);
+}
+
+/* ─── 파트너 답변 수신 후 처리 ─── */
+function mpHandlePartnerAnswer(id){
+  const d=mpData[id];
+  if(!d||d.status!=='checking') return;
+
+  /* 이미 처리됐으면 skip */
+  if(d._partnerHandled) return;
+  d._partnerHandled=true;
 
   d.completed.push({ day:d.curDay, myQ:d.myQ, myAnswer:d.myAnswer, partnerQ:d.partnerQ, partnerAnswer:d.partnerAnswer });
 
   if(d.curDay>=d.days){
     d.status='complete';
-    mpUpdateGemBox(mpCurrent);
-    mpShowComplete(d);
+    mpUpdateGemBox(id);
+    if(id===mpCurrent && document.getElementById('missionOverlay').classList.contains('active')){
+      mpShowComplete(d);
+    }
+    showToast('🎉 특수작전 임무 수행완료!');
   } else {
     d.curDay++;
     d.myAnswer=''; d.myQ=''; d.partnerAnswer=''; d.partnerQ='';
+    d._partnerHandled=false;
     d.status='open';
-    mpUpdateGemBox(mpCurrent);
-    mpUpdateKwBadges(d);
-    mpShowInput(d);
-    document.getElementById('mpCard').scrollTop=0;
+    mpUpdateGemBox(id);
+    if(id===mpCurrent && document.getElementById('missionOverlay').classList.contains('active')){
+      mpUpdateKwBadges(d);
+      mpShowInput(d);
+      document.getElementById('mpCard').scrollTop=0;
+    }
+    showToast('✅ 상대방이 답변했어요! 다음 DAY를 진행하세요.');
   }
 }
 
@@ -6912,7 +6994,12 @@ function mpShowSubmitted(d){
   document.getElementById('mpSvQ').textContent=`Q. ${d.myQ}`;
   document.getElementById('mpSvAns').textContent=d.myAnswer;
   const pName=(window.partnerData&&window.partnerData.nickname)||'파트너';
-  document.getElementById('mpSvPendingTxt').textContent=`${pName}의 답변이 등록되면 함께 확인할 수 있어요`;
+  const partnerDone=!!(d.partnerAnswer);
+  const statusTxt = partnerDone ? '✅ 수행완료' : '⏳ 임무수행중';
+  const statusColor = partnerDone ? 'rgba(127,191,106,.9)' : 'rgba(255,184,71,.9)';
+  document.getElementById('mpSvPendingTxt').innerHTML=
+    `<span style="color:${statusColor};font-weight:900;">${pName} — ${statusTxt}</span>`+
+    (partnerDone ? '' : `<br><span style="font-size:11px;color:rgba(255,255,255,.35);">상대방이 답변을 등록하면 함께 확인할 수 있어요</span>`);
 }
 
 /* ─── 완료 뷰 ─── */
@@ -6970,8 +7057,15 @@ function mpUpdateGemBox(id){
       <button class="gem-stamp-view" onclick="event.stopPropagation();mpOpen(${typeof id==='number'?id:"'"+id+"'"})">답변 보기</button>
     </div>`;
   } else if(d.status==='checking'){
-    box.classList.add('state-checking');
-    box.classList.remove('state-open','state-active');
+    box.className='gem-box state-checking';
+    box.onclick=()=>mpOpen(id);
+    const label2=id==='special'?'스페셜작전':'특수작전'+id;
+    box.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;">
+      <div style="font-family:var(--orb);font-size:8px;color:rgba(255,184,71,.5);letter-spacing:1px;">MISSION ${id}</div>
+      <div style="font-size:18px;">⏳</div>
+      <div style="font-family:var(--kr);font-size:9px;font-weight:900;color:rgba(255,184,71,.85);">임무수행중</div>
+      <div style="font-family:var(--kr);font-size:8px;color:rgba(255,255,255,.35);">${label2}</div>
+    </div>`;
   } else if(d.curDay>1){
     box.classList.add('state-active');
     box.classList.remove('state-open','state-checking');
