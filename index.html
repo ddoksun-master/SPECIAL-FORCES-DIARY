@@ -5105,306 +5105,28 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div id="specialOpArea" style="display:none;"></div>
       </div>
 
-      <!-- ④ 비밀상자 팀 미션 카드 (연결 후만 표시) -->
-      <div class="card" id="teamQAMissionCard" style="display:none;padding:0;overflow:hidden;border:1.5px solid rgba(200,168,75,.3);box-shadow:0 0 20px rgba(200,168,75,.08);">
-
-        <!-- ══ 상태 A: 잠금 (양쪽 합산 2만원 미달) ══ -->
-        <div id="qaBoxLocked" style="padding:20px 16px;">
-          <!-- 헤더 -->
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:18px;">🔒</span>
-              <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:rgba(255,255,255,.7);">비밀 팀 미션</div>
-            </div>
-            <div style="padding:3px 9px;background:rgba(80,60,10,.5);border:1px solid rgba(200,168,75,.3);border-radius:10px;font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(200,168,75,.6);">LOCKED</div>
-          </div>
-
-          <!-- 상자 그래픽 -->
-          <div style="text-align:center;margin-bottom:16px;position:relative;">
-            <div style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;">
-              <!-- 상자 뚜껑 -->
-              <div style="width:72px;height:14px;background:linear-gradient(135deg,rgba(120,90,20,.7),rgba(80,55,10,.9));border:1.5px solid rgba(200,168,75,.4);border-radius:4px 4px 0 0;position:relative;">
-                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:18px;height:4px;background:rgba(200,168,75,.5);border-radius:2px;"></div>
-              </div>
-              <!-- 상자 본체 -->
-              <div id="qaBoxBody" style="width:72px;height:68px;background:linear-gradient(160deg,rgba(100,72,15,.5),rgba(60,40,8,.8));border:1.5px solid rgba(200,168,75,.35);border-radius:0 0 6px 6px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
-                <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 8px,rgba(200,168,75,.04) 8px,rgba(200,168,75,.04) 9px);"></div>
-                <span style="font-size:28px;filter:grayscale(1);opacity:.4;">🎁</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 조건 텍스트 -->
-          <div style="text-align:center;margin-bottom:14px;">
-            <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.55);margin-bottom:4px;">잠금 해제 조건</div>
-            <div style="font-family:var(--kr);font-size:13px;color:rgba(200,168,75,.8);font-weight:900;">나 + 팀원 각각 <span style="color:var(--gold);font-size:16px;">2만원</span> 달성</div>
-          </div>
-
-          <!-- 진행 바 -->
-          <div style="margin-bottom:8px;">
-            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-              <div style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.7);">나</div>
-              <div id="qaMyMoneyTxt" style="font-family:var(--orb);font-size:10px;color:rgba(127,191,106,.8);">0원 / 20,000원</div>
-            </div>
-            <div style="height:7px;background:rgba(20,40,15,.6);border-radius:4px;overflow:hidden;margin-bottom:8px;">
-              <div id="qaMyBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--green),var(--green-dim));border-radius:4px;transition:width .6s;"></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-              <div id="qaOppNameLockTxt" style="font-family:var(--kr);font-size:10px;color:rgba(180,150,220,.7);">상대방</div>
-              <div id="qaOppMoneyTxt" style="font-family:var(--orb);font-size:10px;color:rgba(180,150,220,.8);">0원 / 20,000원</div>
-            </div>
-            <div style="height:7px;background:rgba(20,15,35,.6);border-radius:4px;overflow:hidden;">
-              <div id="qaOppBar" style="height:100%;width:0%;background:linear-gradient(90deg,rgba(140,100,220,.7),rgba(180,140,255,.85));border-radius:4px;transition:width .6s;"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ══ 상태 B: 열림 (미션 진행 중) ══ -->
-        <div id="qaBoxOpen" style="display:none;padding:16px;">
-          <!-- 헤더 -->
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:18px;">📬</span>
-              <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#fff;">비밀 팀 미션</div>
-            </div>
-            <div id="teamQAStatusBadge" style="padding:3px 9px;background:rgba(56,150,138,.15);border:1px solid rgba(56,150,138,.5);border-radius:10px;font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(92,184,172,.9);">진행중</div>
-          </div>
-
-          <!-- 열린 상자 그래픽 (작게) -->
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 12px;background:rgba(200,168,75,.06);border:1px solid rgba(200,168,75,.2);border-radius:10px;">
-            <div style="font-size:22px;">🎁</div>
-            <div>
-              <div style="font-family:var(--orb);font-size:8px;letter-spacing:2px;color:rgba(200,168,75,.6);margin-bottom:2px;">SECRET BOX UNLOCKED</div>
-              <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.5);">양쪽 모두 2만원 달성! 미션이 열렸어요</div>
-            </div>
-          </div>
-
-          <!-- 미션 질문 카드 -->
-          <div style="padding:14px;background:rgba(10,30,28,.7);border:1.5px solid rgba(56,150,138,.35);border-radius:12px;margin-bottom:14px;">
-            <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(92,184,172,.6);margin-bottom:8px;">Q. TEAM MISSION</div>
-            <div id="teamQAQuestionText" style="font-family:var(--kr);font-size:15px;font-weight:900;color:#fff;line-height:1.6;"></div>
-          </div>
-
-          <!-- 나의 답글 -->
-          <div style="margin-bottom:10px;">
-            <div style="font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(127,191,106,.65);margin-bottom:6px;">▎ 나의 답글</div>
-            <div id="teamQAMyAnswerDisplay" style="display:none;padding:11px 13px;background:rgba(18,50,16,.7);border:1.5px solid rgba(90,158,72,.5);border-radius:10px;flex-direction:row;align-items:center;justify-content:space-between;gap:8px;">
-              <div style="display:flex;align-items:center;gap:8px;flex:1;">
-                <span style="font-size:14px;">✅</span>
-                <div id="teamQAMyAnswerText" style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,240,180,.95);flex:1;"></div>
-              </div>
-              <button onclick="teamQAClearMyAnswer()" style="padding:3px 8px;background:rgba(40,20,10,.6);border:1px solid rgba(180,100,50,.3);border-radius:6px;color:rgba(200,130,70,.7);font-family:var(--kr);font-size:10px;cursor:pointer;flex-shrink:0;">수정</button>
-            </div>
-            <div id="teamQAMyAnswerInput" style="display:flex;flex-direction:column;gap:8px;">
-              <textarea id="teamQAMyAnswerTextarea" placeholder="답글을 입력하세요..." maxlength="200" rows="2"
-                style="width:100%;padding:11px 13px;background:rgba(12,28,12,.6);border:1.5px solid rgba(90,158,72,.3);border-radius:10px;color:#fff;font-family:var(--kr);font-size:13px;resize:none;outline:none;line-height:1.5;"></textarea>
-              <button onclick="teamQASaveMyAnswer()" style="width:100%;padding:11px;background:linear-gradient(135deg,rgba(50,120,35,.9),rgba(30,85,20,.9));border:1.5px solid rgba(90,158,72,.5);border-radius:10px;color:#fff;font-family:var(--kr);font-size:14px;font-weight:900;cursor:pointer;letter-spacing:.3px;">✅ 답글 저장</button>
-            </div>
-          </div>
-
-          <!-- 상대방 답글 -->
-          <div style="margin-bottom:4px;">
-            <div id="teamQAOppNickLabel" style="font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(200,168,75,.65);margin-bottom:6px;">▎ 상대방의 답글</div>
-            <div id="teamQAOppAnswerBox" style="padding:11px 13px;background:rgba(20,15,5,.5);border:1px dashed rgba(200,168,75,.25);border-radius:10px;">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:16px;">⏳</span>
-                <div style="font-family:var(--kr);font-size:12px;color:rgba(200,168,75,.6);font-weight:600;" id="teamQAOppWaitingTxt">상대방 임무수행중...</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 상태 배너 -->
-          <div id="teamQAStatusBanner" style="display:none;margin-top:12px;padding:12px;text-align:center;border-radius:10px;"></div>
-        </div>
-
-        <!-- ══ 상태 C: 완료 도장 ══ -->
-        <div id="qaBoxComplete" style="display:none;padding:16px;">
-
-          <!-- 탭하면 펼쳐지는 완료 카드 -->
-          <div id="qaCompleteCard" onclick="qaToggleDetail()"
-            style="cursor:pointer;position:relative;overflow:hidden;
-              background:linear-gradient(160deg,rgba(15,40,12,.95),rgba(10,28,10,.98));
-              border:2px solid rgba(90,158,72,.6);border-radius:14px;
-              box-shadow:0 0 24px rgba(90,158,72,.15);
-              transition:all .3s;">
-
-            <!-- 격자 무늬 배경 -->
-            <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 14px,rgba(90,158,72,.03) 14px,rgba(90,158,72,.03) 15px);pointer-events:none;"></div>
-            <!-- 상단 광선 -->
-            <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(90,158,72,.8),transparent);"></div>
-
-            <!-- 상단: 도장 + 타이틀 가로 배치 -->
-            <div style="display:flex;align-items:center;gap:14px;padding:16px 16px 12px;">
-              <!-- 도장 SVG (작게) -->
-              <div style="flex-shrink:0;">
-                <svg width="64" height="64" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(90,158,72,.9)" stroke-width="3.5" stroke-dasharray="6 3"/>
-                  <circle cx="50" cy="50" r="37" fill="rgba(10,28,10,.6)" stroke="rgba(90,158,72,.6)" stroke-width="1.5"/>
-                  <text x="50" y="36" text-anchor="middle" font-size="20" fill="rgba(127,191,106,.95)">★</text>
-                  <text x="50" y="54" text-anchor="middle" font-family="Courier Prime,monospace" font-size="10.5" font-weight="900" fill="rgba(127,191,106,.95)" letter-spacing="1.5">COMPLETE</text>
-                  <line x1="20" y1="62" x2="80" y2="62" stroke="rgba(90,158,72,.45)" stroke-width="1"/>
-                  <text x="50" y="73" text-anchor="middle" font-family="Courier Prime,monospace" font-size="6.5" fill="rgba(127,191,106,.55)" letter-spacing="2.5">SPECIAL MISSION 1</text>
-                </svg>
-              </div>
-
-              <!-- 타이틀 영역 -->
-              <div style="flex:1;min-width:0;">
-                <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(127,191,106,.6);margin-bottom:4px;">✅ MISSION ACCOMPLISHED</div>
-                <div style="font-family:var(--kr);font-size:16px;font-weight:900;color:#fff;line-height:1.3;">특수미션1 완료</div>
-                <div style="font-family:var(--kr);font-size:11px;color:rgba(127,191,106,.65);margin-top:3px;">팀 미션을 함께 완수했습니다</div>
-              </div>
-
-              <!-- 펼치기 화살표 -->
-              <div id="qaDetailArrow" style="flex-shrink:0;font-size:16px;color:rgba(127,191,106,.5);transition:transform .3s;">▼</div>
-            </div>
-
-            <!-- 펼침 영역 (기본 숨김) -->
-            <div id="qaCompleteDetail" style="display:none;padding:0 16px 16px;">
-              <div style="height:1px;background:rgba(90,158,72,.2);margin-bottom:12px;"></div>
-              <!-- 질문 -->
-              <div style="padding:10px 12px;background:rgba(10,30,28,.7);border:1px solid rgba(56,150,138,.3);border-radius:10px;margin-bottom:10px;">
-                <div style="font-family:var(--orb);font-size:8px;letter-spacing:2px;color:rgba(92,184,172,.55);margin-bottom:5px;">Q. TEAM MISSION</div>
-                <div id="qaCompleteQuestion" style="font-family:var(--kr);font-size:13px;font-weight:700;color:#fff;line-height:1.5;"></div>
-              </div>
-              <!-- 답글들 -->
-              <div id="qaCompleteAnswers" style="display:flex;flex-direction:column;gap:6px;"></div>
-            </div>
-          </div>
-
-        </div>
-
+      <!-- 팀 미션 카드 컨테이너 (JS가 동적 생성) -->
+      <div id="tmCardsWrap" style="display:none;">
+        <div id="tmCard1" class="card" style="padding:0;overflow:hidden;margin-bottom:0;"></div>
+        <div id="tmCard2" class="card" style="padding:0;overflow:hidden;margin-bottom:0;"></div>
+        <div id="tmCard3" class="card" style="padding:0;overflow:hidden;margin-bottom:0;"></div>
+        <div id="tmCard4" class="card" style="padding:0;overflow:hidden;margin-bottom:0;"></div>
       </div>
 
-      <!-- ⑤ 비밀상자 팀 미션2 카드 (연결 후만 표시) -->
-      <div class="card" id="teamQAMissionCard2" style="display:none;padding:0;overflow:hidden;border:1.5px solid rgba(123,94,168,.3);box-shadow:0 0 20px rgba(123,94,168,.08);">
-
-        <!-- ══ 상태 A: 잠금 ══ -->
-        <div id="qaBoxLocked2" style="padding:20px 16px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:18px;">🔒</span>
-              <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:rgba(255,255,255,.7);">비밀 팀 미션 2</div>
+      <!-- 보물상자 보상 팝업 -->
+      <div id="tmRewardOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;">
+        <div id="tmRewardPanel" style="width:100%;max-width:360px;background:linear-gradient(160deg,rgba(15,30,20,.98),rgba(10,20,15,.99));border:2px solid rgba(200,168,75,.5);border-radius:18px;overflow:hidden;max-height:90vh;overflow-y:auto;">
+          <div style="padding:18px 18px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(200,168,75,.7);">🎁 MISSION REWARD</div>
+              <button onclick="tmCloseReward()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:18px;cursor:pointer;padding:0 4px;">✕</button>
             </div>
-            <div style="padding:3px 9px;background:rgba(60,30,80,.5);border:1px solid rgba(123,94,168,.35);border-radius:10px;font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(160,128,204,.6);">LOCKED</div>
+            <div id="tmRewardTitle" style="font-family:var(--kr);font-size:18px;font-weight:900;color:#fff;margin-bottom:4px;"></div>
+            <div id="tmRewardSub" style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.45);margin-bottom:14px;"></div>
           </div>
-          <div style="text-align:center;margin-bottom:16px;position:relative;">
-            <div style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;">
-              <div style="width:72px;height:14px;background:linear-gradient(135deg,rgba(80,50,110,.7),rgba(50,25,75,.9));border:1.5px solid rgba(123,94,168,.4);border-radius:4px 4px 0 0;position:relative;">
-                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:18px;height:4px;background:rgba(160,128,204,.5);border-radius:2px;"></div>
-              </div>
-              <div id="qaBoxBody2" style="width:72px;height:68px;background:linear-gradient(160deg,rgba(70,40,100,.5),rgba(40,20,60,.8));border:1.5px solid rgba(123,94,168,.35);border-radius:0 0 6px 6px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
-                <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 8px,rgba(123,94,168,.04) 8px,rgba(123,94,168,.04) 9px);"></div>
-                <span style="font-size:28px;filter:grayscale(1);opacity:.4;">🎁</span>
-              </div>
-            </div>
-          </div>
-          <div style="text-align:center;margin-bottom:14px;">
-            <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.55);margin-bottom:4px;">잠금 해제 조건</div>
-            <div style="font-family:var(--kr);font-size:13px;color:rgba(160,128,204,.9);font-weight:900;">나 + 팀원 각각 <span style="color:rgba(160,128,204,1);font-size:16px;">4만원</span> 달성</div>
-          </div>
-          <div style="margin-bottom:8px;">
-            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-              <div style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.7);">나</div>
-              <div id="qaMyMoneyTxt2" style="font-family:var(--orb);font-size:10px;color:rgba(127,191,106,.8);">0원 / 40,000원</div>
-            </div>
-            <div style="height:7px;background:rgba(20,40,15,.6);border-radius:4px;overflow:hidden;margin-bottom:8px;">
-              <div id="qaMyBar2" style="height:100%;width:0%;background:linear-gradient(90deg,var(--green),var(--green-dim));border-radius:4px;transition:width .6s;"></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-              <div id="qaOppNameLockTxt2" style="font-family:var(--kr);font-size:10px;color:rgba(180,150,220,.7);">상대방</div>
-              <div id="qaOppMoneyTxt2" style="font-family:var(--orb);font-size:10px;color:rgba(180,150,220,.8);">0원 / 40,000원</div>
-            </div>
-            <div style="height:7px;background:rgba(20,15,35,.6);border-radius:4px;overflow:hidden;">
-              <div id="qaOppBar2" style="height:100%;width:0%;background:linear-gradient(90deg,rgba(160,100,220,.7),rgba(200,150,255,.85));border-radius:4px;transition:width .6s;"></div>
-            </div>
-          </div>
+          <div style="height:1px;background:rgba(200,168,75,.15);margin:0 18px;"></div>
+          <div id="tmRewardBody" style="padding:16px 18px 20px;"></div>
         </div>
-
-        <!-- ══ 상태 B: 열림 ══ -->
-        <div id="qaBoxOpen2" style="display:none;padding:16px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:18px;">📬</span>
-              <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#fff;">비밀 팀 미션 2</div>
-            </div>
-            <div id="teamQAStatusBadge2" style="padding:3px 9px;background:rgba(123,94,168,.15);border:1px solid rgba(123,94,168,.5);border-radius:10px;font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(160,128,204,.9);">진행중</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 12px;background:rgba(123,94,168,.06);border:1px solid rgba(123,94,168,.2);border-radius:10px;">
-            <div style="font-size:22px;">🎁</div>
-            <div>
-              <div style="font-family:var(--orb);font-size:8px;letter-spacing:2px;color:rgba(160,128,204,.6);margin-bottom:2px;">SECRET BOX 2 UNLOCKED</div>
-              <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.5);">양쪽 모두 4만원 달성! 미션2가 열렸어요</div>
-            </div>
-          </div>
-          <div style="padding:14px;background:rgba(20,10,35,.7);border:1.5px solid rgba(123,94,168,.35);border-radius:12px;margin-bottom:14px;">
-            <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(160,128,204,.6);margin-bottom:8px;">Q. TEAM MISSION 2</div>
-            <div id="teamQAQuestionText2" style="font-family:var(--kr);font-size:15px;font-weight:900;color:#fff;line-height:1.6;"></div>
-          </div>
-          <div style="margin-bottom:10px;">
-            <div style="font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(127,191,106,.65);margin-bottom:6px;">▎ 나의 답글</div>
-            <div id="teamQAMyAnswerDisplay2" style="display:none;padding:11px 13px;background:rgba(18,50,16,.7);border:1.5px solid rgba(90,158,72,.5);border-radius:10px;flex-direction:row;align-items:center;justify-content:space-between;gap:8px;">
-              <div style="display:flex;align-items:center;gap:8px;flex:1;">
-                <span style="font-size:14px;">✅</span>
-                <div id="teamQAMyAnswerText2" style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,240,180,.95);flex:1;"></div>
-              </div>
-              <button onclick="teamQAClearMyAnswer(2)" style="padding:3px 8px;background:rgba(40,20,10,.6);border:1px solid rgba(180,100,50,.3);border-radius:6px;color:rgba(200,130,70,.7);font-family:var(--kr);font-size:10px;cursor:pointer;flex-shrink:0;">수정</button>
-            </div>
-            <div id="teamQAMyAnswerInput2" style="display:flex;flex-direction:column;gap:8px;">
-              <textarea id="teamQAMyAnswerTextarea2" placeholder="답글을 입력하세요..." maxlength="200" rows="2"
-                style="width:100%;padding:11px 13px;background:rgba(12,10,25,.6);border:1.5px solid rgba(123,94,168,.3);border-radius:10px;color:#fff;font-family:var(--kr);font-size:13px;resize:none;outline:none;line-height:1.5;"></textarea>
-              <button onclick="teamQASaveMyAnswer(2)" style="width:100%;padding:11px;background:linear-gradient(135deg,rgba(100,60,160,.9),rgba(70,35,110,.9));border:1.5px solid rgba(123,94,168,.5);border-radius:10px;color:#fff;font-family:var(--kr);font-size:14px;font-weight:900;cursor:pointer;letter-spacing:.3px;">✅ 답글 저장</button>
-            </div>
-          </div>
-          <div style="margin-bottom:4px;">
-            <div id="teamQAOppNickLabel2" style="font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(160,128,204,.65);margin-bottom:6px;">▎ 상대방의 답글</div>
-            <div id="teamQAOppAnswerBox2" style="padding:11px 13px;background:rgba(20,10,30,.5);border:1px dashed rgba(123,94,168,.25);border-radius:10px;">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:16px;">⏳</span>
-                <div style="font-family:var(--kr);font-size:12px;color:rgba(160,128,204,.6);font-weight:600;" id="teamQAOppWaitingTxt2">상대방 임무수행중...</div>
-              </div>
-            </div>
-          </div>
-          <div id="teamQAStatusBanner2" style="display:none;margin-top:12px;padding:12px;text-align:center;border-radius:10px;"></div>
-        </div>
-
-        <!-- ══ 상태 C: 완료 도장 ══ -->
-        <div id="qaBoxComplete2" style="display:none;padding:16px;">
-          <div id="qaCompleteCard2" onclick="qaToggleDetail(2)"
-            style="cursor:pointer;position:relative;overflow:hidden;
-              background:linear-gradient(160deg,rgba(25,12,40,.95),rgba(15,8,28,.98));
-              border:2px solid rgba(123,94,168,.6);border-radius:14px;
-              box-shadow:0 0 24px rgba(123,94,168,.15);transition:all .3s;">
-            <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 14px,rgba(123,94,168,.03) 14px,rgba(123,94,168,.03) 15px);pointer-events:none;"></div>
-            <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(123,94,168,.8),transparent);"></div>
-            <div style="display:flex;align-items:center;gap:14px;padding:16px 16px 12px;">
-              <div style="flex-shrink:0;">
-                <svg width="64" height="64" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(160,128,204,.9)" stroke-width="3.5" stroke-dasharray="6 3"/>
-                  <circle cx="50" cy="50" r="37" fill="rgba(15,8,28,.6)" stroke="rgba(123,94,168,.6)" stroke-width="1.5"/>
-                  <text x="50" y="36" text-anchor="middle" font-size="20" fill="rgba(160,128,204,.95)">★</text>
-                  <text x="50" y="54" text-anchor="middle" font-family="Courier Prime,monospace" font-size="10.5" font-weight="900" fill="rgba(160,128,204,.95)" letter-spacing="1.5">COMPLETE</text>
-                  <line x1="20" y1="62" x2="80" y2="62" stroke="rgba(123,94,168,.45)" stroke-width="1"/>
-                  <text x="50" y="73" text-anchor="middle" font-family="Courier Prime,monospace" font-size="6.5" fill="rgba(160,128,204,.55)" letter-spacing="2.5">SPECIAL MISSION 2</text>
-                </svg>
-              </div>
-              <div style="flex:1;min-width:0;">
-                <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(160,128,204,.6);margin-bottom:4px;">✅ MISSION ACCOMPLISHED</div>
-                <div style="font-family:var(--kr);font-size:16px;font-weight:900;color:#fff;line-height:1.3;">특수미션2 완료</div>
-                <div style="font-family:var(--kr);font-size:11px;color:rgba(160,128,204,.65);margin-top:3px;">팀 미션을 함께 완수했습니다</div>
-              </div>
-              <div id="qaDetailArrow2" style="flex-shrink:0;font-size:16px;color:rgba(160,128,204,.5);transition:transform .3s;">▼</div>
-            </div>
-            <div id="qaCompleteDetail2" style="display:none;padding:0 16px 16px;">
-              <div style="height:1px;background:rgba(123,94,168,.2);margin-bottom:12px;"></div>
-              <div style="padding:10px 12px;background:rgba(20,10,35,.7);border:1px solid rgba(123,94,168,.3);border-radius:10px;margin-bottom:10px;">
-                <div style="font-family:var(--orb);font-size:8px;letter-spacing:2px;color:rgba(160,128,204,.55);margin-bottom:5px;">Q. TEAM MISSION 2</div>
-                <div id="qaCompleteQuestion2" style="font-family:var(--kr);font-size:13px;font-weight:700;color:#fff;line-height:1.5;"></div>
-              </div>
-              <div id="qaCompleteAnswers2" style="display:flex;flex-direction:column;gap:6px;"></div>
-            </div>
-          </div>
-        </div>
-
       </div>
 
     </div><!-- /panelTeam -->
@@ -7954,362 +7676,845 @@ window._mpHandleAccepted = async function(n){
      ans_a / ans_b: string   ← 각자 답글 (uid 알파벳순 a/b)
    ================================================================ */
 
-window._teamQASubscribed = false;
-window._qaBoxState = {};
 
-/* 미션별 설정 */
-const QA_MISSIONS = {
-  1: { threshold: 20000, path: 'qa_mission'  },
-  2: { threshold: 40000, path: 'qa_mission2' }
+/* ═══════════════════════════════════════════════════════════════════
+   🎯 팀 비밀상자 미션 엔진 v3
+   특수임무1(2만) / 특수임무2(5만) / 특수임무3(7만) / 스페셜임무(10만)
+═══════════════════════════════════════════════════════════════════ */
+
+/* 미션 설정 */
+const TM = {
+  1: { th:20000,  label:'특수임무1', path:'tm_mission1', color:'rgba(56,150,138,1)',  border:'rgba(56,150,138,.5)',  glow:'rgba(56,150,138,.15)',  box:'rgba(200,168,75,.5)',  rewards:[20000,30000,40000] },
+  2: { th:50000,  label:'특수임무2', path:'tm_mission2', color:'rgba(123,94,168,1)',  border:'rgba(123,94,168,.5)',  glow:'rgba(123,94,168,.15)',  box:'rgba(200,168,75,.5)',  rewards:[20000,30000,40000] },
+  3: { th:70000,  label:'특수임무3', path:'tm_mission3', color:'rgba(74,127,168,1)',  border:'rgba(74,127,168,.5)',  glow:'rgba(74,127,168,.15)',  box:'rgba(200,168,75,.5)',  rewards:[20000,30000,40000] },
+  4: { th:100000, label:'스페셜임무', path:'tm_special',  color:'rgba(200,168,75,1)',  border:'rgba(200,168,75,.6)',  glow:'rgba(200,168,75,.2)',   box:'rgba(200,168,75,.7)',  rewards:null, days:5 }
 };
 
-/* 오늘 질문 목록 */
-const TEAM_QA_QUESTIONS = [
+const TM_QUESTIONS = [
   "오늘 우리 팀이 함께 이루고 싶은 목표는 무엇인가요?",
   "지금 가장 집중하고 싶은 한 가지 행동은 무엇인가요?",
   "오늘 하루 절약할 수 있는 금액과 방법을 적어보세요.",
   "우리 팀이 함께 피해야 할 지출 유혹은 무엇인가요?",
   "오늘의 작전에서 각자 맡을 역할을 한 문장으로 정의해보세요.",
   "이번 주 가장 잘한 소비 결정은 무엇인가요?",
-  "오늘 가장 아끼고 싶은 영역은 어디인가요? (식비/교통/쇼핑 등)",
+  "오늘 가장 아끼고 싶은 영역은 어디인가요?",
   "우리 팀의 공통 저축 목표와 기한을 함께 적어보세요.",
   "오늘 서로에게 응원 한마디를 전한다면?",
   "이번 작전을 성공시키기 위한 나만의 한 가지 전략은?",
   "우리 팀이 이번 달 함께 달성하고 싶은 절약 금액은?",
-  "지금까지의 작전 중 가장 기억에 남는 성공 경험을 나눠보세요.",
-  "다음 목표를 향해 오늘 내가 할 수 있는 한 가지 작은 실천은?",
-  "우리 팀이 함께 피하고 싶은 소비 습관은 무엇인가요?",
+  "지금까지 가장 기억에 남는 성공 경험을 나눠보세요.",
+  "다음 목표를 향해 오늘 내가 할 수 있는 작은 실천은?",
+  "우리 팀이 함께 피하고 싶은 소비 습관은?",
   "서로의 강점을 활용해 이번 작전을 어떻게 성공시킬까요?"
 ];
-function _getTodayQuestion(n){
-  const dayIndex = Math.floor(Date.now() / (1000*60*60*24));
-  return TEAM_QA_QUESTIONS[(dayIndex + (n-1)*7) % TEAM_QA_QUESTIONS.length];
-}
+function _tmQ(n){ const d=Math.floor(Date.now()/(864e5)); return TM_QUESTIONS[(d+(n-1)*4)%TM_QUESTIONS.length]; }
 
-/* ── 헬퍼 ── */
-function _qaPartnerUid(){ return partnerData ? partnerData.uid : null; }
-function _qaPath(n){
-  const pUid = _qaPartnerUid();
-  if(!pUid || !MY_UID) return null;
-  return PATH.teamRoom(MY_UID, pUid) + '/' + QA_MISSIONS[n].path;
-}
-function _qaMyKey(){
-  const pUid = _qaPartnerUid();
-  return MY_UID < pUid ? 'ans_a' : 'ans_b';
-}
-function _qaOppKey(){
-  const pUid = _qaPartnerUid();
-  return MY_UID < pUid ? 'ans_b' : 'ans_a';
-}
-function _qaPName(){ return (partnerData && partnerData.nickname) || '상대방'; }
-function _qaIsUnlocked(n){
-  const th   = QA_MISSIONS[n].threshold;
-  const myM  = window.calcTotalPersonalMoney ? calcTotalPersonalMoney() : 0;
-  const oppM = partnerData ? (partnerData.money || 0) : 0;
-  return myM >= th && oppM >= th;
-}
-/* id 헬퍼 — 미션1은 suffix 없음, 미션2는 '2' */
-function _qid(id, n){ return document.getElementById(n===1 ? id : id+n); }
+/* 헬퍼 */
+function _tmPUid(){ return partnerData ? partnerData.uid : null; }
+function _tmPath(n){ const p=_tmPUid(); return (p&&MY_UID) ? PATH.teamRoom(MY_UID,p)+'/'+TM[n].path : null; }
+function _tmMK(){ const p=_tmPUid(); return MY_UID<p?'ans_a':'ans_b'; }
+function _tmOK(){ const p=_tmPUid(); return MY_UID<p?'ans_b':'ans_a'; }
+function _tmPN(){ return (partnerData&&partnerData.nickname)||'상대방'; }
+function _tmMyM(){ return window.calcTotalPersonalMoney ? calcTotalPersonalMoney() : 0; }
+function _tmOppM(){ return partnerData ? (partnerData.money||0) : 0; }
+function _tmUnlocked(n){ const t=TM[n].th; return _tmMyM()>=t && _tmOppM()>=t; }
 
-/* ══════════════════════════════════════════════
-   메인 렌더
-══════════════════════════════════════════════ */
-function renderTeamQAMission(qaData, n){
-  n = n || 1;
-  const cardId = n===1 ? 'teamQAMissionCard' : 'teamQAMissionCard2';
-  const card = document.getElementById(cardId);
+/* ──────────────────────────────────────────
+   카드 HTML 생성 & 렌더
+────────────────────────────────────────── */
+function tmBuildCard(n){
+  const cfg  = TM[n];
+  const isSpecial = n===4;
+  const icon = isSpecial ? '💎' : '🔒';
+  const lockedBg = isSpecial
+    ? 'linear-gradient(160deg,rgba(40,30,5,.8),rgba(30,20,3,.95))'
+    : 'linear-gradient(160deg,rgba(12,25,20,.8),rgba(8,18,14,.95))';
+
+  const card = document.getElementById('tmCard'+n);
   if(!card) return;
+  card.style.cssText = `padding:0;overflow:hidden;border:1.5px solid ${cfg.border};box-shadow:0 0 18px ${cfg.glow};`;
 
-  const th    = QA_MISSIONS[n].threshold;
-  const myM   = window.calcTotalPersonalMoney ? calcTotalPersonalMoney() : 0;
-  const oppM  = partnerData ? (partnerData.money || 0) : 0;
-  const pName = _qaPName();
-  const unlocked = myM >= th && oppM >= th;
-
-  const myAns   = qaData ? (qaData[_qaMyKey()]  || null) : null;
-  const oppAns  = qaData ? (qaData[_qaOppKey()] || null) : null;
-  const bothDone = !!(myAns && oppAns);
-
-  /* ── C: 완료 ── */
-  if(bothDone){
-    _qaShowState('complete', n);
-    const qEl = _qid('qaCompleteQuestion', n);
-    const aEl = _qid('qaCompleteAnswers', n);
-    const mn  = (myNickname && myNickname !== '') ? myNickname : '나';
-    if(qEl) qEl.textContent = qaData.question || _getTodayQuestion(n);
-    if(aEl) aEl.innerHTML = `
-      <div style="padding:8px 12px;background:rgba(18,50,16,.7);border:1px solid rgba(90,158,72,.4);border-radius:8px;display:flex;gap:8px;align-items:flex-start;">
-        <span style="font-size:12px;flex-shrink:0;">✅</span>
-        <div><div style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.7);margin-bottom:2px;">${mn}</div>
-        <div style="font-family:var(--kr);font-size:12px;color:rgba(200,240,180,.9);font-weight:700;">${myAns}</div></div>
+  card.innerHTML = `
+  <!-- A: 잠금 -->
+  <div id="tmLocked${n}" style="padding:18px 16px;background:${lockedBg};">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:18px;">${icon}</span>
+        <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:rgba(255,255,255,.75);">${cfg.label}</div>
       </div>
-      <div style="padding:8px 12px;background:rgba(50,35,8,.6);border:1px solid rgba(200,168,75,.4);border-radius:8px;display:flex;gap:8px;align-items:flex-start;">
-        <span style="font-size:12px;flex-shrink:0;">✅</span>
-        <div><div style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.7);margin-bottom:2px;">${pName}</div>
-        <div style="font-family:var(--kr);font-size:12px;color:rgba(240,200,100,.95);font-weight:700;">${oppAns}</div></div>
-      </div>`;
-    const det = _qid('qaCompleteDetail', n);
-    const arr = _qid('qaDetailArrow', n);
-    if(det && !window['_qaDetailOpen'+n]) det.style.display='none';
-    if(arr) arr.style.transform = window['_qaDetailOpen'+n] ? 'rotate(180deg)' : 'rotate(0deg)';
-    return;
-  }
+      <div style="padding:3px 10px;background:rgba(0,0,0,.4);border:1px solid ${cfg.border};border-radius:10px;font-family:var(--orb);font-size:9px;letter-spacing:1.5px;color:${cfg.color.replace('1)','0.7)')}">${isSpecial?'JEWEL BOX':'LOCKED'}</div>
+    </div>
+    <!-- 상자 그래픽 -->
+    <div style="text-align:center;margin-bottom:14px;">
+      <div style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;">
+        <div style="width:${isSpecial?80:68}px;height:${isSpecial?16:12}px;background:${isSpecial?'linear-gradient(135deg,rgba(200,168,75,.6),rgba(150,110,30,.8))':'linear-gradient(135deg,rgba(60,100,80,.6),rgba(30,60,45,.8))'};border:1.5px solid ${cfg.border};border-radius:4px 4px 0 0;position:relative;">
+          ${isSpecial?'<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:5px;background:rgba(200,168,75,.7);border-radius:2px;box-shadow:0 0 6px rgba(200,168,75,.4);"></div>':'<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:16px;height:4px;background:'+cfg.color.replace('1)','.5)')+';border-radius:2px;"></div>'}
+        </div>
+        <div id="tmBoxBody${n}" style="width:${isSpecial?80:68}px;height:${isSpecial?80:65}px;background:${isSpecial?'linear-gradient(160deg,rgba(60,45,8,.6),rgba(40,28,3,.85))':'linear-gradient(160deg,rgba(20,45,32,.5),rgba(12,30,20,.85))'};border:1.5px solid ${cfg.border};border-radius:0 0 6px 6px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 8px,${cfg.color.replace('1)','.04)')} 8px,${cfg.color.replace('1)','.04)')} 9px);"></div>
+          <span style="font-size:${isSpecial?32:26}px;${isSpecial?'filter:drop-shadow(0 0 8px rgba(200,168,75,.5));':'filter:grayscale(.6);opacity:.5;'}">${isSpecial?'💎':'🎁'}</span>
+        </div>
+      </div>
+    </div>
+    <!-- 조건 -->
+    <div style="text-align:center;margin-bottom:12px;">
+      <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.45);margin-bottom:3px;">잠금 해제 조건</div>
+      <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:${cfg.color.replace('1)','.9)')}">${isSpecial?'💎 보석함 ':''}<span style="font-size:18px;color:#fff;">${(cfg.th/10000).toFixed(0)}만원</span> 달성</div>
+    </div>
+    <!-- 진행 바 -->
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+        <div style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.7);">나</div>
+        <div id="tmMyTxt${n}" style="font-family:var(--orb);font-size:10px;color:rgba(127,191,106,.8);">0원</div>
+      </div>
+      <div style="height:6px;background:rgba(20,40,15,.6);border-radius:3px;overflow:hidden;margin-bottom:7px;">
+        <div id="tmMyBar${n}" style="height:100%;width:0%;background:linear-gradient(90deg,var(--green),var(--green-dim));border-radius:3px;transition:width .6s;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+        <div id="tmOppNameLock${n}" style="font-family:var(--kr);font-size:10px;color:rgba(180,150,220,.7);">상대방</div>
+        <div id="tmOppTxt${n}" style="font-family:var(--orb);font-size:10px;color:rgba(180,150,220,.8);">0원</div>
+      </div>
+      <div style="height:6px;background:rgba(20,15,35,.6);border-radius:3px;overflow:hidden;">
+        <div id="tmOppBar${n}" style="height:100%;width:0%;background:linear-gradient(90deg,${cfg.color.replace('1)','.6)')},${cfg.color.replace('1)','.85)')});border-radius:3px;transition:width .6s;"></div>
+      </div>
+    </div>
+  </div>
 
-  /* ── A: 잠금 ── */
-  if(!unlocked){
-    _qaShowState('locked', n);
-    const myPct  = Math.min(100, Math.round(myM / th * 100));
-    const oppPct = Math.min(100, Math.round(oppM / th * 100));
-    const fmt    = th.toLocaleString();
-    const myBar  = _qid('qaMyBar', n);
-    const oppBar = _qid('qaOppBar', n);
-    const myTxt  = _qid('qaMyMoneyTxt', n);
-    const oppTxt = _qid('qaOppMoneyTxt', n);
-    const oppLockName = _qid('qaOppNameLockTxt', n);
-    if(myBar)  myBar.style.width  = myPct  + '%';
-    if(oppBar) oppBar.style.width = oppPct + '%';
-    if(myTxt)  myTxt.textContent  = myM.toLocaleString()  + '원 / ' + fmt + '원';
-    if(oppTxt) oppTxt.textContent = oppM.toLocaleString() + '원 / ' + fmt + '원';
-    if(oppLockName) oppLockName.textContent = pName;
-    const body = _qid('qaBoxBody', n);
-    if(body){
-      if(myM >= th || oppM >= th){
-        body.style.borderColor = n===1 ? 'rgba(200,168,75,.7)' : 'rgba(160,128,204,.7)';
-        body.style.boxShadow   = n===1 ? '0 0 12px rgba(200,168,75,.25)' : '0 0 12px rgba(123,94,168,.25)';
+  <!-- B: 열림 (Q&A) -->
+  <div id="tmOpen${n}" style="display:none;padding:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:18px;">${isSpecial?'💎':'📬'}</span>
+        <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#fff;">${cfg.label}</div>
+      </div>
+      <div id="tmBadge${n}" style="padding:3px 9px;background:${cfg.glow};border:1px solid ${cfg.border};border-radius:10px;font-family:var(--orb);font-size:9px;letter-spacing:1px;color:${cfg.color.replace('1)','.9)')}">${isSpecial?'DAY MISSION':'진행중'}</div>
+    </div>
+    <!-- 열림 배너 -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 12px;background:${cfg.glow};border:1px solid ${cfg.border};border-radius:10px;">
+      <span style="font-size:20px;">${isSpecial?'💎':'🎁'}</span>
+      <div>
+        <div style="font-family:var(--orb);font-size:8px;letter-spacing:1.5px;color:${cfg.color.replace('1)','.6)')};margin-bottom:2px;">${isSpecial?'JEWEL BOX UNLOCKED':'SECRET BOX UNLOCKED'}</div>
+        <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.5);">${isSpecial?'보석함이 열렸어요! 5일 미션을 완수하세요':'양쪽 모두 '+Math.round(cfg.th/10000)+'만원 달성!'}</div>
+      </div>
+    </div>
+    ${isSpecial ? `
+    <!-- 스페셜: 5일 달성 바 -->
+    <div style="padding:14px;background:rgba(30,22,3,.7);border:1.5px solid rgba(200,168,75,.3);border-radius:12px;margin-bottom:14px;">
+      <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(200,168,75,.6);margin-bottom:10px;">◈ SPECIAL 5-DAY CHALLENGE</div>
+      <div id="tmDayBars" style="display:flex;gap:4px;margin-bottom:10px;">
+        ${[1,2,3,4,5].map(d=>`<div style="flex:1;text-align:center;">
+          <div id="tmDay${d}" style="height:36px;background:rgba(30,22,3,.8);border:1px solid rgba(200,168,75,.25);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.4);transition:all .4s;">D${d}</div>
+        </div>`).join('')}
+      </div>
+      <div id="tmDayStatus" style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.45);text-align:center;">오늘 답글을 등록하면 DAY 카운트됩니다</div>
+      <!-- 테스터: 다음날 버튼 -->
+      <div style="margin-top:8px;padding:8px;background:rgba(255,80,80,.08);border:1px dashed rgba(255,80,80,.2);border-radius:8px;">
+        <div style="font-family:var(--orb);font-size:7px;letter-spacing:1px;color:rgba(255,80,80,.5);margin-bottom:5px;">⚠ TESTER MODE</div>
+        <button onclick="tmTesterNextDay()" style="width:100%;padding:7px;background:rgba(255,80,80,.15);border:1px solid rgba(255,80,80,.3);border-radius:7px;color:rgba(255,120,120,.8);font-family:var(--kr);font-size:11px;cursor:pointer;">⏭ 다음 DAY 진행 (10초 후 자동)</button>
+        <div id="tmTesterCountdown" style="font-family:var(--orb);font-size:10px;color:rgba(255,80,80,.4);text-align:center;margin-top:4px;display:none;"></div>
+      </div>
+    </div>
+    ` : `
+    <!-- 일반: Q&A -->
+    <div style="padding:14px;background:rgba(10,25,20,.7);border:1.5px solid ${cfg.border};border-radius:12px;margin-bottom:14px;">
+      <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:${cfg.color.replace('1)','.6)')};margin-bottom:8px;">Q. ${cfg.label.toUpperCase()} MISSION</div>
+      <div id="tmQText${n}" style="font-family:var(--kr);font-size:15px;font-weight:900;color:#fff;line-height:1.6;"></div>
+    </div>
+    `}
+    ${isSpecial ? '' : `
+    <!-- 나의 답글 -->
+    <div style="margin-bottom:10px;">
+      <div style="font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(127,191,106,.65);margin-bottom:6px;">▎ 나의 답글</div>
+      <div id="tmMyDisplay${n}" style="display:none;padding:11px 13px;background:rgba(18,50,16,.7);border:1.5px solid rgba(90,158,72,.5);border-radius:10px;flex-direction:row;align-items:center;justify-content:space-between;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;flex:1;"><span>✅</span><div id="tmMyText${n}" style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,240,180,.95);flex:1;"></div></div>
+        <button onclick="tmClear(${n})" style="padding:3px 8px;background:rgba(40,20,10,.6);border:1px solid rgba(180,100,50,.3);border-radius:6px;color:rgba(200,130,70,.7);font-family:var(--kr);font-size:10px;cursor:pointer;flex-shrink:0;">수정</button>
+      </div>
+      <div id="tmMyInput${n}" style="display:flex;flex-direction:column;gap:8px;">
+        <textarea id="tmMyTA${n}" placeholder="답글을 입력하세요..." maxlength="200" rows="2"
+          style="width:100%;padding:11px 13px;background:rgba(10,20,15,.6);border:1.5px solid ${cfg.border};border-radius:10px;color:#fff;font-family:var(--kr);font-size:13px;resize:none;outline:none;line-height:1.5;"></textarea>
+        <button onclick="tmSave(${n})" style="width:100%;padding:11px;background:linear-gradient(135deg,${cfg.color.replace('1)','.85)')},${cfg.color.replace('1)','.6)')});border:1.5px solid ${cfg.border};border-radius:10px;color:#fff;font-family:var(--kr);font-size:14px;font-weight:900;cursor:pointer;">✅ 답글 저장</button>
+      </div>
+    </div>
+    <!-- 상대방 답글 -->
+    <div style="margin-bottom:4px;">
+      <div id="tmOppLbl${n}" style="font-family:var(--orb);font-size:9px;letter-spacing:1px;color:${cfg.color.replace('1)','.65)')};margin-bottom:6px;">▎ 상대방의 답글</div>
+      <div id="tmOppBox${n}" style="padding:11px 13px;background:rgba(10,15,10,.5);border:1px dashed ${cfg.border};border-radius:10px;">
+        <div style="display:flex;align-items:center;gap:8px;"><span>⏳</span><div id="tmOppWait${n}" style="font-family:var(--kr);font-size:12px;color:${cfg.color.replace('1)','.65)')};font-weight:600;">상대방 임무수행중...</div></div>
+      </div>
+    </div>
+    <div id="tmBanner${n}" style="display:none;margin-top:12px;padding:12px;text-align:center;border-radius:10px;"></div>
+    <!-- 보상받기 버튼 (Q&A 완료 후 표시) -->
+    <div id="tmRewardBtn${n}" style="display:none;margin-top:12px;">
+      <button onclick="tmOpenReward(${n})" style="width:100%;padding:13px;background:linear-gradient(135deg,rgba(200,168,75,.9),rgba(160,120,30,.9));border:2px solid rgba(200,168,75,.7);border-radius:12px;color:#000;font-family:var(--kr);font-size:15px;font-weight:900;cursor:pointer;letter-spacing:.5px;box-shadow:0 0 16px rgba(200,168,75,.3);">🎁 미션완료 보상받기</button>
+    </div>
+    `}
+    ${isSpecial ? `<div id="tmSpQAWrap" style=""></div>` : ''}
+  </div>
+
+  <!-- C: 완료 도장 -->
+  <div id="tmComplete${n}" style="display:none;padding:16px;">
+    <div onclick="tmToggleDetail(${n})" style="cursor:pointer;position:relative;overflow:hidden;background:${isSpecial?'linear-gradient(160deg,rgba(40,30,3,.97),rgba(30,20,2,.99))':'linear-gradient(160deg,rgba(15,35,25,.97),rgba(10,22,15,.99))'};border:2px solid ${cfg.border};border-radius:14px;box-shadow:0 0 24px ${cfg.glow};">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,${cfg.border},transparent);"></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:16px 16px 12px;">
+        <div style="flex-shrink:0;">
+          <svg width="64" height="64" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="46" fill="none" stroke="${cfg.color.replace('1)','.9)')}" stroke-width="3.5" stroke-dasharray="6 3"/>
+            <circle cx="50" cy="50" r="37" fill="rgba(10,15,8,.6)" stroke="${cfg.color.replace('1)','.6)')}" stroke-width="1.5"/>
+            <text x="50" y="36" text-anchor="middle" font-size="20" fill="${cfg.color.replace('1)','.95)')}">${isSpecial?'💎':'★'}</text>
+            <text x="50" y="54" text-anchor="middle" font-family="Courier Prime,monospace" font-size="10" font-weight="900" fill="${cfg.color.replace('1)','.95)')}" letter-spacing="1.5">COMPLETE</text>
+            <line x1="20" y1="62" x2="80" y2="62" stroke="${cfg.color.replace('1)','.4)')}" stroke-width="1"/>
+            <text x="50" y="73" text-anchor="middle" font-family="Courier Prime,monospace" font-size="6" fill="${cfg.color.replace('1)','.55)')}" letter-spacing="2">${isSpecial?'SPECIAL MISSION':'MISSION '+n}</text>
+          </svg>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:${cfg.color.replace('1)','.6)')};margin-bottom:4px;">✅ MISSION ACCOMPLISHED</div>
+          <div style="font-family:var(--kr);font-size:16px;font-weight:900;color:#fff;">${cfg.label} 완료</div>
+          <div id="tmCompleteRewardLabel${n}" style="font-family:var(--orb);font-size:12px;color:rgba(200,168,75,.9);margin-top:3px;font-weight:700;"></div>
+        </div>
+        <div id="tmDetailArrow${n}" style="flex-shrink:0;font-size:16px;color:${cfg.color.replace('1)','.5)')};transition:transform .3s;">▼</div>
+      </div>
+      <div id="tmDetail${n}" style="display:none;padding:0 16px 16px;">
+        <div style="height:1px;background:${cfg.color.replace('1)','.2)')};margin-bottom:12px;"></div>
+        <div id="tmDetailBody${n}" style="font-family:var(--kr);font-size:13px;color:rgba(255,255,255,.7);line-height:1.6;"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* 카드 렌더 메인 */
+function tmRender(qaData, n){
+  const cfg   = TM[n];
+  const myM   = _tmMyM(), oppM = _tmOppM();
+  const pName = _tmPN();
+  const th    = cfg.th;
+  const unlocked = myM>=th && oppM>=th;
+  const mk    = _tmMK(), ok = _tmOK();
+  const myAns = qaData ? (qaData[mk]||null) : null;
+  const oppAns= qaData ? (qaData[ok]||null) : null;
+  const bothDone = !!(myAns && oppAns);
+  const isSpecial = n===4;
+
+  /* 완료 */
+  if(bothDone && (isSpecial ? (qaData.completedDays||0)>=5 : window['tmRewardDone'+n])){
+    tmShowState('complete', n);
+    const rl = document.getElementById('tmCompleteRewardLabel'+n);
+    const db = document.getElementById('tmDetailBody'+n);
+    if(rl){
+      const rAmt = window['tmMyReward'+n]||0;
+      if(rAmt) rl.textContent = '+' + rAmt.toLocaleString() + '원 보상 완료';
+    }
+    if(db){
+      if(isSpecial){
+        db.innerHTML = `<div>5일 챌린지를 완수했습니다! 🎉</div>`;
       } else {
-        body.style.borderColor = n===1 ? 'rgba(200,168,75,.35)' : 'rgba(123,94,168,.35)';
-        body.style.boxShadow   = 'none';
+        db.innerHTML = `<div style="padding:10px 12px;background:rgba(10,25,20,.7);border:1px solid ${cfg.border};border-radius:10px;margin-bottom:8px;">
+          <div style="font-family:var(--orb);font-size:8px;letter-spacing:1px;color:${cfg.color.replace('1)','.55)')};margin-bottom:4px;">Q. MISSION</div>
+          <div style="font-weight:700;color:#fff;">${qaData.question||''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="padding:7px 11px;background:rgba(18,50,16,.7);border:1px solid rgba(90,158,72,.4);border-radius:8px;"><span style="font-size:11px;">✅</span> <strong style="color:rgba(200,240,180,.9);">${myAns}</strong></div>
+          <div style="padding:7px 11px;background:rgba(50,35,8,.6);border:1px solid rgba(200,168,75,.4);border-radius:8px;"><span style="font-size:11px;">✅</span> <strong style="color:rgba(240,200,100,.9);">${oppAns}</strong></div>
+        </div>`;
       }
     }
     return;
   }
 
-  /* ── B: 열림 ── */
-  _qaShowState('open', n);
-  if(!window['_qaUnlockToasted'+n]){
-    window['_qaUnlockToasted'+n] = true;
-    showToast('🎁 비밀 팀 미션 ' + n + '이 열렸어요!');
+  /* 잠금 */
+  if(!unlocked){
+    tmShowState('locked', n);
+    const fmt = (cfg.th/10000).toFixed(0)+'만원';
+    const myPct  = Math.min(100,Math.round(myM/th*100));
+    const oppPct = Math.min(100,Math.round(oppM/th*100));
+    const mb = document.getElementById('tmMyBar'+n);
+    const ob = document.getElementById('tmOppBar'+n);
+    const mt = document.getElementById('tmMyTxt'+n);
+    const ot = document.getElementById('tmOppTxt'+n);
+    const ol = document.getElementById('tmOppNameLock'+n);
+    const bb = document.getElementById('tmBoxBody'+n);
+    if(mb) mb.style.width=myPct+'%';
+    if(ob) ob.style.width=oppPct+'%';
+    if(mt) mt.textContent=myM.toLocaleString()+'원 / '+(th).toLocaleString()+'원';
+    if(ot) ot.textContent=oppM.toLocaleString()+'원 / '+(th).toLocaleString()+'원';
+    if(ol) ol.textContent=pName;
+    if(bb){
+      if(myM>=th||oppM>=th){ bb.style.boxShadow='0 0 14px '+cfg.glow; }
+      else { bb.style.boxShadow='none'; }
+    }
+    return;
   }
-  const qText = _qid('teamQAQuestionText', n);
-  if(qText) qText.textContent = (qaData && qaData.question) || _getTodayQuestion(n);
-  const oppLbl = _qid('teamQAOppNickLabel', n);
-  if(oppLbl) oppLbl.textContent = String.fromCharCode(9618) + ' ' + pName + '의 답글';
-  const waitTxt = _qid('teamQAOppWaitingTxt', n);
-  if(waitTxt) waitTxt.textContent = pName + ' 임무수행중...';
-  _updateQAAnswerUI(myAns, oppAns, n);
-  _updateQAStatus(myAns, oppAns, n);
+
+  /* 열림 */
+  tmShowState('open', n);
+
+  /* 잠금해제 토스트 — 이미 완료된 미션에는 뜨지 않음 */
+  if(!window['tmUnlockToasted'+n] && !window['tmRewardDone'+n]){
+    window['tmUnlockToasted'+n]=true;
+    showToast('🎁 '+cfg.label+' 비밀상자가 열렸어요!');
+  }
+
+  if(isSpecial){
+    /* 스페셜: 5일 DAY 렌더 */
+    const days = qaData ? (qaData['days_'+(MY_UID<_tmPUid()?'a':'b')]||[]) : [];
+    const oppDays = qaData ? (qaData['days_'+(MY_UID<_tmPUid()?'b':'a')]||[]) : [];
+    tmRenderDays(days, oppDays, qaData);
+    /* Q&A도 스페셜 아래에 표시 */
+    tmRenderSpQA(qaData, n, myAns, oppAns, bothDone);
+  } else {
+    /* 일반: Q&A */
+    const qt = document.getElementById('tmQText'+n);
+    if(qt) qt.textContent = (qaData&&qaData.question) || _tmQ(n);
+    const ol2 = document.getElementById('tmOppLbl'+n);
+    if(ol2) ol2.textContent = '▎ '+pName+'의 답글';
+    const ow = document.getElementById('tmOppWait'+n);
+    if(ow) ow.textContent = pName+' 임무수행중...';
+    tmUpdateAnswerUI(myAns, oppAns, n);
+    tmUpdateStatus(myAns, oppAns, n);
+    /* 보상 버튼 */
+    const rb = document.getElementById('tmRewardBtn'+n);
+    if(rb) rb.style.display = bothDone ? 'block' : 'none';
+  }
 }
 
-/* 세 패널 전환 */
-function _qaShowState(state, n){
-  const locked   = _qid('qaBoxLocked', n);
-  const open     = _qid('qaBoxOpen', n);
-  const complete = _qid('qaBoxComplete', n);
-  if(locked)   locked.style.display   = state==='locked'   ? 'block' : 'none';
-  if(open)     open.style.display     = state==='open'     ? 'block' : 'none';
-  if(complete) complete.style.display = state==='complete' ? 'block' : 'none';
-  const cardId = n===1 ? 'teamQAMissionCard' : 'teamQAMissionCard2';
-  const card = document.getElementById(cardId);
+function tmShowState(state, n){
+  const a=document.getElementById('tmLocked'+n);
+  const b=document.getElementById('tmOpen'+n);
+  const c=document.getElementById('tmComplete'+n);
+  if(a) a.style.display=state==='locked'  ?'block':'none';
+  if(b) b.style.display=state==='open'    ?'block':'none';
+  if(c) c.style.display=state==='complete'?'block':'none';
+  const card=document.getElementById('tmCard'+n);
   if(!card) return;
-  if(state==='complete'){
-    card.style.border     = n===1 ? '2px solid rgba(90,158,72,.6)'   : '2px solid rgba(123,94,168,.6)';
-    card.style.boxShadow  = n===1 ? '0 0 24px rgba(90,158,72,.18)'   : '0 0 24px rgba(123,94,168,.18)';
-  } else if(state==='open'){
-    card.style.border     = n===1 ? '1.5px solid rgba(56,150,138,.5)' : '1.5px solid rgba(123,94,168,.5)';
-    card.style.boxShadow  = n===1 ? '0 0 18px rgba(56,150,138,.12)'  : '0 0 18px rgba(123,94,168,.12)';
-  } else {
-    card.style.border     = n===1 ? '1.5px solid rgba(200,168,75,.3)' : '1.5px solid rgba(123,94,168,.3)';
-    card.style.boxShadow  = n===1 ? '0 0 14px rgba(200,168,75,.07)'  : '0 0 14px rgba(123,94,168,.07)';
-  }
+  const cfg=TM[n];
+  if(state==='complete') card.style.boxShadow='0 0 28px '+cfg.glow;
+  else card.style.boxShadow='0 0 18px '+cfg.glow;
 }
 
-/* 답글 UI */
-function _updateQAAnswerUI(myAns, oppAns, n){
-  const pName     = _qaPName();
-  const displayEl = _qid('teamQAMyAnswerDisplay', n);
-  const inputEl   = _qid('teamQAMyAnswerInput', n);
-  const ansTextEl = _qid('teamQAMyAnswerText', n);
-  const oppBox    = _qid('teamQAOppAnswerBox', n);
-  const oc = n===1 ? 'rgba(200,168,75,.6)'   : 'rgba(160,128,204,.6)';
-  const ob = n===1 ? 'rgba(200,168,75,.5)'   : 'rgba(123,94,168,.5)';
-  const od = n===1 ? 'rgba(200,168,75,.25)'  : 'rgba(123,94,168,.25)';
-  const obg= n===1 ? 'rgba(20,15,5,.5)'      : 'rgba(20,10,30,.5)';
-
+function tmUpdateAnswerUI(myAns, oppAns, n){
+  const cfg   = TM[n];
+  const pName = _tmPN();
+  const disp  = document.getElementById('tmMyDisplay'+n);
+  const inp   = document.getElementById('tmMyInput'+n);
+  const txt   = document.getElementById('tmMyText'+n);
+  const ob    = document.getElementById('tmOppBox'+n);
   if(myAns){
-    if(displayEl){ displayEl.style.display='flex'; }
-    if(inputEl)  { inputEl.style.display='none'; }
-    if(ansTextEl){ ansTextEl.textContent = myAns; }
+    if(disp) disp.style.display='flex';
+    if(inp)  inp.style.display='none';
+    if(txt)  txt.textContent=myAns;
   } else {
-    if(displayEl){ displayEl.style.display='none'; }
-    if(inputEl)  { inputEl.style.display='flex'; }
-    const ta = _qid('teamQAMyAnswerTextarea', n);
+    if(disp) disp.style.display='none';
+    if(inp)  inp.style.display='flex';
+    const ta=document.getElementById('tmMyTA'+n);
     if(ta) ta.value='';
   }
-  if(oppBox){
+  if(ob){
     if(oppAns){
-      oppBox.innerHTML=`<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:14px;">\u2705</span><div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(240,200,100,.95);">${oppAns}</div></div>`;
-      oppBox.style.background='rgba(50,35,8,.6)';
-      oppBox.style.border='1.5px solid '+ob;
+      ob.innerHTML=`<div style="display:flex;align-items:center;gap:8px;"><span>✅</span><div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(240,200,100,.95);">${oppAns}</div></div>`;
+      ob.style.border='1.5px solid '+cfg.border;
     } else {
-      oppBox.innerHTML=`<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:16px;">\u23f3</span><div style="font-family:var(--kr);font-size:12px;color:${oc};font-weight:600;" id="teamQAOppWaitingTxt${n===1?'':n}">${pName} \uc784\ubb34\uc218\ud589\uc911...</div></div>`;
-      oppBox.style.background=obg;
-      oppBox.style.border='1px dashed '+od;
+      ob.innerHTML=`<div style="display:flex;align-items:center;gap:8px;"><span>⏳</span><div id="tmOppWait${n}" style="font-family:var(--kr);font-size:12px;color:${cfg.color.replace('1)','.65)')};font-weight:600;">${pName} 임무수행중...</div></div>`;
+      ob.style.border='1px dashed '+cfg.border;
     }
   }
 }
 
-/* 상태 배너 + 뱃지 */
-function _updateQAStatus(myAns, oppAns, n){
-  const badge  = _qid('teamQAStatusBadge', n);
-  const banner = _qid('teamQAStatusBanner', n);
-  const pName  = _qaPName();
-  const bothDone = !!(myAns && oppAns);
-  const myOnly   = !!(myAns && !oppAns);
-  const oppOnly  = !!(!myAns && oppAns);
-  const gc  = n===1 ? 'rgba(92,184,172,.9)'   : 'rgba(160,128,204,.9)';
-  const gb  = n===1 ? 'rgba(56,150,138,.15)'  : 'rgba(123,94,168,.15)';
-  const gbd = n===1 ? 'rgba(56,150,138,.5)'   : 'rgba(123,94,168,.5)';
-
-  if(bothDone){
-    if(badge){ badge.textContent='✅ 수행완료'; badge.style.background='rgba(90,158,72,.2)'; badge.style.borderColor='rgba(90,158,72,.7)'; badge.style.color='rgba(127,191,106,.95)'; }
-    if(banner){ banner.style.display='block'; banner.style.background='rgba(20,55,18,.8)'; banner.style.border='1.5px solid rgba(90,158,72,.5)';
-      banner.innerHTML='<div style="font-family:var(--kr);font-size:15px;font-weight:900;color:rgba(127,191,106,.95);">\ud83c\udf89 \ubbf8\uc158 \uc218\ud589\uc644\ub8cc!</div><div style="font-family:var(--kr);font-size:12px;color:rgba(200,240,180,.6);margin-top:4px;">\ub098\uc640 '+pName+' \ubaa8\ub450 \ub2f5\uae00\uc744 \ub0a8\uacbc\uc2b5\ub2c8\ub2e4</div>'; }
-  } else if(myOnly){
-    if(badge){ badge.textContent='⏳ 임무수행중'; badge.style.background='rgba(255,184,71,.1)'; badge.style.borderColor='rgba(255,184,71,.5)'; badge.style.color='rgba(255,184,71,.9)'; }
-    if(banner){ banner.style.display='block'; banner.style.background='rgba(40,30,5,.7)'; banner.style.border='1px dashed rgba(200,168,75,.3)';
-      banner.innerHTML='<div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,168,75,.85);">⏳ 임무수행중</div><div style="font-family:var(--kr);font-size:11px;color:rgba(200,168,75,.5);margin-top:3px;">'+pName+'\uc774(\uac00) \ub2f5\uae00\uc744 \ub2ec\uba74 \uc644\ub8cc\ub429\ub2c8\ub2e4</div>'; }
-  } else if(oppOnly){
-    if(badge){ badge.textContent='⏳ 임무수행중'; badge.style.background='rgba(255,184,71,.1)'; badge.style.borderColor='rgba(255,184,71,.5)'; badge.style.color='rgba(255,184,71,.9)'; }
-    if(banner){ banner.style.display='block'; banner.style.background='rgba(40,30,5,.7)'; banner.style.border='1px dashed rgba(200,168,75,.3)';
-      banner.innerHTML='<div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,168,75,.85);">⏳ 임무수행중</div><div style="font-family:var(--kr);font-size:11px;color:rgba(200,168,75,.5);margin-top:3px;">'+pName+'\uc774(\uac00) \uc774\ubbf8 \ub2f5\uae00\uc744 \ub2ec\uc558\uc5b4\uc694. \ub0b4 \ucc28\ub840\uc785\ub2c8\ub2e4!</div>'; }
+function tmUpdateStatus(myAns, oppAns, n){
+  const badge  = document.getElementById('tmBadge'+n);
+  const banner = document.getElementById('tmBanner'+n);
+  const pName  = _tmPN();
+  const cfg    = TM[n];
+  const both=!!(myAns&&oppAns), myO=!!(myAns&&!oppAns), oppO=!!(!myAns&&oppAns);
+  if(both){
+    if(badge){badge.textContent='✅ 수행완료';badge.style.background='rgba(90,158,72,.2)';badge.style.borderColor='rgba(90,158,72,.6)';badge.style.color='rgba(127,191,106,.9)';}
+    if(banner){banner.style.display='block';banner.style.background='rgba(20,55,18,.8)';banner.style.border='1.5px solid rgba(90,158,72,.5)';
+      banner.innerHTML='<div style="font-family:var(--kr);font-size:14px;font-weight:900;color:rgba(127,191,106,.95);">🎉 미션 수행완료!</div><div style="font-family:var(--kr);font-size:11px;color:rgba(200,240,180,.6);margin-top:3px;">보상을 받아보세요</div>';}
+  } else if(myO){
+    if(badge){badge.textContent='⏳ 임무수행중';badge.style.background='rgba(255,184,71,.1)';badge.style.borderColor='rgba(255,184,71,.5)';badge.style.color='rgba(255,184,71,.9)';}
+    if(banner){banner.style.display='block';banner.style.background='rgba(40,30,5,.7)';banner.style.border='1px dashed rgba(200,168,75,.3)';
+      banner.innerHTML='<div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,168,75,.85);">⏳ 임무수행중</div><div style="font-family:var(--kr);font-size:11px;color:rgba(200,168,75,.5);margin-top:2px;">'+pName+'이(가) 답글을 달면 완료됩니다</div>';}
+  } else if(oppO){
+    if(badge){badge.textContent='⏳ 임무수행중';badge.style.background='rgba(255,184,71,.1)';badge.style.borderColor='rgba(255,184,71,.5)';badge.style.color='rgba(255,184,71,.9)';}
+    if(banner){banner.style.display='block';banner.style.background='rgba(40,30,5,.7)';banner.style.border='1px dashed rgba(200,168,75,.3)';
+      banner.innerHTML='<div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,168,75,.85);">⏳ 임무수행중</div><div style="font-family:var(--kr);font-size:11px;color:rgba(200,168,75,.5);margin-top:2px;">'+pName+'이(가) 먼저 답글을 달았어요! 내 차례입니다</div>';}
   } else {
-    if(badge){ badge.textContent='진행중'; badge.style.background=gb; badge.style.borderColor=gbd; badge.style.color=gc; }
+    if(badge){badge.textContent='진행중';badge.style.background=cfg.glow;badge.style.borderColor=cfg.border;badge.style.color=cfg.color.replace('1)','.9)');}
     if(banner) banner.style.display='none';
   }
 }
 
-/* 답글 저장 */
-async function teamQASaveMyAnswer(n){
-  n = n || 1;
-  const ta = _qid('teamQAMyAnswerTextarea', n);
+/* ──────────────────────────────────────────
+   스페셜임무 5일 DAY 렌더
+────────────────────────────────────────── */
+function tmRenderDays(myDays, oppDays, qaData){
+  for(let d=1;d<=5;d++){
+    const el = document.getElementById('tmDay'+d);
+    if(!el) continue;
+    const myDone  = myDays[d-1]===true||myDays[d-1]==='true';
+    const oppDone = oppDays[d-1]===true||oppDays[d-1]==='true';
+    const both    = myDone && oppDone;
+    if(both){
+      el.style.background='linear-gradient(135deg,rgba(40,30,3,.9),rgba(60,45,5,.9))';
+      el.style.border='1.5px solid rgba(200,168,75,.8)';
+      el.style.color='rgba(200,168,75,1)';
+      el.style.boxShadow='0 0 8px rgba(200,168,75,.3)';
+      el.textContent='D'+d+' ✓';
+    } else if(myDone){
+      el.style.background='rgba(18,50,16,.8)';
+      el.style.border='1px solid rgba(90,158,72,.5)';
+      el.style.color='rgba(127,191,106,.8)';
+      el.textContent='D'+d+' ½';
+    } else {
+      el.style.background='rgba(30,22,3,.8)';
+      el.style.border='1px solid rgba(200,168,75,.2)';
+      el.style.color='rgba(200,168,75,.35)';
+      el.textContent='D'+d;
+    }
+  }
+  const completedDays = qaData ? (qaData.completedDays||0) : 0;
+  const ds = document.getElementById('tmDayStatus');
+  if(ds){
+    if(completedDays>=5) ds.textContent='🏆 5일 챌린지 완료!';
+    else if(completedDays>0) ds.textContent='진행중: '+completedDays+'/5일 완료';
+    else ds.textContent='오늘 답글을 등록하면 DAY 카운트됩니다';
+  }
+}
+
+/* 스페셜 Q&A 영역 (tmSpQAWrap 안에) */
+function tmRenderSpQA(qaData, n, myAns, oppAns, bothDone){
+  const wrap = document.getElementById('tmSpQAWrap');
+  if(!wrap) return;
+  const cfg = TM[n];
+  const pName = _tmPN();
+  const mk = _tmMK(), ok = _tmOK();
+  wrap.innerHTML = `
+    <div style="padding:14px;background:rgba(10,25,18,.7);border:1.5px solid ${cfg.border};border-radius:12px;margin-bottom:14px;">
+      <div style="font-family:var(--orb);font-size:9px;letter-spacing:1.5px;color:${cfg.color.replace('1)','.6)')};margin-bottom:8px;">Q. DAILY MISSION</div>
+      <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#fff;line-height:1.6;">${(qaData&&qaData.question)||_tmQ(n)}</div>
+    </div>
+    <div style="margin-bottom:10px;">
+      <div style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.65);margin-bottom:6px;">▎ 나의 답글</div>
+      ${myAns ? `<div style="padding:10px 13px;background:rgba(18,50,16,.7);border:1.5px solid rgba(90,158,72,.5);border-radius:10px;display:flex;align-items:center;gap:8px;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:8px;flex:1;"><span>✅</span><div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,240,180,.95);">${myAns}</div></div>
+        <button onclick="tmClear(4)" style="padding:3px 8px;background:rgba(40,20,10,.6);border:1px solid rgba(180,100,50,.3);border-radius:6px;color:rgba(200,130,70,.7);font-family:var(--kr);font-size:10px;cursor:pointer;flex-shrink:0;">수정</button>
+      </div>` : `<div style="display:flex;flex-direction:column;gap:8px;">
+        <textarea id="tmMyTA4" placeholder="오늘의 답글을 입력하세요..." maxlength="200" rows="2"
+          style="width:100%;padding:11px 13px;background:rgba(10,20,8,.6);border:1.5px solid ${cfg.border};border-radius:10px;color:#fff;font-family:var(--kr);font-size:13px;resize:none;outline:none;line-height:1.5;"></textarea>
+        <button onclick="tmSave(4)" style="width:100%;padding:11px;background:linear-gradient(135deg,rgba(180,138,35,.85),rgba(140,98,15,.85));border:1.5px solid rgba(200,168,75,.6);border-radius:10px;color:#fff;font-family:var(--kr);font-size:14px;font-weight:900;cursor:pointer;">✅ 오늘 답글 저장 (DAY 카운트)</button>
+      </div>`}
+    </div>
+    <div>
+      <div style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.65);margin-bottom:6px;">▎ ${pName}의 답글</div>
+      <div style="padding:10px 13px;background:rgba(20,15,3,.5);border:1px dashed rgba(200,168,75,.3);border-radius:10px;">
+        ${oppAns ? `<div style="display:flex;align-items:center;gap:8px;"><span>✅</span><div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(240,200,100,.95);">${oppAns}</div></div>`
+          : `<div style="display:flex;align-items:center;gap:8px;"><span>⏳</span><div style="font-family:var(--kr);font-size:12px;color:rgba(200,168,75,.6);font-weight:600;">${pName} 임무수행중...</div></div>`}
+      </div>
+    </div>`;
+}
+
+/* ──────────────────────────────────────────
+   답글 저장/수정
+────────────────────────────────────────── */
+async function tmSave(n){
+  const ta = document.getElementById('tmMyTA'+n);
   if(!ta) return;
   const ans = ta.value.trim();
   if(!ans){ showToast('답글을 입력해주세요.'); return; }
-  const path = _qaPath(n);
+  const path = _tmPath(n);
   if(!path){ showToast('팀원과 연결 후 사용 가능합니다.'); return; }
-  if(!_qaIsUnlocked(n)){ showToast('🔒 아직 비밀상자가 잠겨 있어요!'); return; }
-  const qEl = _qid('teamQAQuestionText', n);
-  const question = (qEl && qEl.textContent) || _getTodayQuestion(n);
+  if(!_tmUnlocked(n)){ showToast('🔒 아직 잠겨 있어요!'); return; }
+  const qt = document.getElementById('tmQText'+n);
+  const question = (qt && qt.textContent) || _tmQ(n);
   const update = { question };
-  update[_qaMyKey()] = ans;
+  update[_tmMK()] = ans;
+
+  if(n===4){
+    /* 스페셜: 오늘 답글 저장 = 내 days 배열 업데이트는 서버 구독에서 처리 */
+    const mk = _tmMK();
+    update[mk] = ans;
+    /* 오늘 인덱스는 서버에서 completedDays 기준으로 관리 */
+  }
   try{
     await _fbUpdate(path, update);
     showToast('✅ 답글이 저장되었습니다!');
   } catch(e){ showToast('⚠ 저장 실패. 다시 시도해주세요.'); }
 }
 
-/* 답글 수정 */
-async function teamQAClearMyAnswer(n){
-  n = n || 1;
-  const path = _qaPath(n);
+async function tmClear(n){
+  const path = _tmPath(n);
   if(!path) return;
-  const update = {};
-  update[_qaMyKey()] = null;
-  try{ await _fbUpdate(path, update); } catch(e){ showToast('⚠ 수정 실패.'); }
+  const u={}; u[_tmMK()]=null;
+  try{ await _fbUpdate(path,u); } catch(e){ showToast('⚠ 수정 실패.'); }
 }
 
-/* 펼치기 / 접기 */
-function qaToggleDetail(n){
-  n = n || 1;
-  const detail = _qid('qaCompleteDetail', n);
-  const arrow  = _qid('qaDetailArrow', n);
-  if(!detail) return;
-  const isOpen = detail.style.display !== 'none';
-  window['_qaDetailOpen'+n] = !isOpen;
-  detail.style.display = isOpen ? 'none' : 'block';
-  if(arrow) arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+function tmToggleDetail(n){
+  const d=document.getElementById('tmDetail'+n);
+  const a=document.getElementById('tmDetailArrow'+n);
+  if(!d) return;
+  const open=d.style.display!=='none';
+  d.style.display=open?'none':'block';
+  if(a) a.style.transform=open?'rotate(0deg)':'rotate(180deg)';
 }
 
-/* Firebase 구독 */
-function teamQASubscribe(n){
-  n = n || 1;
-  const path = _qaPath(n);
-  if(!path || !FB_READY || !_fbDb) return;
-  if(window['_teamQASubscribed'+n]) return;
-  window['_teamQASubscribed'+n] = true;
+/* ──────────────────────────────────────────
+   테스터: 다음 DAY 버튼 (10초 자동)
+────────────────────────────────────────── */
+let _tmTesterTimer=null;
+function tmTesterNextDay(){
+  const path = _tmPath(4);
+  if(!path) return;
+  const cd = document.getElementById('tmTesterCountdown');
+  if(cd){ cd.style.display='block'; }
+  let sec=10;
+  if(cd) cd.textContent='⏱ '+sec+'초 후 다음 DAY...';
+  clearInterval(_tmTesterTimer);
+  _tmTesterTimer = setInterval(async()=>{
+    sec--;
+    if(cd) cd.textContent='⏱ '+sec+'초 후 다음 DAY...';
+    if(sec<=0){
+      clearInterval(_tmTesterTimer);
+      if(cd){ cd.textContent=''; cd.style.display='none'; }
+      /* 양쪽 days 배열 진행 */
+      try{
+        const snap = await _fbGet(path);
+        const d = snap.exists() ? snap.val() : {};
+        const mkA = MY_UID < _tmPUid() ? 'days_a' : 'days_b';
+        const mkB = MY_UID < _tmPUid() ? 'days_b' : 'days_a';
+        let da = d[mkA] || [false,false,false,false,false];
+        let db = d[mkB] || [false,false,false,false,false];
+        /* 내 답글이 있을 때만 진행 */
+        const myAns = d[_tmMK()];
+        if(!myAns){ showToast('먼저 오늘 답글을 저장해주세요!'); return; }
+        const idx = da.findIndex(v=>!v);
+        if(idx===-1){ showToast('이미 5일 완료!'); return; }
+        da[idx]=true; db[idx]=true;
+        const cd2 = (d.completedDays||0)+1;
+        const u = { completedDays: cd2 }; u[mkA]=da; u[mkB]=db;
+        /* 새 날 → Q/A 초기화 */
+        u[_tmMK()] = null; u[_tmOK()] = null;
+        u.question = _tmQ(4);
+        await _fbUpdate(path, u);
+        showToast('✅ DAY '+(idx+1)+' 완료! (테스터)');
+      } catch(e){ showToast('⚠ 테스터 오류'); }
+    }
+  },1000);
+}
 
-  _fbOn(path, snap=>{
-    const qaData = snap.exists() ? snap.val() : null;
-    const todayQ = _getTodayQuestion(n);
-    if(qaData && qaData.question && qaData.question !== todayQ && !(qaData[_qaMyKey()] && qaData[_qaOppKey()])){
-      _fbUpdate(path, { question: todayQ, ans_a: null, ans_b: null });
-      return;
-    }
-    renderTeamQAMission(qaData, n);
-    const oppAns = qaData ? (qaData[_qaOppKey()] || null) : null;
-    const myAns  = qaData ? (qaData[_qaMyKey()]  || null) : null;
-    if(oppAns && myAns && !window['_qaCompleteNotified'+n]){
-      window['_qaCompleteNotified'+n] = true;
-      showToast('🎉 팀 미션 ' + n + ' 완료! 완성 도장이 찍혔어요!');
-    } else if(oppAns && !myAns && !window['_qaOppNotified'+n]){
-      window['_qaOppNotified'+n] = true;
-      showToast('💬 ' + _qaPName() + '이(가) 미션' + n + '에 답글을 달았어요!');
-    }
-    if(!oppAns){ window['_qaOppNotified'+n] = false; }
-    if(!myAns || !oppAns){ window['_qaCompleteNotified'+n] = false; }
+/* ──────────────────────────────────────────
+   보상 팝업 (보물상자 선택)
+────────────────────────────────────────── */
+let _tmRewardN = 0;
+let _tmRewardBoxes = []; /* [{amt}] */
+
+/* Firebase 보상 경로 */
+function _tmRewardPath(n){ const p=_tmPath(n); return p ? p+'/reward_pick' : null; }
+
+/* 보상받기 버튼 클릭 */
+function tmOpenReward(n){
+  _tmRewardN = n;
+  const cfg  = TM[n];
+  _tmRewardBoxes = cfg.rewards.map(amt=>({amt}));
+
+  /* Firebase에서 현재 선택 현황 + 우선권 로드 */
+  const path = _tmPath(n);
+  _fbGet(path).then(snap=>{
+    const d = snap.exists() ? snap.val() : {};
+    /* 우선권: 먼저 저장한 사람 (타임스탬프) */
+    const myTime  = d[_tmMK()+'_at'] || 0;
+    const oppTime = d[_tmOK()+'_at'] || Infinity;
+    window._tmIPriority = (myTime <= oppTime);
+    /* 팝업 오픈 */
+    _tmShowRewardOv(n);
+    /* 실시간 구독 시작 */
+    _tmSubReward(n);
+  }).catch(()=>{
+    window._tmIPriority = true;
+    _tmShowRewardOv(n);
+    _tmSubReward(n);
   });
 }
 
-/* 금액 변화 시 두 상자 모두 갱신 */
+/* 팝업 오버레이 열기 */
+function _tmShowRewardOv(n){
+  const ov = document.getElementById('tmRewardOverlay');
+  if(ov) ov.style.display='flex';
+  const title = document.getElementById('tmRewardTitle');
+  const sub   = document.getElementById('tmRewardSub');
+  if(title) title.textContent = TM[n].label+' 보상받기';
+  if(sub)   sub.textContent   = '보물상자를 골라 보상을 받으세요!';
+  _tmRenderRewardBody(n, null);
+}
+
+/* 실시간 구독 — 상대가 선택하면 즉시 반영 */
+let _tmRewardUnsubFn = null;
+function _tmSubReward(n){
+  if(_tmRewardUnsubFn){ try{ _tmRewardUnsubFn(); }catch(e){} _tmRewardUnsubFn=null; }
+  const rpath = _tmRewardPath(n);
+  if(!rpath||!FB_READY||!_fbDb) return;
+  _fbOn(rpath, snap=>{
+    const d = snap.exists() ? snap.val() : null;
+    _tmRenderRewardBody(n, d);
+    /* 둘 다 선택 완료 → 자동 완료 처리 */
+    if(d && d[_tmMK()+'_pick']!==undefined && d[_tmOK()+'_pick']!==undefined){
+      const myIdx  = d[_tmMK()+'_pick'];
+      const oppIdx = d[_tmOK()+'_pick'];
+      if(!window['tmRewardDone'+n]){
+        window['tmRewardDone'+n] = true;
+        window['tmMyReward'+n]   = _tmRewardBoxes[myIdx]?.amt || 0;
+        _tmSaveRewardFinal(n, myIdx, oppIdx);
+      }
+    }
+  });
+  _tmRewardUnsubFn = ()=>{ /* off는 _fbOff가 있을 경우 처리 */ };
+}
+
+/* 팝업 본문 렌더 */
+function _tmRenderRewardBody(n, fbData){
+  const body = document.getElementById('tmRewardBody');
+  if(!body) return;
+
+  const boxes     = _tmRewardBoxes;
+  const pName     = _tmPN();
+  const myName    = (myNickname&&myNickname!=='')?myNickname:'나';
+  const iPriority = window._tmIPriority;
+  const first     = iPriority ? myName : pName;
+
+  const myPickIdx  = fbData ? fbData[_tmMK()+'_pick']  : undefined;
+  const oppPickIdx = fbData ? fbData[_tmOK()+'_pick']  : undefined;
+  const myChosen   = myPickIdx  !== undefined && myPickIdx  !== null;
+  const oppChosen  = oppPickIdx !== undefined && oppPickIdx !== null;
+  const allDone    = myChosen && oppChosen;
+
+  /* 내 차례 조건:
+     - 우선권 있고 아직 선택 안 함
+     - 우선권 없고 상대가 먼저 선택 완료, 나는 아직 */
+  const isMyTurn = (!myChosen) && (iPriority ? true : oppChosen);
+  const waitingForOpp = myChosen && !oppChosen;
+  const waitingForMe  = !myChosen && oppChosen && !iPriority;
+  const oppGoingFirst = !myChosen && !oppChosen && !iPriority; /* 상대 우선권 → 내 차례 대기 */
+
+  if(allDone){
+    /* 완료 화면 */
+    const myAmt  = boxes[myPickIdx]?.amt  || 0;
+    const oppAmt = boxes[oppPickIdx]?.amt || 0;
+    body.innerHTML = `
+      <div style="text-align:center;padding:10px 0 16px;">
+        <div style="font-size:48px;margin-bottom:10px;">🎊</div>
+        <div style="font-family:var(--kr);font-size:16px;font-weight:900;color:#fff;margin-bottom:8px;">${myName}님 보상 완료!</div>
+        <div style="font-family:var(--orb);font-size:32px;font-weight:900;color:rgba(200,168,75,.95);text-shadow:0 0 12px rgba(200,168,75,.4);margin-bottom:4px;">+${myAmt.toLocaleString()}원</div>
+        <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.4);margin-bottom:18px;">${pName}님 +${oppAmt.toLocaleString()}원</div>
+        <button onclick="tmCloseReward()" style="width:100%;padding:13px;background:linear-gradient(135deg,rgba(90,158,72,.9),rgba(50,110,35,.9));border:2px solid rgba(90,158,72,.6);border-radius:12px;color:#fff;font-family:var(--kr);font-size:15px;font-weight:900;cursor:pointer;">✅ 확인</button>
+      </div>`;
+    return;
+  }
+
+  /* 상태 메시지 */
+  let statusMsg = '';
+  let statusColor = 'rgba(255,255,255,.5)';
+  if(isMyTurn && iPriority){
+    statusMsg = '🏅 우선권! 먼저 선택해보세요';
+    statusColor = 'rgba(200,168,75,.9)';
+  } else if(isMyTurn && !iPriority){
+    statusMsg = pName+'이(가) 선택했어요! 이제 내 차례입니다';
+    statusColor = 'rgba(127,191,106,.9)';
+  } else if(waitingForOpp){
+    statusMsg = '✅ 선택 완료! '+pName+' 선택 대기중...';
+    statusColor = 'rgba(255,184,71,.8)';
+  } else if(oppGoingFirst){
+    statusMsg = pName+'이(가) 먼저 선택합니다. 대기해주세요...';
+    statusColor = 'rgba(160,128,204,.8)';
+  } else if(waitingForMe){
+    statusMsg = '이제 내 차례입니다! 선택해보세요';
+    statusColor = 'rgba(127,191,106,.9)';
+  }
+
+  body.innerHTML = `
+    <!-- 우선권 배너 -->
+    <div style="padding:9px 12px;background:rgba(200,168,75,.07);border:1px solid rgba(200,168,75,.2);border-radius:10px;margin-bottom:12px;text-align:center;">
+      <div style="font-family:var(--orb);font-size:8px;letter-spacing:1.5px;color:rgba(200,168,75,.55);margin-bottom:2px;">우선권</div>
+      <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(255,220,100,.9);">🏅 ${first}님에게 우선권이 주어집니다</div>
+    </div>
+    <!-- 상태 메시지 -->
+    <div style="font-family:var(--kr);font-size:12px;color:${statusColor};margin-bottom:12px;text-align:center;font-weight:700;">${statusMsg}</div>
+    <!-- 보물상자 3개 -->
+    <div style="display:flex;gap:10px;margin-bottom:16px;">
+      ${boxes.map((b,i)=>{
+        const isMyPick  = myPickIdx  === i;
+        const isOppPick = oppPickIdx === i;
+        const taken     = isMyPick || isOppPick;
+        const canPick   = !taken && isMyTurn;
+        const boxBg     = isMyPick  ? 'rgba(18,50,16,.85)'  :
+                          isOppPick ? 'rgba(50,35,8,.8)'    : 'rgba(15,25,18,.7)';
+        const boxBdr    = isMyPick  ? 'rgba(90,158,72,.8)'  :
+                          isOppPick ? 'rgba(200,168,75,.7)' :
+                          canPick   ? 'rgba(200,168,75,.5)' : 'rgba(200,168,75,.2)';
+        const boxShadow = canPick   ? '0 0 14px rgba(200,168,75,.25)' : 'none';
+        const icon      = isMyPick ? '✅' : isOppPick ? '🎊' : canPick ? '📦' : '📦';
+        return `<div style="flex:1;text-align:center;cursor:${canPick?'pointer':'default'};"
+          onclick="${canPick?'tmPickBox('+i+')':''}"
+          ${canPick?'onmouseover="this.firstElementChild.style.transform=\'scale(1.04)\'" onmouseout="this.firstElementChild.style.transform=\'scale(1)\'"':''}>
+          <div style="padding:16px 6px;background:${boxBg};border:2px solid ${boxBdr};border-radius:13px;transition:all .25s;box-shadow:${boxShadow};">
+            <div style="font-size:${taken?28:30}px;margin-bottom:6px;transition:all .2s;">${icon}</div>
+            <div style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.55);margin-bottom:3px;">BOX ${i+1}</div>
+            ${taken ? `
+              <div style="font-family:var(--kr);font-size:10px;color:${isMyPick?'rgba(127,191,106,.9)':'rgba(200,168,75,.85)'};font-weight:700;margin-bottom:2px;">${isMyPick?myName:pName}</div>
+              <div style="font-family:var(--orb);font-size:13px;font-weight:900;color:${isMyPick?'rgba(127,191,106,.95)':'rgba(200,168,75,.95)'};">+${b.amt.toLocaleString()}</div>
+            ` : `<div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.2);">???</div>`}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <!-- 진행 상태 -->
+    <div style="display:flex;gap:6px;">
+      <div style="flex:1;padding:7px;background:${myChosen?'rgba(18,50,16,.7)':'rgba(20,20,20,.4)'};border:1px solid ${myChosen?'rgba(90,158,72,.5)':'rgba(255,255,255,.1)'};border-radius:8px;text-align:center;">
+        <div style="font-family:var(--kr);font-size:10px;color:${myChosen?'rgba(127,191,106,.9)':'rgba(255,255,255,.4)'};">${myChosen?'✅ '+myName:'⏳ '+myName}</div>
+      </div>
+      <div style="flex:1;padding:7px;background:${oppChosen?'rgba(50,35,8,.7)':'rgba(20,20,20,.4)'};border:1px solid ${oppChosen?'rgba(200,168,75,.5)':'rgba(255,255,255,.1)'};border-radius:8px;text-align:center;">
+        <div style="font-family:var(--kr);font-size:10px;color:${oppChosen?'rgba(200,168,75,.9)':'rgba(255,255,255,.4)'};">${oppChosen?'✅ '+pName:'⏳ '+pName}</div>
+      </div>
+    </div>`;
+}
+
+/* 보물상자 선택 */
+async function tmPickBox(idx){
+  const n    = _tmRewardN;
+  const rpath= _tmRewardPath(n);
+  if(!rpath) return;
+  const mk   = _tmMK();
+  /* Firebase에 내 선택 저장 */
+  const u={}; u[mk+'_pick']=idx;
+  try{
+    await _fbUpdate(rpath, u);
+    /* 실시간 구독이 자동으로 반영하므로 추가 렌더 불필요 */
+  } catch(e){ showToast('⚠ 선택 저장 실패.'); }
+}
+
+/* 최종 완료 처리 (둘 다 선택 후 자동 호출) */
+async function _tmSaveRewardFinal(n, myIdx, oppIdx){
+  const boxes  = _tmRewardBoxes;
+  const myAmt  = boxes[myIdx]?.amt  || 0;
+  const oppAmt = boxes[oppIdx]?.amt || 0;
+  /* teamData 업데이트 → 통계 반영 */
+  if(!window.teamData) window.teamData={};
+  if(!window.teamData.completedMissions) window.teamData.completedMissions=[];
+  if(!window.teamData.completedMissions.find(m=>m.n===n)){
+    window.teamData.completedMissions.push({n, label:TM[n].label, reward:myAmt, completedAt:Date.now()});
+  }
+  /* Firebase: 내 보상 기록 */
+  const path = _tmPath(n);
+  if(path){
+    const rk='reward_'+_tmMK();
+    const u={}; u[rk]=myAmt; u.rewardDone=true;
+    await _fbUpdate(path,u).catch(()=>{});
+  }
+  renderStatsRevenueCard();
+  /* 카드 완료 상태로 갱신 */
+  setTimeout(()=>{ tmRender(null,n); }, 500);
+  showToast('🎊 보상 +'+myAmt.toLocaleString()+'원 획득!');
+}
+
+function tmCloseReward(){
+  const ov=document.getElementById('tmRewardOverlay');
+  if(ov) ov.style.display='none';
+  if(_tmRewardUnsubFn){ try{ _tmRewardUnsubFn(); }catch(e){} _tmRewardUnsubFn=null; }
+}
+
+/* ──────────────────────────────────────────
+   Firebase 구독
+────────────────────────────────────────── */
+function tmSubscribe(n){
+  const path = _tmPath(n);
+  if(!path||!FB_READY||!_fbDb) return;
+  if(window['tmSub'+n]) return;
+  window['tmSub'+n]=true;
+
+  _fbOn(path, snap=>{
+    const d = snap.exists() ? snap.val() : null;
+    /* 보상 완료 상태 복원 */
+    if(d){
+      const rk='reward_'+_tmMK();
+      if(d[rk] && !window['tmRewardDone'+n]){
+        window['tmRewardDone'+n]=true;
+        window['tmMyReward'+n]=d[rk];
+      }
+      /* 스페셜: days 동기화 */
+      if(n===4){
+        const mk=MY_UID<_tmPUid()?'days_a':'days_b';
+        const ok=MY_UID<_tmPUid()?'days_b':'days_a';
+        const myDays  = d[mk]||[];
+        const oppDays = d[ok]||[];
+        if(d.completedDays>=5 && !window['tmRewardDone4']){
+          /* 5일 완료 시 완료 처리 */
+          window['tmRewardDone4']=true;
+          window['tmMyReward4']=50000;
+          if(!window.teamData) window.teamData={};
+          if(!window.teamData.completedMissions) window.teamData.completedMissions=[];
+          if(!window.teamData.completedMissions.find(m=>m.n===4)){
+            window.teamData.completedMissions.push({n:4,label:'스페셜임무',reward:50000,completedAt:Date.now()});
+          }
+          renderStatsRevenueCard();
+          showToast('💎 스페셜임무 5일 완료! 보상 획득!');
+        }
+      }
+    }
+
+    tmRender(d, n);
+
+    /* 알림 — 완료된 미션엔 열림 토스트 안 보냄 */
+    if(d && !window['tmRewardDone'+n]){
+      const ok2 = _tmOK();
+      const oppAns = d[ok2]||null;
+      const myAns  = d[_tmMK()]||null;
+      if(oppAns && !myAns && !window['tmOppNoti'+n]){
+        window['tmOppNoti'+n]=true;
+        showToast('💬 '+_tmPN()+'이(가) '+TM[n].label+'에 답글을 달았어요!');
+      }
+      if(!oppAns) window['tmOppNoti'+n]=false;
+    }
+  });
+}
+
+/* 금액 변화 갱신 */
 function teamQAUpdateBox(){
   if(!partnerData) return;
-  [1, 2].forEach(n => {
-    const path = _qaPath(n);
+  [1,2,3,4].forEach(n=>{
+    const path=_tmPath(n);
     if(!path) return;
-    if(window['_teamQASubscribed'+n]){
-      try{
-        _fbGet(path).then(snap => renderTeamQAMission(snap.exists() ? snap.val() : null, n)).catch(()=>{});
-      } catch(e){}
-    } else {
-      renderTeamQAMission(null, n);
-    }
+    if(window['tmSub'+n]){
+      try{ _fbGet(path).then(snap=>tmRender(snap.exists()?snap.val():null,n)).catch(()=>{}); }catch(e){}
+    } else { tmRender(null,n); }
   });
 }
 
 /* 연결 시 */
 function teamQAOnConnect(){
-  [1, 2].forEach(n => {
-    const cardId = n===1 ? 'teamQAMissionCard' : 'teamQAMissionCard2';
-    const card = document.getElementById(cardId);
-    if(card) card.style.display='block';
-    window['_teamQASubscribed'+n]   = false;
-    window['_qaOppNotified'+n]      = false;
-    window['_qaCompleteNotified'+n] = false;
-    window['_qaUnlockToasted'+n]    = false;
-    teamQASubscribe(n);
-    renderTeamQAMission(null, n);
+  const wrap=document.getElementById('tmCardsWrap');
+  if(wrap) wrap.style.display='block';
+  [1,2,3,4].forEach(n=>{
+    window['tmSub'+n]=false;
+    window['tmUnlockToasted'+n]=false;
+    tmBuildCard(n);
+    tmSubscribe(n);
+    tmRender(null,n);
   });
-  const pName = _qaPName();
-  [1,2].forEach(n=>{
-    const oppLbl = _qid('teamQAOppNickLabel', n);
-    if(oppLbl) oppLbl.textContent = '▎ ' + pName + '의 답글';
-    const waitTxt = _qid('teamQAOppWaitingTxt', n);
-    if(waitTxt) waitTxt.textContent = pName + ' 임무수행중...';
-    const oppLockName = _qid('qaOppNameLockTxt', n);
-    if(oppLockName) oppLockName.textContent = pName;
+  /* 닉네임 즉시 반영 */
+  const pName=_tmPN();
+  [1,2,3,4].forEach(n=>{
+    const ol=document.getElementById('tmOppNameLock'+n);
+    if(ol) ol.textContent=pName;
   });
 }
 
 /* 연결 해제 시 */
 function teamQAOnDisconnect(){
-  [1, 2].forEach(n => {
-    const cardId = n===1 ? 'teamQAMissionCard' : 'teamQAMissionCard2';
-    const card = document.getElementById(cardId);
-    if(card) card.style.display='none';
-    window['_teamQASubscribed'+n] = false;
-    window['_qaUnlockToasted'+n]  = false;
-  });
+  const wrap=document.getElementById('tmCardsWrap');
+  if(wrap) wrap.style.display='none';
+  [1,2,3,4].forEach(n=>{ window['tmSub'+n]=false; window['tmUnlockToasted'+n]=false; });
 }
+
+/* 하위 호환 */
+function _qaPath(n){ return _tmPath(n); }
+function _qaIsUnlocked(n){ return _tmUnlocked(n); }
+function renderTeamQAMission(d,n){ tmRender(d,n||1); }
 
 </script>
 <!-- 삭제된 팀작전 요소 스텁 (JS 호환용) -->
