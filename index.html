@@ -1042,11 +1042,17 @@ async function initFirebase(){
           if(!window.teamData.oppGemProposal) window.teamData.oppGemProposal={};
           /* 현재 활성 작전의 상대 제안 업데이트 */
           if(n && tmData[oppKey]){
-            window.teamData.oppGemProposal[n] = tmData[oppKey];
+            window.teamData.oppGemProposal[n] = tmData[oppKey]; /* 항상 FB 값으로 덮어쓰기 */
+          } else if(n && !tmData[oppKey] && !tmData.todayMission){
+            /* FB에 상대 제안 없으면 해당 작전 초기화 */
+            window.teamData.oppGemProposal[n] = null;
           }
           /* 내 제안도 동기화 (다른 기기 접속 시) */
           if(n && tmData[myKey]){
-            if(!window.teamData.myProposal) window.teamData.myProposal = tmData[myKey];
+            window.teamData.myProposal = tmData[myKey]; /* 항상 FB 값으로 덮어쓰기 */
+          } else if(n && !tmData[myKey] && !tmData.todayMission){
+            /* FB에 내 제안이 없으면 초기화 (다른 기기에서 삭제됐을 수 있음) */
+            window.teamData.myProposal = '';
           }
           /* 수립 단계 activeGemN 동기화 */
           if(n && !tmData.todayMission){
@@ -1410,31 +1416,37 @@ function updateGemBoxes(){
       bx.style.boxShadow=isActive?'0 0 14px rgba(127,191,106,.25)':ok?'0 0 10px rgba(200,168,75,.15)':'none';
     }
     if(st){
+      /* 이 작전(n)에 대한 상태를 독립적으로 계산 */
       const oppP=(window.teamData&&window.teamData.oppGemProposal||{})[n]||null;
-      const myP=(window.teamData&&window.teamData.myProposal)||null;
-      const activeN2=window._teamRoomData?window._teamRoomData.activeGemN:window.teamData&&window.teamData.activeGemN;
+      /* 내 제안: activeGemN이 이 작전번호인 경우에만 유효 */
+      const activeN2=window._teamRoomData?window._teamRoomData.activeGemN:(window.teamData&&window.teamData.activeGemN);
       const isThisActive = String(activeN2)===String(n);
-      const hasToday = window.teamData && window.teamData.todayMission && isThisActive;
+      const myP = isThisActive ? ((window.teamData&&window.teamData.myProposal)||null) : null;
+      /* todayMission: activeGemN이 이 번호일 때만 진행중 */
+      const hasToday = window.teamData && window.teamData.todayMission && String(window.teamData.activeGemN)===String(n);
       if(hasToday){
         st.textContent='진행중';st.style.color='rgba(200,168,75,.95)';
         st.style.background='rgba(55,40,5,.7)';st.style.borderColor='rgba(200,168,75,.5)';
-      } else if(oppP && isThisActive){
+      } else if(myP && oppP){
+        /* 양쪽 모두 제안 등록됨 */
         st.textContent='양쪽등록';st.style.color='rgba(127,191,106,.9)';
         st.style.background='rgba(20,55,18,.7)';st.style.borderColor='rgba(90,158,72,.5)';
-      } else if(myP && isThisActive){
+      } else if(oppP && !myP){
+        /* 상대만 제안 등록 */
+        st.textContent='상대등록';st.style.color='rgba(255,184,71,.9)';
+        st.style.background='rgba(50,30,5,.6)';st.style.borderColor='rgba(220,150,40,.45)';
+      } else if(myP && !oppP){
+        /* 나만 제안 등록 */
         st.textContent='내등록완료';st.style.color='rgba(127,191,106,.75)';
         st.style.background='rgba(15,40,12,.6)';st.style.borderColor='rgba(90,158,72,.35)';
       } else if(!ok) {
         st.textContent='잠금';st.style.color='rgba(200,168,75,.4)';
         st.style.background='rgba(30,20,5,.5)';st.style.borderColor='rgba(200,130,40,.2)';
-      } else if(ok && !isThisActive) {
-        /* 잠금 해제됨 — activeGemN이 없거나 다른 작전이 활성 중이어도 탭 가능 표시 */
+      } else {
+        /* 잠금 해제 — 아직 제안 없음 */
         st.textContent='임무수행';st.style.color='rgba(255,180,60,.9)';
         st.style.background='rgba(55,35,5,.6)';st.style.borderColor='rgba(220,150,40,.4)';
         st.style.fontWeight='700';
-      } else {
-        st.textContent='임무수행';st.style.color='rgba(255,160,50,.65)';
-        st.style.background='rgba(50,30,5,.5)';st.style.borderColor='rgba(200,130,40,.25)';
       }
     }
   });
@@ -6583,7 +6595,8 @@ function renderStatsRevenueCard(){
   const pctEl=document.getElementById('statsTotalPct');
   if(pctEl) pctEl.textContent=Math.min(100,Math.round(totalAll/MAX_TOTAL*100))+'%';
 
-  /* ── 잠금 1~5 (특수작전, 2만원 단위) ── */
+  /* ── 잠금 1~4 (특수작전, 2만원 단위) — 양쪽 금액 모두 충족해야 해방 ── */
+  const oppMoney = window.partnerData ? (window.partnerData.money||0) : 0;
   const lockThresholds=[20000,40000,60000,80000];
   lockThresholds.forEach((th,i)=>{
     const n=i+1;
@@ -6592,19 +6605,25 @@ function renderStatsRevenueCard(){
     const st=document.getElementById('lock'+n+'Status');
     const card=document.getElementById('teamLock'+n+'Card');
     if(!bar) return;
+    /* 진행도는 내 금액 기준, 해방 조건은 양쪽 모두 */
     const pct=Math.min(100,Math.round(personal/th*100));
     bar.style.width=pct+'%';
     if(lbl) lbl.textContent=personal.toLocaleString()+' / '+th.toLocaleString()+'원';
-    if(personal>=th){
+    const bothUnlocked = personal>=th && oppMoney>=th;
+    if(bothUnlocked){
       if(st){st.textContent='✅ 해방';st.style.color='rgba(127,191,106,.9)';}
       if(card){card.style.borderColor='rgba(127,191,106,.4)';card.style.background='rgba(10,30,12,.8)';}
+    } else if(personal>=th && oppMoney<th){
+      /* 내가 달성했지만 상대가 아직 */
+      if(st){st.textContent='⏳ 상대 대기';st.style.color='rgba(255,184,71,.75)';}
+      if(card){card.style.borderColor='rgba(200,168,75,.25)';card.style.background='rgba(14,26,16,.7)';}
     } else {
       if(st){st.textContent='🔒 대기';st.style.color='rgba(200,168,75,.5)';}
       if(card){card.style.borderColor='rgba(90,158,72,.15)';card.style.background='rgba(14,26,16,.7)';}
     }
   });
 
-  /* ── 스페셜작전 잠금 (20만원) ── */
+  /* ── 스페셜작전 잠금 (20만원) — 양쪽 모두 충족 시 해방 ── */
   const spBar=document.getElementById('lockSpecialBar');
   const spLbl=document.getElementById('lockSpecialLabel');
   const spSt=document.getElementById('lockSpecialStatus');
@@ -6613,9 +6632,12 @@ function renderStatsRevenueCard(){
   if(spBar){
     spBar.style.width=Math.min(100,(personal/spTh)*100)+'%';
     if(spLbl) spLbl.textContent=personal.toLocaleString()+' / '+spTh.toLocaleString()+'원';
-    if(personal>=spTh){
+    const spBothUnlocked = personal>=spTh && oppMoney>=spTh;
+    if(spBothUnlocked){
       if(spSt){spSt.textContent='✅ 해방';spSt.style.color='rgba(200,168,75,.95)';}
       if(spCard){spCard.style.borderColor='rgba(200,168,75,.5)';spCard.style.background='rgba(30,22,5,.85)';}
+    } else if(personal>=spTh && oppMoney<spTh){
+      if(spSt){spSt.textContent='⏳ 상대 대기';spSt.style.color='rgba(255,184,71,.75)';}
     } else {
       if(spSt){spSt.textContent='🔒 대기';spSt.style.color='rgba(200,168,75,.45)';}
     }
