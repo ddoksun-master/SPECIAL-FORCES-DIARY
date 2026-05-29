@@ -1620,6 +1620,61 @@ async function rejectSpecialOp(){
 }
 
 /* ============================================================
+   [테스터] 특수작전1 완전 초기화 — Firebase + 로컬 상태 리셋
+   ============================================================ */
+async function resetSpecialOp1(){
+  if(!confirm('⚠ 테스터 재실행: 특수작전1을 완전히 초기화합니다.\n양쪽 모두 초기 상태로 돌아갑니다.')) return;
+  if(!FB_READY||!_fbDb) return;
+
+  /* 로컬 상태 초기화 */
+  window._specialOpAccepted = false;
+  specialOpRequested = false;
+  if(window.mpData) delete window.mpData[1];
+  if(window.mpRandDays) delete window.mpRandDays[1];
+
+  /* Firebase — 내 유저 필드 초기화 */
+  await _fbUpdate(PATH.user(MY_UID), {
+    specialOpRequest: false,
+    specialOpAccepted: false
+  });
+
+  /* Firebase — 파트너 유저 필드 초기화 */
+  if(window.partnerData){
+    await _fbUpdate(PATH.user(partnerData.uid), {
+      specialOpRequest: false,
+      specialOpAccepted: false
+    });
+    /* Firebase — mp_1 데이터 삭제 */
+    const mpRoomPath = PATH.teamRoom(MY_UID, partnerData.uid)+'/mp_1';
+    await _fbSet(mpRoomPath, null);
+    /* Firebase — mp_proposal 초기화 */
+    const mpPropPath = PATH.teamRoom(MY_UID, partnerData.uid)+'/mp_proposal';
+    await _fbSet(mpPropPath, null);
+  }
+
+  /* gemBox1 원상 복구 */
+  const bx = document.getElementById('gemBox1');
+  if(bx){
+    bx.className='gem-box';
+    bx.onclick = ()=>openGemBoxWithMission(1);
+    bx.innerHTML=`
+      <div id="gemLock1" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;justify-content:center;z-index:2;backdrop-filter:blur(1px);">
+        <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
+        <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">20,000원</div>
+      </div>
+      <div style="font-family:var(--orb);font-size:8px;letter-spacing:1px;color:rgba(127,191,106,.6);margin-bottom:4px;">MISSION 1</div>
+      <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:#fff;">특수작전1</div>
+      <div style="font-family:var(--orb);font-size:11px;font-weight:700;color:var(--green);margin-top:4px;">+10,000원</div>
+      <div id="gemOppStatus1" style="margin-top:5px;padding:2px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);">미등록</div>
+    `;
+  }
+
+  showToast('🔄 특수작전1 재실행 완료. 연결 요청부터 다시 시작하세요.');
+  renderConnectCard();
+  if(window.updateGemBoxes) updateGemBoxes();
+}
+
+/* ============================================================
    gemBox 잠금/상태 업데이트 (특수작전 4개 + 스페셜 1개)
    ============================================================ */
 function updateGemBoxes(){
@@ -5383,11 +5438,11 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="mp-cv-next-lock" id="mpCvNextLock">🔒 다음날 자동 해제</div>
     </div>
     <button class="mp-close-btn2" onclick="mpClose()">닫기</button>
+    <!-- 테스터 재실행 버튼 -->
+    <div id="mpCvTesterReset" style="display:none;margin-top:8px;">
+      <button onclick="resetSpecialOp1()" style="width:100%;padding:9px;background:rgba(74,127,168,.12);border:1px dashed rgba(74,127,168,.35);border-radius:9px;color:rgba(114,168,204,.65);font-family:var(--kr);font-size:11px;cursor:pointer;">🔄 테스터 재실행 — 처음부터 다시</button>
+    </div>
   </div>
-
-</div>
-</div>
-<!-- /MISSION POPUP v2 -->
 
 </div><!-- /app-shell -->
 
@@ -7437,6 +7492,17 @@ function mpShowComplete(d){
   const lockEl=document.getElementById('mpCvNextLock');
   if(nextId&&nextId<=4){ nextEl.textContent=`특수작전${nextId} 잠금해제!`; lockEl.textContent='🔓 다음 작전이 해제됩니다'; }
   else if(mpCurrent==='special'||nextId>4){ nextEl.textContent='모든 작전 완료!'; lockEl.textContent='🏆 전체 임무 달성!'; }
+
+  /* 테스터 재실행 버튼 (특수작전1 완료 시) */
+  const testerEl = document.getElementById('mpCvTesterReset');
+  if(testerEl){
+    if(mpCurrent===1 && window._specialOpAccepted){
+      testerEl.style.display='block';
+    } else {
+      testerEl.style.display='none';
+    }
+  }
+
   document.getElementById('mpCard').scrollTop=0;
 }
 
@@ -7464,11 +7530,14 @@ function mpUpdateGemBox(id){
     const label=id==='special'?'스페셜작전':'특수작전'+id;
     box.className='gem-box stamped';
     box.onclick=()=>mpOpen(id);
+    /* 특수작전1 + specialOpAccepted 완료 시 → 재실행 버튼 포함 */
+    const isSp1Done = id===1 && window._specialOpAccepted;
     box.innerHTML=`<div class="gem-stamp-wrap">
       <div style="font-family:var(--orb);font-size:8px;letter-spacing:1px;color:rgba(92,184,172,.35);align-self:flex-start;margin-bottom:2px;">MISSION ${id}</div>
       <div class="gem-stamp-circle"><div class="gem-stamp-icon">🏆</div><div class="gem-stamp-word">COMPLETE</div></div>
       <div class="gem-stamp-title">${label}</div>
       <button class="gem-stamp-view" onclick="event.stopPropagation();mpOpen(${typeof id==='number'?id:"'"+id+"'"})">답변 보기</button>
+      ${isSp1Done?`<button onclick="event.stopPropagation();resetSpecialOp1()" style="margin-top:5px;padding:5px 10px;background:rgba(74,127,168,.18);border:1px dashed rgba(74,127,168,.4);border-radius:7px;color:rgba(114,168,204,.7);font-family:var(--kr);font-size:9px;cursor:pointer;width:100%;">🔄 테스터 재실행</button>`:''}
     </div>`;
   } else if(d.status==='checking'){
     box.className='gem-box state-checking';
@@ -7505,15 +7574,22 @@ window.openGemBoxWithMission = async function(n){
     alert('팀원과 연결된 후 특수작전을 진행할 수 있습니다.\n팀작전 탭에서 친구 코드로 연결하세요.');
     return;
   }
-  const total = typeof calcTotalPersonalMoney === 'function' ? calcTotalPersonalMoney() : 0;
-  const th = (typeof GEM_THRESHOLDS !== 'undefined' && GEM_THRESHOLDS[n])||0;
-  const oppM = (typeof partnerData !== 'undefined' && partnerData) ? (partnerData.money||0) : 0;
-  const unlocked = total>=th && oppM>=th;
-  if(!unlocked){
-    const label='특수작전'+n;
-    if(typeof showToast === 'function') showToast(`🎯 ${label}: 양쪽 모두 ${th.toLocaleString()}원 필요 (나: ${total.toLocaleString()}원 / 상대: ${oppM.toLocaleString()}원)`);
-    return;
+
+  /* 특수작전1 연결 수락 완료 시 — 돈/잠금 조건 우회하고 바로 팝업 진입 */
+  const isSpecialOpAccepted = window._specialOpAccepted && n === 1;
+
+  if(!isSpecialOpAccepted){
+    const total = typeof calcTotalPersonalMoney === 'function' ? calcTotalPersonalMoney() : 0;
+    const th = (typeof GEM_THRESHOLDS !== 'undefined' && GEM_THRESHOLDS[n])||0;
+    const oppM = (typeof partnerData !== 'undefined' && partnerData) ? (partnerData.money||0) : 0;
+    const unlocked = total>=th && oppM>=th;
+    if(!unlocked){
+      const label='특수작전'+n;
+      if(typeof showToast === 'function') showToast(`🎯 ${label}: 양쪽 모두 ${th.toLocaleString()}원 필요 (나: ${total.toLocaleString()}원 / 상대: ${oppM.toLocaleString()}원)`);
+      return;
+    }
   }
+
   if(n==='special'){ if(typeof openSpecialModal === 'function') openSpecialModal(); return; }
 
   if(!FB_READY||!_fbDb||!window.partnerData){ showToast('팀원 연결 상태를 확인해주세요.'); return; }
