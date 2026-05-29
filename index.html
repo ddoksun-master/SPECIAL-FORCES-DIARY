@@ -6820,7 +6820,7 @@ async function mpOpen(id){
   document.getElementById('mpSub').textContent   = `MISSION ${id} · ${d.days}일 공동 임무`;
 
   /* 파트너 이름 */
-  const pName = (window.partnerData&&window.partnerData.nickname)||'파트너';
+  const pName = (window.partnerData&&window.partnerData.shareCode)||'파트너';
   document.getElementById('mpPartnerName').textContent = pName;
   document.getElementById('mpCvPartnerName').textContent = pName;
   const myName = window.myNickname||'나';
@@ -7015,7 +7015,7 @@ function mpShowSubmitted(d){
   document.getElementById('mpComplete').style.display='none';
   document.getElementById('mpSvQ').textContent=`Q. ${d.myQ}`;
   document.getElementById('mpSvAns').textContent=d.myAnswer;
-  const pName=(window.partnerData&&window.partnerData.nickname)||'파트너';
+  const pName=(window.partnerData&&window.partnerData.shareCode)||'파트너';
   const partnerDone=!!(d.partnerAnswer);
   const statusTxt = partnerDone ? '✅ 수행완료' : '⏳ 임무수행중';
   const statusColor = partnerDone ? 'rgba(127,191,106,.9)' : 'rgba(255,184,71,.9)';
