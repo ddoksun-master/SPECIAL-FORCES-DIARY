@@ -10,26 +10,42 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 
 :root{
-  /* ── 컬러 가이드 ── */
-  --bg:#0D1A10;              /* BG Dark — 딥 올리브 그린 */
-  --card:#142018;            /* Panel */
-  --card2:#172418;           /* Sub Panel */
+  /* ── 컬러 가이드 (밝기·다채로움 개선) ── */
+  --bg:#152B1A;              /* BG — 올리브 미드나이트 (이전보다 15% 밝음) */
+  --card:#1E3624;            /* Panel — 올리브 미드 */
+  --card2:#243E2A;           /* Sub Panel */
 
   /* Gold — 지휘·금액·계급 */
-  --gold:#C8A84B;
-  --gold-dim:#E8C870;
-  --gold-glow:rgba(200,168,75,.25);
+  --gold:#D4AE52;
+  --gold-dim:#F0CC78;
+  --gold-glow:rgba(212,174,82,.28);
 
   /* Olive — 전술·작전·달성 */
-  --green:#5A9E48;           /* 올리브 그린 메인 */
-  --green-dim:#7FBF6A;       /* 올리브 그린 밝음 */
-  --green-glow:rgba(90,158,72,.25);
+  --green:#62AA4E;
+  --green-dim:#8FCF78;
+  --green-glow:rgba(98,170,78,.28);
 
-  --red:#FF4D4D;
+  /* 확장 팔레트 — 전술 다채로움 */
+  --steel:#4A7FA8;           /* 스틸블루 — 팀·파트너·정보 */
+  --steel-dim:#72A8CC;
+  --steel-glow:rgba(74,127,168,.25);
+
+  --teal:#38968A;            /* 틸 — 진행·완료·작전 */
+  --teal-dim:#5CB8AC;
+  --teal-glow:rgba(56,150,138,.25);
+
+  --purple:#7B5EA8;          /* 퍼플 — 스페셜·보상 */
+  --purple-dim:#A080CC;
+  --purple-glow:rgba(123,94,168,.25);
+
+  --red:#E84040;
+  --red-dim:#FF6B6B;
   --amber:#FFB847;
-  --text:#E8EAE6;
-  --dim:#3A4A3C;
-  --border:rgba(90,158,72,.18);
+  --amber-dim:#FFD080;
+  --text:#ECF0E8;
+  --text-secondary:#B8C8B0;
+  --dim:#3E5240;
+  --border:rgba(98,170,78,.2);
   --bright:#ffffff;
   --orb:'Courier Prime','Courier New',monospace;
   --kr:-apple-system,'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;
@@ -39,7 +55,7 @@
 /* ===== 앱 컨테이너 — 최대 430px 모바일 폼팩터 ===== */
 html,body{
   width:100%;min-height:100vh;
-  background:#0A1510;
+  background:#0F2014;
   display:flex;justify-content:center;
   font-family:var(--kr);
 }
@@ -50,11 +66,11 @@ html,body{
   min-height:100vh;
   background:var(--bg);
   background-image:
-    radial-gradient(ellipse at 15% 5%,rgba(50,100,40,.22),transparent 42%),
-    radial-gradient(ellipse at 85% 85%,rgba(35,80,28,.18),transparent 42%),
-    radial-gradient(ellipse at 50% 40%,rgba(22,60,18,.12),transparent 52%),
-    repeating-linear-gradient(0deg, rgba(80,140,60,.05) 0,rgba(80,140,60,.05) 1px,transparent 1px,transparent 48px),
-    repeating-linear-gradient(90deg,rgba(80,140,60,.05) 0,rgba(80,140,60,.05) 1px,transparent 1px,transparent 48px);
+    radial-gradient(ellipse at 15% 5%,rgba(74,127,168,.12),transparent 40%),
+    radial-gradient(ellipse at 85% 85%,rgba(56,150,138,.10),transparent 40%),
+    radial-gradient(ellipse at 50% 40%,rgba(98,170,78,.08),transparent 52%),
+    repeating-linear-gradient(0deg, rgba(98,170,78,.04) 0,rgba(98,170,78,.04) 1px,transparent 1px,transparent 48px),
+    repeating-linear-gradient(90deg,rgba(74,127,168,.03) 0,rgba(74,127,168,.03) 1px,transparent 1px,transparent 48px);
   position:relative;
   display:flex;flex-direction:column;
   overflow:hidden;
@@ -80,7 +96,7 @@ html,body{
 /* ===== TOP HUD ===== */
 .hud{
   position:sticky;top:0;z-index:50;
-  background:linear-gradient(180deg,rgba(10,20,12,1) 0%,rgba(13,25,15,.99) 100%);
+  background:linear-gradient(180deg,rgba(12,26,16,1) 0%,rgba(18,34,22,.99) 100%);
   border-bottom:1.5px solid rgba(200,168,75,.35);
   box-shadow:0 4px 24px rgba(0,0,0,.9),0 1px 0 rgba(200,168,75,.08);
   flex-shrink:0;
@@ -204,7 +220,7 @@ html,body{
 /* ===== CARD ===== */
 .card{
   position:relative;overflow:hidden;
-  background:linear-gradient(145deg,rgba(18,30,20,.95),rgba(14,24,16,.98));
+  background:linear-gradient(145deg,rgba(24,42,28,.96),rgba(20,36,24,.98));
   border:1px solid rgba(90,158,72,.14);
   border-radius:14px;
   padding:14px;
@@ -224,7 +240,7 @@ html,body{
   font-family:var(--title);font-size:13px;font-weight:700;
   color:var(--green-dim);letter-spacing:.4px;margin-bottom:12px;
 }
-.card-title::before{content:'';width:3px;height:14px;background:linear-gradient(180deg,var(--green-dim),var(--green));border-radius:2px;flex-shrink:0;box-shadow:0 0 6px rgba(90,158,72,.4);}
+.card-title::before{content:'';width:3px;height:14px;background:linear-gradient(180deg,var(--gold-dim),var(--gold));border-radius:2px;flex-shrink:0;box-shadow:0 0 6px rgba(212,174,82,.4);}
 
 /* ===== PANEL / NAV ===== */
 .panel{display:none;}
@@ -253,14 +269,14 @@ html,body{
   position:relative;
 }
 .nav-item:active{opacity:.7;transform:scale(.97);}
-.nav-item.active{color:var(--green-dim);}
+.nav-item.active{color:var(--gold-dim);}
 .nav-item.active::before{display:none;}
 .nav-icon{font-size:0;line-height:1;display:flex;align-items:center;justify-content:center;}
 .nav-icon svg{width:22px;height:22px;display:block;}
 .nav-item .nav-icon svg{stroke:rgba(180,210,175,.4);}
-.nav-item.active .nav-icon svg{stroke:var(--green-dim);filter:drop-shadow(0 0 5px rgba(90,158,72,.45));}
+.nav-item.active .nav-icon svg{stroke:var(--gold-dim);filter:drop-shadow(0 0 5px rgba(212,174,82,.45));}
 .nav-label{font-size:10px;font-weight:700;white-space:nowrap;color:rgba(180,210,175,.4);}
-.nav-item.active .nav-label{color:var(--green-dim);}
+.nav-item.active .nav-label{color:var(--gold-dim);}
 
 /* ===== 요일 탭 ===== */
 .day-tabs{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
@@ -333,10 +349,10 @@ html,body{
 .ctab-sub{font-size:10px;font-weight:700;font-family:var(--orb);letter-spacing:.5px;color:rgba(255,255,255,.25);}
 
 /* 일반임무 — 올리브 그린 */
-.ctab-easy{background:rgba(8,28,12,.85);border-color:rgba(90,158,72,.18);}
+.ctab-easy{background:rgba(12,40,36,.85);border-color:rgba(56,150,138,.2);}
 .ctab-easy .ci svg{filter:none;stroke:rgba(90,158,72,.5);}
 .ctab-easy.active{
-  background:linear-gradient(145deg,rgba(12,45,16,.95),rgba(8,32,12,.92));
+  background:linear-gradient(145deg,rgba(16,55,50,.95),rgba(10,42,38,.92));
   border-color:rgba(90,158,72,.7);
   box-shadow:0 4px 18px rgba(90,158,72,.2),inset 0 1px 0 rgba(90,158,72,.12);
 }
@@ -345,7 +361,7 @@ html,body{
 .ctab-easy.active .ci svg{stroke:#7FBF6A;filter:drop-shadow(0 0 4px rgba(90,158,72,.6));}
 
 /* 위험임무 — 앰버 골드 */
-.ctab-medium{background:rgba(28,20,4,.85);border-color:rgba(200,168,75,.18);}
+.ctab-medium{background:rgba(36,26,5,.85);border-color:rgba(212,174,82,.2);}
 .ctab-medium .ci svg{filter:none;stroke:rgba(200,168,75,.5);}
 .ctab-medium.active{
   background:linear-gradient(145deg,rgba(48,34,4,.95),rgba(32,22,4,.92));
@@ -500,12 +516,12 @@ html,body{
 
 /* 왼쪽 컬러 스트라이프 */
 .qstripe{width:4px;flex-shrink:0;z-index:1;}
-.qitem.easy   .qstripe{background:linear-gradient(180deg,#8FCF7A,#5A9E48);box-shadow:1px 0 6px rgba(90,158,72,.3);}
+.qitem.easy   .qstripe{background:linear-gradient(180deg,#5CB8AC,#38968A);box-shadow:1px 0 6px rgba(56,150,138,.3);}
 .qitem.medium .qstripe{background:linear-gradient(180deg,#E8C870,#C8A84B);box-shadow:1px 0 6px rgba(200,168,75,.3);}
 .qitem.hard   .qstripe{background:linear-gradient(180deg,#ff5555,#c42020);box-shadow:1px 0 6px rgba(200,50,50,.3);}
 
 /* 카드 배경 */
-.qitem.easy  {background:linear-gradient(135deg,rgba(10,26,12,.97) 30%,rgba(14,38,16,.94));}
+.qitem.easy  {background:linear-gradient(135deg,rgba(10,34,30,.97) 30%,rgba(14,45,40,.94));}
 .qitem.medium{background:linear-gradient(135deg,rgba(22,18,4,.97) 30%,rgba(32,24,5,.94));}
 .qitem.hard  {background:linear-gradient(135deg,rgba(24,6,6,.97) 30%,rgba(34,7,7,.94));}
 
@@ -751,6 +767,148 @@ html,body{
 .qbtn.cum-complete { font-size:12px !important; }
 .qbtn.cum-complete.locked { opacity:.38 !important; cursor:not-allowed !important; }
 .cum-segs { overflow-x:auto; }
+
+/* ================================================================
+   MISSION POPUP v2 — 팀작전 미션 수행 팝업
+   ================================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap');
+
+/* 미션 팝업 오버레이 */
+#missionOverlay{display:none;position:fixed;inset:0;background:rgba(8,16,10,.93);z-index:300;align-items:flex-end;justify-content:center;backdrop-filter:blur(5px);}
+#missionOverlay.active{display:flex;animation:mpFadeIn .2s;}
+@keyframes mpFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes mpSlideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes mpPulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes mpShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+
+/* 팝업 카드 */
+.mp-card{width:100%;max-width:430px;background:var(--bg);border-top:2px solid var(--teal);border-radius:16px 16px 0 0;max-height:92vh;overflow-y:auto;animation:mpSlideUp .35s cubic-bezier(.22,1,.36,1);scrollbar-width:thin;scrollbar-color:var(--dim) transparent;}
+.mp-header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid rgba(56,150,138,.25);padding:16px 18px 12px;display:flex;align-items:center;gap:10px;}
+.mp-header-icon{font-size:22px;}
+.mp-header-text{flex:1;}
+.mp-header-title{font-family:'Black Han Sans',var(--title);font-size:17px;letter-spacing:2px;color:var(--teal-dim);}
+.mp-header-sub{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:2px;margin-top:1px;}
+.mp-close-btn{background:none;border:1px solid rgba(56,150,138,.3);color:var(--text-secondary);width:30px;height:30px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+/* 키워드 배지 */
+.mp-kw-row{display:flex;gap:8px;padding:12px 18px 0;flex-wrap:wrap;}
+.mp-kw-badge{background:var(--card2);border:1px solid rgba(98,170,78,.2);border-radius:20px;padding:5px 14px;font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:5px;}
+.mp-kw-badge.active{border-color:var(--teal);color:var(--teal-dim);background:rgba(56,150,138,.1);}
+.mp-kw-badge.locked{opacity:.4;}
+.mp-divider{height:1px;background:rgba(56,150,138,.15);margin:14px 18px;}
+
+/* 미션 내용 박스 */
+.mp-mission-box{margin:0 18px;background:var(--card);border:1px solid rgba(56,150,138,.3);border-radius:10px;overflow:hidden;}
+.mp-mission-head{background:rgba(56,150,138,.12);border-bottom:1px solid rgba(56,150,138,.18);padding:10px 14px;display:flex;align-items:center;gap:8px;}
+.mp-day-tag{background:var(--teal);color:#0a1e1b;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;font-family:var(--orb);letter-spacing:1px;}
+.mp-keyword{font-family:'Black Han Sans',var(--title);font-size:15px;color:var(--text);}
+.mp-rules{padding:10px 14px;border-bottom:1px solid rgba(56,150,138,.12);background:rgba(0,0,0,.15);}
+.mp-rules-label{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:2px;margin-bottom:6px;}
+.mp-rule-item{font-size:11px;color:var(--text-secondary);padding:2px 0;display:flex;align-items:center;gap:5px;}
+.mp-rule-item::before{content:'▸';color:var(--teal-dim);font-size:9px;}
+.mp-questions{padding:12px 14px;}
+.mp-q-label{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:2px;margin-bottom:6px;}
+.mp-q-hint{font-size:11px;color:rgba(255,255,255,.25);margin-bottom:10px;}
+
+/* 질문 카드 */
+.mp-q-item{background:var(--card2);border:2px solid rgba(56,150,138,.18);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;gap:8px;align-items:flex-start;cursor:pointer;transition:border-color .2s,background .2s;user-select:none;}
+.mp-q-item:hover{border-color:rgba(56,150,138,.45);background:rgba(56,150,138,.06);}
+.mp-q-item.selected{border-color:var(--gold);background:rgba(212,174,82,.08);box-shadow:0 0 0 1px rgba(212,174,82,.2);}
+.mp-q-num{background:rgba(56,150,138,.2);color:var(--teal-dim);font-size:10px;font-weight:700;min-width:20px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s;flex-shrink:0;}
+.mp-q-item.selected .mp-q-num{background:var(--gold);color:#1a1000;}
+.mp-q-text{font-size:13px;line-height:1.5;color:var(--text);}
+.mp-q-check{margin-left:auto;font-size:14px;opacity:0;flex-shrink:0;transition:opacity .15s;color:var(--gold);}
+.mp-q-item.selected .mp-q-check{opacity:1;}
+
+/* 경고 */
+.mp-q-warn{font-size:11px;color:var(--red-dim);margin-top:-4px;margin-bottom:8px;display:none;padding:6px 10px;background:rgba(232,64,64,.1);border-radius:4px;border:1px solid rgba(232,64,64,.25);}
+.mp-q-warn.show{display:block;}
+
+/* 답변 영역 */
+.mp-answer-area{padding:0 18px 14px;margin-top:14px;}
+.mp-answer-label{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:2px;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.mp-answer-label::before{content:'✍';}
+.mp-q-preview{background:rgba(212,174,82,.06);border:1px solid rgba(212,174,82,.2);border-radius:6px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:rgba(240,200,100,.8);font-style:italic;display:none;}
+.mp-textarea{width:100%;background:var(--card);border:1px solid rgba(56,150,138,.25);border-radius:6px;color:var(--text);font-family:var(--kr);font-size:13px;line-height:1.6;padding:12px 14px;resize:none;min-height:120px;outline:none;transition:border-color .2s;}
+.mp-textarea:focus{border-color:var(--teal);}
+.mp-textarea::placeholder{color:rgba(255,255,255,.2);}
+
+/* 파트너 상태 */
+.mp-partner{margin:0 18px 14px;background:var(--card);border:1px solid rgba(74,127,168,.25);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;}
+.mp-partner-icon{font-size:18px;}
+.mp-partner-name{font-size:12px;font-weight:700;color:var(--text);}
+.mp-partner-state{font-size:11px;margin-top:2px;}
+.mp-state-waiting{color:var(--amber);animation:mpPulse 1.8s infinite;}
+.mp-state-done{color:var(--green-dim);}
+
+/* 제출 버튼 */
+.mp-submit-area{padding:0 18px 30px;}
+.mp-submit-btn{width:100%;border:none;border-radius:8px;font-family:'Black Han Sans',var(--title);font-size:15px;letter-spacing:2px;padding:16px;cursor:pointer;transition:transform .15s,box-shadow .2s,background .2s,opacity .2s;}
+.mp-submit-btn.off{background:rgba(30,54,36,.6);color:rgba(255,255,255,.25);cursor:default;}
+.mp-submit-btn.on{background:linear-gradient(135deg,var(--teal),#2A7A70);color:#fff;box-shadow:0 4px 20px rgba(56,150,138,.35);}
+.mp-submit-btn.on:hover{transform:scale(1.02);box-shadow:0 6px 28px rgba(56,150,138,.5);}
+.mp-btn-hint{font-size:11px;font-weight:400;letter-spacing:0;opacity:.7;}
+
+/* 제출완료 뷰 */
+.mp-submitted{padding:20px 18px 30px;display:none;}
+.mp-sv-title{font-family:'Black Han Sans',var(--title);font-size:15px;color:var(--gold-dim);display:flex;align-items:center;gap:8px;margin-bottom:14px;letter-spacing:1px;}
+.mp-sv-box{background:var(--card);border:1px solid rgba(56,150,138,.2);border-radius:8px;padding:14px;margin-bottom:12px;}
+.mp-sv-label{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:2px;margin-bottom:6px;}
+.mp-sv-q{font-size:12px;color:var(--text-secondary);font-style:italic;margin-bottom:6px;line-height:1.5;}
+.mp-sv-ans{font-size:13px;color:var(--text);line-height:1.7;}
+.mp-sv-pending{background:var(--card);border:1px solid rgba(74,127,168,.25);border-radius:8px;padding:14px;margin-bottom:14px;}
+.mp-sv-pending-wrap{display:flex;align-items:center;gap:12px;}
+.mp-sv-pending-icon{font-size:28px;flex-shrink:0;}
+.mp-sv-pending-title{font-family:'Black Han Sans',var(--title);font-size:13px;color:var(--steel-dim);}
+.mp-sv-pending-sub{font-size:11px;color:rgba(255,255,255,.3);margin-top:3px;line-height:1.5;}
+.mp-sv-pending-dot{width:10px;height:10px;border-radius:50%;background:var(--steel-dim);box-shadow:0 0 8px var(--steel);animation:mpPulse 1.4s infinite;flex-shrink:0;}
+.mp-edit-btn{width:100%;background:var(--card);border:1px solid rgba(212,174,82,.4);color:var(--gold-dim);border-radius:6px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px;transition:background .15s;font-family:var(--kr);}
+.mp-edit-btn:hover{background:rgba(212,174,82,.08);}
+.mp-close-btn2{width:100%;background:var(--card);border:1px solid rgba(255,255,255,.1);color:var(--text-secondary);border-radius:6px;padding:12px;font-size:13px;cursor:pointer;font-family:var(--kr);}
+
+/* 완료 뷰 */
+.mp-complete{padding:20px 18px 30px;display:none;}
+.mp-cv-banner{display:flex;align-items:center;justify-content:center;gap:10px;background:rgba(123,94,168,.12);border:1px solid rgba(123,94,168,.4);border-radius:8px;padding:12px 16px;margin-bottom:18px;box-shadow:0 0 16px rgba(123,94,168,.1);}
+.mp-cv-banner-icon{font-size:22px;flex-shrink:0;}
+.mp-cv-banner-title{font-family:'Black Han Sans',var(--title);font-size:15px;color:var(--purple-dim);letter-spacing:1px;}
+.mp-cv-banner-sub{font-size:11px;color:var(--text-secondary);margin-left:4px;}
+.mp-cv-section-label{font-size:11px;color:rgba(255,255,255,.3);letter-spacing:2px;margin-bottom:8px;padding:0 2px;}
+.mp-cv-card{background:var(--card);border:2px solid rgba(56,150,138,.3);border-radius:10px;overflow:hidden;margin-bottom:0;}
+.mp-cv-card.mine{border-color:rgba(98,170,78,.5);background:rgba(98,170,78,.05);}
+.mp-cv-card.partner{border-color:rgba(74,127,168,.5);background:rgba(74,127,168,.05);}
+.mp-cv-who{font-family:'Black Han Sans',var(--title);font-size:13px;padding:10px 14px;border-bottom:1px solid;}
+.mp-cv-card.mine .mp-cv-who{color:var(--green-dim);background:rgba(98,170,78,.1);border-bottom-color:rgba(98,170,78,.2);}
+.mp-cv-card.partner .mp-cv-who{color:var(--steel-dim);background:rgba(74,127,168,.1);border-bottom-color:rgba(74,127,168,.2);}
+.mp-cv-q{font-size:12px;color:var(--text-secondary);font-style:italic;line-height:1.6;padding:10px 14px;border-bottom:1px solid rgba(56,150,138,.12);}
+.mp-cv-ans{font-size:14px;color:var(--text);line-height:1.8;padding:10px 14px;}
+.mp-cv-next{background:var(--card);border:1px solid rgba(212,174,82,.2);border-radius:8px;padding:14px;margin-top:4px;margin-bottom:14px;}
+.mp-cv-next-label{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:2px;}
+.mp-cv-next-day{font-family:'Black Han Sans',var(--title);font-size:15px;color:var(--text-secondary);margin-top:4px;}
+.mp-cv-next-lock{font-size:11px;color:rgba(255,255,255,.3);display:flex;align-items:center;gap:4px;margin-top:4px;}
+
+/* Day 탭 */
+.mp-day-tabs{display:flex;gap:6px;padding:0 0 12px;flex-wrap:wrap;}
+.mp-day-tab{flex:1;min-width:60px;background:var(--card);border:1px solid rgba(56,150,138,.15);border-radius:6px;padding:8px 6px;text-align:center;cursor:pointer;transition:all .15s;font-size:11px;color:rgba(255,255,255,.3);}
+.mp-day-tab.active{background:rgba(56,150,138,.12);border-color:var(--teal);color:var(--teal-dim);font-weight:700;}
+.mp-day-tab-day{font-family:'Black Han Sans',var(--title);font-size:13px;}
+.mp-day-tab-kw{font-size:9px;margin-top:2px;opacity:.8;}
+
+/* 완료 카드 도장 스타일 (gemBox) */
+.gem-box.stamped{background:rgba(12,28,22,.8)!important;border-color:rgba(56,150,138,.4)!important;position:relative;overflow:hidden;}
+.gem-box.stamped::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 8px,rgba(0,0,0,.1) 8px,rgba(0,0,0,.1) 9px);pointer-events:none;}
+.gem-stamp-wrap{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;width:100%;}
+.gem-stamp-circle{width:56px;height:56px;border-radius:50%;border:2.5px solid var(--teal);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;opacity:.9;background:rgba(8,24,20,.7);}
+.gem-stamp-icon{font-size:20px;line-height:1;}
+.gem-stamp-word{font-family:var(--orb);font-size:8px;color:var(--teal-dim);letter-spacing:2px;margin-top:1px;}
+.gem-stamp-title{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1px;}
+.gem-stamp-view{margin-top:5px;background:transparent;border:1px solid rgba(56,150,138,.3);color:rgba(92,184,172,.7);border-radius:3px;padding:4px 10px;font-size:10px;cursor:pointer;letter-spacing:1px;font-family:var(--kr);}
+.gem-stamp-view:hover{border-color:var(--teal);color:var(--teal-dim);}
+
+/* gemBox 상태 컬러 클래스 */
+.gem-box.state-open{border-color:rgba(98,170,78,.45)!important;background:rgba(22,48,28,.8)!important;}
+.gem-box.state-active{border-color:rgba(212,174,82,.6)!important;background:rgba(36,28,6,.8)!important;}
+.gem-box.state-checking{border-color:rgba(232,100,64,.55)!important;background:rgba(36,16,10,.8)!important;}
+
 </style>
 
 <!-- ★ Firebase SDK (module) -->
@@ -4686,8 +4844,8 @@ document.addEventListener('DOMContentLoaded',()=>{
         <!-- 수정 5,6: 특수카드 4개 4분할, 스폐셜 길게 하나, 보상 1~4만원 / 스폐셜 5day 2만씩 10만 -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
           <!-- 특수작전 1 -->
-          <div id="gemBox1" class="gem-box" onclick="openGemBox(1)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(14,26,16,.7);border:1.5px solid rgba(90,158,72,.2);border-radius:12px;text-align:center;min-height:90px;display:flex;flex-direction:column;justify-content:center;align-items:center;">
-            <div id="gemLock1" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(5,10,6,.92);border-radius:10px;justify-content:center;z-index:2;">
+          <div id="gemBox1" class="gem-box" onclick="openGemBox(1)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
+            <div id="gemLock1" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;justify-content:center;z-index:2;backdrop-filter:blur(1px);">
               <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
               <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">20,000원</div>
             </div>
@@ -4697,8 +4855,8 @@ document.addEventListener('DOMContentLoaded',()=>{
             <div id="gemOppStatus1" style="margin-top:5px;padding:2px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);">미등록</div>
           </div>
           <!-- 특수작전 2 -->
-          <div id="gemBox2" class="gem-box" onclick="openGemBox(2)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(14,26,16,.7);border:1.5px solid rgba(90,158,72,.2);border-radius:12px;text-align:center;min-height:90px;display:flex;flex-direction:column;justify-content:center;align-items:center;">
-            <div id="gemLock2" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(5,10,6,.92);border-radius:10px;justify-content:center;z-index:2;">
+          <div id="gemBox2" class="gem-box" onclick="openGemBox(2)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
+            <div id="gemLock2" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;justify-content:center;z-index:2;backdrop-filter:blur(1px);">
               <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
               <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">40,000원</div>
             </div>
@@ -4708,8 +4866,8 @@ document.addEventListener('DOMContentLoaded',()=>{
             <div id="gemOppStatus2" style="margin-top:5px;padding:2px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);">미등록</div>
           </div>
           <!-- 특수작전 3 -->
-          <div id="gemBox3" class="gem-box" onclick="openGemBox(3)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(14,26,16,.7);border:1.5px solid rgba(90,158,72,.2);border-radius:12px;text-align:center;min-height:90px;display:flex;flex-direction:column;justify-content:center;align-items:center;">
-            <div id="gemLock3" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(5,10,6,.92);border-radius:10px;justify-content:center;z-index:2;">
+          <div id="gemBox3" class="gem-box" onclick="openGemBox(3)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
+            <div id="gemLock3" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;justify-content:center;z-index:2;backdrop-filter:blur(1px);">
               <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
               <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">60,000원</div>
             </div>
@@ -4719,8 +4877,8 @@ document.addEventListener('DOMContentLoaded',()=>{
             <div id="gemOppStatus3" style="margin-top:5px;padding:2px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);">미등록</div>
           </div>
           <!-- 특수작전 4 -->
-          <div id="gemBox4" class="gem-box" onclick="openGemBox(4)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(14,26,16,.7);border:1.5px solid rgba(90,158,72,.2);border-radius:12px;text-align:center;min-height:90px;display:flex;flex-direction:column;justify-content:center;align-items:center;">
-            <div id="gemLock4" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(5,10,6,.92);border-radius:10px;justify-content:center;z-index:2;">
+          <div id="gemBox4" class="gem-box" onclick="openGemBox(4)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
+            <div id="gemLock4" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;justify-content:center;z-index:2;backdrop-filter:blur(1px);">
               <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
               <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">80,000원</div>
             </div>
@@ -4855,6 +5013,127 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="nav-label">전술본부</div>
     </div>
   </div>
+
+
+<!-- ================================================================
+     MISSION POPUP v2 — 팀작전 미션 수행 팝업 (통합)
+     ================================================================ -->
+<div id="missionOverlay" onclick="mpCloseOnBg(event)">
+<div class="mp-card" id="mpCard">
+
+  <div class="mp-header">
+    <div class="mp-header-icon">🎖</div>
+    <div class="mp-header-text">
+      <div class="mp-header-title" id="mpTitle">작전카드 — 특수작전1</div>
+      <div class="mp-header-sub" id="mpSub">MISSION 1 · 1일 공동 임무</div>
+    </div>
+    <button class="mp-close-btn" onclick="mpClose()">✕</button>
+  </div>
+
+  <div class="mp-kw-row" id="mpKwRow">
+    <div class="mp-kw-badge active" id="mpKw1">🎯 DAY1 &nbsp;<strong id="mpKwTxt1">-</strong></div>
+    <div class="mp-kw-badge locked" id="mpKw2" style="display:none">🔒 DAY2 &nbsp;<span id="mpKwTxt2">???</span></div>
+    <div class="mp-kw-badge locked" id="mpKw3" style="display:none">🔒 DAY3 &nbsp;<span id="mpKwTxt3">???</span></div>
+  </div>
+
+  <div class="mp-divider"></div>
+
+  <!-- 입력 뷰 -->
+  <div id="mpInputView">
+    <div class="mp-mission-box">
+      <div class="mp-mission-head">
+        <div class="mp-day-tag" id="mpDayTag">DAY 1</div>
+        <div class="mp-keyword" id="mpKeyword">-</div>
+      </div>
+      <div class="mp-rules">
+        <div class="mp-rules-label">▸ 임무 규칙</div>
+        <div id="mpRulesList"></div>
+      </div>
+      <div class="mp-questions">
+        <div class="mp-q-label">▸ 오늘의 질문 <span style="color:var(--teal-dim);font-size:10px;">— 1개 선택</span></div>
+        <div class="mp-q-hint">질문 카드를 탭하여 선택하세요</div>
+        <div class="mp-q-warn" id="mpQWarn">⚠ 질문을 선택해주세요</div>
+        <div id="mpQuestions"></div>
+      </div>
+    </div>
+
+    <div class="mp-answer-area">
+      <div class="mp-answer-label">나의 임무 답변</div>
+      <div class="mp-q-preview" id="mpQPreview"></div>
+      <textarea class="mp-textarea" id="mpAnswer"
+        placeholder="질문을 먼저 선택하고 답변을 작성해주세요."
+        oninput="mpUpdateBtn()" maxlength="500"></textarea>
+    </div>
+
+    <div class="mp-partner">
+      <div class="mp-partner-icon">👥</div>
+      <div>
+        <div class="mp-partner-name" id="mpPartnerName">파트너</div>
+        <div class="mp-partner-state mp-state-waiting" id="mpPartnerState">⏳ 아직 미등록 상태입니다</div>
+      </div>
+    </div>
+
+    <div class="mp-submit-area">
+      <button class="mp-submit-btn off" id="mpSubmitBtn" onclick="mpSubmit()">
+        <span id="mpSubmitTxt">임무 제출하기</span>
+        <span class="mp-btn-hint" id="mpSubmitHint">&nbsp;· 10자 이상 입력해주세요</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 제출완료 뷰 -->
+  <div class="mp-submitted" id="mpSubmitted">
+    <div class="mp-sv-title">✅ 내 답변 제출완료</div>
+    <div class="mp-sv-box">
+      <div class="mp-sv-label">MY ANSWER</div>
+      <div class="mp-sv-q" id="mpSvQ"></div>
+      <div class="mp-sv-ans" id="mpSvAns"></div>
+    </div>
+    <div class="mp-sv-pending" id="mpSvPending">
+      <div class="mp-sv-pending-wrap">
+        <div class="mp-sv-pending-icon">🫂</div>
+        <div>
+          <div class="mp-sv-pending-title">상대방 미션을 수행중입니다</div>
+          <div class="mp-sv-pending-sub" id="mpSvPendingTxt">파트너의 답변이 등록되면 함께 확인할 수 있어요</div>
+        </div>
+        <div class="mp-sv-pending-dot"></div>
+      </div>
+    </div>
+    <button class="mp-edit-btn" onclick="mpEdit()">✏ 답변 수정하기</button>
+    <button class="mp-close-btn2" onclick="mpClose()">닫기</button>
+  </div>
+
+  <!-- 완료 뷰 -->
+  <div class="mp-complete" id="mpComplete">
+    <div class="mp-cv-banner">
+      <div class="mp-cv-banner-icon">🏆</div>
+      <div class="mp-cv-banner-title" id="mpCvBannerTitle">임무 완료!</div>
+      <div class="mp-cv-banner-sub">· 서로의 답변을 확인하세요</div>
+    </div>
+    <div class="mp-day-tabs" id="mpDayTabs" style="display:none"></div>
+    <div class="mp-cv-section-label">👤 나의 답변</div>
+    <div class="mp-cv-card mine">
+      <div class="mp-cv-who" id="mpCvMyName">나</div>
+      <div class="mp-cv-q" id="mpCvMyQ">Q. -</div>
+      <div class="mp-cv-ans" id="mpCvMyAns">-</div>
+    </div>
+    <div class="mp-cv-section-label" style="margin-top:14px;">💙 파트너 답변</div>
+    <div class="mp-cv-card partner">
+      <div class="mp-cv-who" id="mpCvPartnerName">파트너</div>
+      <div class="mp-cv-q" id="mpCvPartnerQ">Q. -</div>
+      <div class="mp-cv-ans" id="mpCvPartnerAns">-</div>
+    </div>
+    <div class="mp-cv-next">
+      <div class="mp-cv-next-label">NEXT MISSION</div>
+      <div class="mp-cv-next-day" id="mpCvNextDay">-</div>
+      <div class="mp-cv-next-lock" id="mpCvNextLock">🔒 다음날 자동 해제</div>
+    </div>
+    <button class="mp-close-btn2" onclick="mpClose()">닫기</button>
+  </div>
+
+</div>
+</div>
+<!-- /MISSION POPUP v2 -->
 
 </div><!-- /app-shell -->
 
@@ -6420,6 +6699,328 @@ function renderStatsGemProposalGrid(){
 }
 
 /* switchPanel 후크 제거됨 - 원본 함수에 통합 */
+
+
+/* ================================================================
+   MISSION POPUP v2 JS — 팀작전 미션 수행 로직
+   ================================================================ */
+const MP_MISSIONS = {
+  '가치관':   { rules:['답변 작성 필수','이유 10자 이상 작성'], questions:['행복한 삶이란 무엇인가?','돈과 시간 중 더 중요한 것은?','가장 후회하고 싶지 않은 것은?','인생에서 가장 중요한 가치는?','평생 지키고 싶은 신념은?','성공했다고 느끼는 순간은?','친구를 선택할 때 중요하게 보는 것은?','가장 존경하는 사람의 특징은?','가장 두려운 것은?','지금 가장 감사한 것은?'] },
+  '추억':     { rules:['기억 작성 필수','10자 이상 작성'], questions:['가장 기억에 남는 데이트는?','가장 많이 웃었던 날은?','처음 만났던 날 기억나는 장면은?','가장 설렜던 순간은?','가장 고마웠던 순간은?','가장 기억에 남는 여행은?','가장 맛있었던 음식은?','가장 오래 이야기했던 날은?','처음 선물을 주고받은 기억은?','가장 감동받았던 순간은?'] },
+  '미래':     { rules:['답변 작성 필수','이유 10자 이상 작성'], questions:['함께 배우고 싶은 취미는?','함께 가고 싶은 여행지는?','1년 후 이루고 싶은 목표는?','함께 살고 싶은 집은?','언젠가 해보고 싶은 도전은?','은퇴 후 어떤 삶을 살고 싶은가?','꼭 가보고 싶은 나라는?','함께 만들고 싶은 추억은?','앞으로 가장 기대되는 일은?','같이 키우고 싶은 반려동물은?'] },
+  '상황판단': { rules:['답변 작성 필수','이유 10자 이상 작성'], questions:['10억 원이 생긴다면 무엇을 할 것인가?','갑자기 1년 휴가가 생긴다면?','무인도에 가게 된다면?','타임머신이 있다면 언제로 갈 것인가?','내일부터 일을 안 해도 된다면?','하루 동안 투명인간이 된다면?','복권에 당첨된다면?','하루 동안 무엇이든 배울 수 있다면?','한 달 동안 자유 시간이 생긴다면?','한 가지 능력을 가질 수 있다면?'] },
+  '선택의순간':{ rules:['하나 선택 필수','이유 10자 이상 작성'], questions:['평생 하나의 음식만 먹어야 한다면?','평생 하나의 취미만 가능하다면?','평생 한 곳에서만 살아야 한다면?','단 하나의 물건만 가져갈 수 있다면?','한 사람만 다시 만날 수 있다면?','평생 하나의 계절만 선택한다면?','평생 하나의 나라만 방문할 수 있다면?','평생 하나의 운동만 해야 한다면?','평생 하나의 영화만 볼 수 있다면?','평생 하나의 노래만 들을 수 있다면?'] }
+};
+const MP_KW_KEYS = Object.keys(MP_MISSIONS);
+
+/* 작전별 day 수 매핑 (gemBox1~4 순서 기준) */
+const MP_DAYS_MAP = {1:1, 2:2, 3:3, 4:'random', special:1};
+const mpRandDays  = {};
+
+/* 상태 저장소 */
+const mpData   = {};
+let mpCurrent  = null;   /* 현재 열린 작전 번호 */
+let mpSelQ     = null;   /* 선택된 질문 인덱스 */
+
+function mpRandItems(arr, n){
+  const c=[...arr]; const o=[];
+  for(let i=0;i<n&&c.length;i++){ const x=Math.floor(Math.random()*c.length); o.push(c.splice(x,1)[0]); }
+  return o;
+}
+function mpRandKw(){ return MP_KW_KEYS[Math.floor(Math.random()*MP_KW_KEYS.length)]; }
+
+function mpGetDays(id){
+  const cfg = MP_DAYS_MAP[id];
+  if(cfg==='random'){
+    if(!mpRandDays[id]) mpRandDays[id]=Math.floor(Math.random()*3)+1;
+    return mpRandDays[id];
+  }
+  return cfg||1;
+}
+
+function mpInit(id){
+  if(mpData[id]) return;
+  const days = mpGetDays(id);
+  const kws  = Array.from({length:days}, ()=>mpRandKw());
+  const qs   = kws.map(k=>mpRandItems(MP_MISSIONS[k].questions,3));
+  mpData[id] = { kws, qs, days, curDay:1, completed:[], myAnswer:'', myQ:'', partnerAnswer:'', partnerQ:'', status:'open' };
+}
+
+/* gemBox 클릭 시 팝업 열기 - 기존 openGemBox와 연동 */
+function mpOpen(id){
+  /* 연결 상태·잠금 체크는 기존 openGemBox에서 이미 통과한 상태로 호출됨 */
+  mpCurrent = id;
+  mpInit(id);
+  const d = mpData[id];
+
+  /* 헤더 */
+  const label = id==='special'?'스페셜작전':'특수작전'+id;
+  document.getElementById('mpTitle').textContent = `작전카드 — ${label}`;
+  document.getElementById('mpSub').textContent   = `MISSION ${id} · ${d.days}일 공동 임무`;
+
+  /* 파트너 이름 */
+  const pName = (window.partnerData&&window.partnerData.nickname)||'파트너';
+  document.getElementById('mpPartnerName').textContent = pName;
+  document.getElementById('mpCvPartnerName').textContent = pName;
+  const myName = window.myNickname||'나';
+  document.getElementById('mpCvMyName').textContent = myName;
+
+  /* 키워드 배지 */
+  mpUpdateKwBadges(d);
+
+  /* 뷰 전환 */
+  if(d.status==='complete')      mpShowComplete(d);
+  else if(d.status==='checking') mpShowSubmitted(d);
+  else                           mpShowInput(d);
+
+  document.getElementById('missionOverlay').classList.add('active');
+  document.body.style.overflow='hidden';
+  document.getElementById('mpCard').scrollTop=0;
+}
+
+function mpUpdateKwBadges(d){
+  for(let i=1;i<=3;i++){
+    const badge=document.getElementById('mpKw'+i);
+    if(i<=d.days){
+      badge.style.display='';
+      if(i<d.curDay){
+        badge.className='mp-kw-badge active';
+        badge.innerHTML=`✅ DAY${i} &nbsp;<strong id="mpKwTxt${i}">${d.kws[i-1]}</strong>`;
+      } else if(i===d.curDay){
+        badge.className='mp-kw-badge active';
+        badge.innerHTML=`🎯 DAY${i} &nbsp;<strong id="mpKwTxt${i}">${d.kws[i-1]}</strong>`;
+      } else {
+        badge.className='mp-kw-badge locked';
+        badge.innerHTML=`🔒 DAY${i} &nbsp;<span id="mpKwTxt${i}">???</span>`;
+      }
+    } else {
+      badge.style.display='none';
+    }
+  }
+}
+
+/* ─── 입력 뷰 ─── */
+function mpShowInput(d){
+  document.getElementById('mpInputView').style.display='';
+  document.getElementById('mpSubmitted').style.display='none';
+  document.getElementById('mpComplete').style.display='none';
+  mpSelQ=null;
+
+  const di=d.curDay-1;
+  const kw=d.kws[di];
+  const qs=d.qs[di];
+  document.getElementById('mpDayTag').textContent=`DAY ${d.curDay}`;
+  document.getElementById('mpKeyword').textContent=kw;
+
+  const rules=MP_MISSIONS[kw].rules;
+  document.getElementById('mpRulesList').innerHTML=rules.map(r=>`<div class="mp-rule-item">${r}</div>`).join('');
+
+  if(d.myQ && qs.includes(d.myQ)){
+    mpSelQ=qs.indexOf(d.myQ);
+  }
+  mpRenderQ(qs);
+  document.getElementById('mpAnswer').value=d.myAnswer||'';
+  if(d.myQ){ const pv=document.getElementById('mpQPreview'); pv.textContent=`Q. ${d.myQ}`; pv.style.display='block'; }
+  else { document.getElementById('mpQPreview').style.display='none'; }
+  document.getElementById('mpQWarn').classList.remove('show');
+  mpUpdateBtn();
+}
+
+function mpRenderQ(qs){
+  const list=document.getElementById('mpQuestions');
+  list.innerHTML='';
+  qs.forEach((q,i)=>{
+    const d2=document.createElement('div');
+    d2.className='mp-q-item'+(i===mpSelQ?' selected':'');
+    d2.innerHTML=`<div class="mp-q-num">${i+1}</div><div class="mp-q-text">${q}</div><div class="mp-q-check">✔</div>`;
+    d2.onclick=()=>mpSelectQ(i);
+    list.appendChild(d2);
+  });
+}
+
+function mpSelectQ(idx){
+  mpSelQ=idx;
+  document.querySelectorAll('.mp-q-item').forEach((el,i)=>el.classList.toggle('selected',i===idx));
+  const d=mpData[mpCurrent];
+  const q=d.qs[d.curDay-1][idx];
+  const pv=document.getElementById('mpQPreview');
+  pv.textContent=`Q. ${q}`; pv.style.display='block';
+  document.getElementById('mpQWarn').classList.remove('show');
+  document.getElementById('mpAnswer').focus();
+  mpUpdateBtn();
+}
+
+function mpUpdateBtn(){
+  const txt=document.getElementById('mpAnswer').value.trim();
+  const len=txt.length;
+  const btn=document.getElementById('mpSubmitBtn');
+  const hint=document.getElementById('mpSubmitHint');
+  if(len>=10){
+    btn.className='mp-submit-btn on'; hint.style.display='none';
+  } else {
+    btn.className='mp-submit-btn off'; hint.style.display='';
+    hint.textContent=len===0?' · 10자 이상 입력해주세요':` · ${10-len}자 더 입력해주세요`;
+  }
+}
+
+function mpSubmit(){
+  const d=mpData[mpCurrent];
+  const txt=document.getElementById('mpAnswer').value.trim();
+  if(mpSelQ===null){ document.getElementById('mpQWarn').classList.add('show'); return; }
+  if(txt.length<10) return;
+
+  const di=d.curDay-1;
+  const qs=d.qs[di];
+  d.myAnswer=txt;
+  d.myQ=qs[mpSelQ];
+
+  /* 파트너 답변 시뮬레이션 (실제 Firebase 연동 시 교체) */
+  const pIdx=(mpSelQ+1)%qs.length;
+  d.partnerQ=qs[pIdx];
+  d.partnerAnswer='함께하는 시간이 가장 소중해요. 매일 쌓이는 소소한 순간들이 행복이 된다고 생각해요.';
+
+  d.completed.push({ day:d.curDay, myQ:d.myQ, myAnswer:d.myAnswer, partnerQ:d.partnerQ, partnerAnswer:d.partnerAnswer });
+
+  if(d.curDay>=d.days){
+    d.status='complete';
+    mpUpdateGemBox(mpCurrent);
+    mpShowComplete(d);
+  } else {
+    d.curDay++;
+    d.myAnswer=''; d.myQ=''; d.partnerAnswer=''; d.partnerQ='';
+    d.status='open';
+    mpUpdateGemBox(mpCurrent);
+    mpUpdateKwBadges(d);
+    mpShowInput(d);
+    document.getElementById('mpCard').scrollTop=0;
+  }
+}
+
+function mpEdit(){
+  if(!confirm('답변을 수정하시겠습니까?')) return;
+  const d=mpData[mpCurrent];
+  d.status='open';
+  mpUpdateGemBox(mpCurrent);
+  mpShowInput(d);
+}
+
+/* ─── 제출완료 뷰 ─── */
+function mpShowSubmitted(d){
+  document.getElementById('mpInputView').style.display='none';
+  document.getElementById('mpSubmitted').style.display='';
+  document.getElementById('mpComplete').style.display='none';
+  document.getElementById('mpSvQ').textContent=`Q. ${d.myQ}`;
+  document.getElementById('mpSvAns').textContent=d.myAnswer;
+  const pName=(window.partnerData&&window.partnerData.nickname)||'파트너';
+  document.getElementById('mpSvPendingTxt').textContent=`${pName}의 답변이 등록되면 함께 확인할 수 있어요`;
+}
+
+/* ─── 완료 뷰 ─── */
+function mpShowComplete(d){
+  document.getElementById('mpInputView').style.display='none';
+  document.getElementById('mpSubmitted').style.display='none';
+  const cv=document.getElementById('mpComplete');
+  cv.style.display='block';
+  document.getElementById('mpCvBannerTitle').textContent=d.days>1?`전체 ${d.days}일 임무 완료!`:`임무 완료!`;
+
+  const tabs=document.getElementById('mpDayTabs');
+  if(d.completed.length>1){
+    tabs.style.display='flex';
+    tabs.innerHTML=d.completed.map((c,i)=>`<div class="mp-day-tab ${i===0?'active':''}" onclick="mpSwitchTab(${i})" id="mpTab${i}"><div class="mp-day-tab-day">DAY ${c.day}</div><div class="mp-day-tab-kw">${d.kws[c.day-1]||''}</div></div>`).join('');
+  } else { tabs.style.display='none'; }
+
+  mpRenderDayAnswers(d,0);
+
+  const nextId=typeof mpCurrent==='number'?mpCurrent+1:null;
+  const nextEl=document.getElementById('mpCvNextDay');
+  const lockEl=document.getElementById('mpCvNextLock');
+  if(nextId&&nextId<=4){ nextEl.textContent=`특수작전${nextId} 잠금해제!`; lockEl.textContent='🔓 다음 작전이 해제됩니다'; }
+  else if(mpCurrent==='special'||nextId>4){ nextEl.textContent='모든 작전 완료!'; lockEl.textContent='🏆 전체 임무 달성!'; }
+  document.getElementById('mpCard').scrollTop=0;
+}
+
+function mpRenderDayAnswers(d,idx){
+  const c=d.completed[idx]; if(!c) return;
+  document.getElementById('mpCvMyQ').textContent=c.myQ?`Q. ${c.myQ}`:'Q. -';
+  document.getElementById('mpCvMyAns').textContent=c.myAnswer||'-';
+  document.getElementById('mpCvPartnerQ').textContent=c.partnerQ?`Q. ${c.partnerQ}`:'Q. -';
+  document.getElementById('mpCvPartnerAns').textContent=c.partnerAnswer||'-';
+}
+
+function mpSwitchTab(idx){
+  document.querySelectorAll('.mp-day-tab').forEach((el,i)=>el.classList.toggle('active',i===idx));
+  mpRenderDayAnswers(mpData[mpCurrent],idx);
+}
+
+/* ─── gemBox 상태 업데이트 ─── */
+function mpUpdateGemBox(id){
+  const d=mpData[id];
+  if(!d) return;
+  const box=document.getElementById('gemBox'+id);
+  if(!box) return;
+
+  if(d.status==='complete'){
+    const label=id==='special'?'스페셜작전':'특수작전'+id;
+    box.className='gem-box stamped';
+    box.onclick=()=>mpOpen(id);
+    box.innerHTML=`<div class="gem-stamp-wrap">
+      <div style="font-family:var(--orb);font-size:8px;letter-spacing:1px;color:rgba(92,184,172,.35);align-self:flex-start;margin-bottom:2px;">MISSION ${id}</div>
+      <div class="gem-stamp-circle"><div class="gem-stamp-icon">🏆</div><div class="gem-stamp-word">COMPLETE</div></div>
+      <div class="gem-stamp-title">${label}</div>
+      <button class="gem-stamp-view" onclick="event.stopPropagation();mpOpen(${typeof id==='number'?id:"'"+id+"'"})">답변 보기</button>
+    </div>`;
+  } else if(d.status==='checking'){
+    box.classList.add('state-checking');
+    box.classList.remove('state-open','state-active');
+  } else if(d.curDay>1){
+    box.classList.add('state-active');
+    box.classList.remove('state-open','state-checking');
+  } else {
+    box.classList.add('state-open');
+    box.classList.remove('state-active','state-checking');
+  }
+}
+
+/* ─── 닫기 ─── */
+function mpClose(){
+  document.getElementById('missionOverlay').classList.remove('active');
+  document.body.style.overflow='';
+}
+function mpCloseOnBg(e){
+  if(e.target===document.getElementById('missionOverlay')) mpClose();
+}
+
+/* ── openGemBox 후크: 잠금/연결 체크 통과 후 미션 팝업으로 연결 ──
+   기존 openGemBox 함수 실행 후 팝업 열기를 가로채는 래퍼 */
+(function(){
+  const _orig = window.openGemBox;
+  window.openGemBoxWithMission = function(n){
+    /* 연결 체크 */
+    const connOk = window.connectionStatus==='connected';
+    if(!connOk){ alert('팀원과 연결된 후 특수작전을 진행할 수 있습니다.'); return; }
+    /* 잠금 체크 */
+    const total = window.calcTotalPersonalMoney ? window.calcTotalPersonalMoney() : 0;
+    const th = (window.GEM_THRESHOLDS&&window.GEM_THRESHOLDS[n])||0;
+    const oppM = window.partnerData ? window.partnerData.money : 0;
+    const unlocked = total>=th && oppM>=th;
+    if(!unlocked){
+      const label=n==='special'?'스페셜작전':'특수작전'+n;
+      if(window.showToast) window.showToast(`🎯 ${label}: 양쪽 모두 ${th.toLocaleString()}원 필요`);
+      return;
+    }
+    /* 스페셜은 기존 모달 유지 */
+    if(n==='special'){ if(window.openSpecialModal) window.openSpecialModal(); return; }
+    /* 일반 특수작전 → 미션 팝업 열기 */
+    mpOpen(n);
+  };
+  /* gemBox onclick을 새 함수로 교체 */
+  document.addEventListener('DOMContentLoaded',()=>{
+    [1,2,3,4].forEach(n=>{
+      const box=document.getElementById('gemBox'+n);
+      if(box) box.onclick=()=>window.openGemBoxWithMission(n);
+    });
+  });
+})();
 
 </script>
 </body>
