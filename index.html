@@ -5275,6 +5275,138 @@ document.addEventListener('DOMContentLoaded',()=>{
 
       </div>
 
+      <!-- ⑤ 비밀상자 팀 미션2 카드 (연결 후만 표시) -->
+      <div class="card" id="teamQAMissionCard2" style="display:none;padding:0;overflow:hidden;border:1.5px solid rgba(123,94,168,.3);box-shadow:0 0 20px rgba(123,94,168,.08);">
+
+        <!-- ══ 상태 A: 잠금 ══ -->
+        <div id="qaBoxLocked2" style="padding:20px 16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:18px;">🔒</span>
+              <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:rgba(255,255,255,.7);">비밀 팀 미션 2</div>
+            </div>
+            <div style="padding:3px 9px;background:rgba(60,30,80,.5);border:1px solid rgba(123,94,168,.35);border-radius:10px;font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(160,128,204,.6);">LOCKED</div>
+          </div>
+          <div style="text-align:center;margin-bottom:16px;position:relative;">
+            <div style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;">
+              <div style="width:72px;height:14px;background:linear-gradient(135deg,rgba(80,50,110,.7),rgba(50,25,75,.9));border:1.5px solid rgba(123,94,168,.4);border-radius:4px 4px 0 0;position:relative;">
+                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:18px;height:4px;background:rgba(160,128,204,.5);border-radius:2px;"></div>
+              </div>
+              <div id="qaBoxBody2" style="width:72px;height:68px;background:linear-gradient(160deg,rgba(70,40,100,.5),rgba(40,20,60,.8));border:1.5px solid rgba(123,94,168,.35);border-radius:0 0 6px 6px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+                <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 8px,rgba(123,94,168,.04) 8px,rgba(123,94,168,.04) 9px);"></div>
+                <span style="font-size:28px;filter:grayscale(1);opacity:.4;">🎁</span>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:center;margin-bottom:14px;">
+            <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.55);margin-bottom:4px;">잠금 해제 조건</div>
+            <div style="font-family:var(--kr);font-size:13px;color:rgba(160,128,204,.9);font-weight:900;">나 + 팀원 각각 <span style="color:rgba(160,128,204,1);font-size:16px;">4만원</span> 달성</div>
+          </div>
+          <div style="margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <div style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.7);">나</div>
+              <div id="qaMyMoneyTxt2" style="font-family:var(--orb);font-size:10px;color:rgba(127,191,106,.8);">0원 / 40,000원</div>
+            </div>
+            <div style="height:7px;background:rgba(20,40,15,.6);border-radius:4px;overflow:hidden;margin-bottom:8px;">
+              <div id="qaMyBar2" style="height:100%;width:0%;background:linear-gradient(90deg,var(--green),var(--green-dim));border-radius:4px;transition:width .6s;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <div id="qaOppNameLockTxt2" style="font-family:var(--kr);font-size:10px;color:rgba(180,150,220,.7);">상대방</div>
+              <div id="qaOppMoneyTxt2" style="font-family:var(--orb);font-size:10px;color:rgba(180,150,220,.8);">0원 / 40,000원</div>
+            </div>
+            <div style="height:7px;background:rgba(20,15,35,.6);border-radius:4px;overflow:hidden;">
+              <div id="qaOppBar2" style="height:100%;width:0%;background:linear-gradient(90deg,rgba(160,100,220,.7),rgba(200,150,255,.85));border-radius:4px;transition:width .6s;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ 상태 B: 열림 ══ -->
+        <div id="qaBoxOpen2" style="display:none;padding:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:18px;">📬</span>
+              <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#fff;">비밀 팀 미션 2</div>
+            </div>
+            <div id="teamQAStatusBadge2" style="padding:3px 9px;background:rgba(123,94,168,.15);border:1px solid rgba(123,94,168,.5);border-radius:10px;font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(160,128,204,.9);">진행중</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 12px;background:rgba(123,94,168,.06);border:1px solid rgba(123,94,168,.2);border-radius:10px;">
+            <div style="font-size:22px;">🎁</div>
+            <div>
+              <div style="font-family:var(--orb);font-size:8px;letter-spacing:2px;color:rgba(160,128,204,.6);margin-bottom:2px;">SECRET BOX 2 UNLOCKED</div>
+              <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.5);">양쪽 모두 4만원 달성! 미션2가 열렸어요</div>
+            </div>
+          </div>
+          <div style="padding:14px;background:rgba(20,10,35,.7);border:1.5px solid rgba(123,94,168,.35);border-radius:12px;margin-bottom:14px;">
+            <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(160,128,204,.6);margin-bottom:8px;">Q. TEAM MISSION 2</div>
+            <div id="teamQAQuestionText2" style="font-family:var(--kr);font-size:15px;font-weight:900;color:#fff;line-height:1.6;"></div>
+          </div>
+          <div style="margin-bottom:10px;">
+            <div style="font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(127,191,106,.65);margin-bottom:6px;">▎ 나의 답글</div>
+            <div id="teamQAMyAnswerDisplay2" style="display:none;padding:11px 13px;background:rgba(18,50,16,.7);border:1.5px solid rgba(90,158,72,.5);border-radius:10px;flex-direction:row;align-items:center;justify-content:space-between;gap:8px;">
+              <div style="display:flex;align-items:center;gap:8px;flex:1;">
+                <span style="font-size:14px;">✅</span>
+                <div id="teamQAMyAnswerText2" style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,240,180,.95);flex:1;"></div>
+              </div>
+              <button onclick="teamQAClearMyAnswer(2)" style="padding:3px 8px;background:rgba(40,20,10,.6);border:1px solid rgba(180,100,50,.3);border-radius:6px;color:rgba(200,130,70,.7);font-family:var(--kr);font-size:10px;cursor:pointer;flex-shrink:0;">수정</button>
+            </div>
+            <div id="teamQAMyAnswerInput2" style="display:flex;flex-direction:column;gap:8px;">
+              <textarea id="teamQAMyAnswerTextarea2" placeholder="답글을 입력하세요..." maxlength="200" rows="2"
+                style="width:100%;padding:11px 13px;background:rgba(12,10,25,.6);border:1.5px solid rgba(123,94,168,.3);border-radius:10px;color:#fff;font-family:var(--kr);font-size:13px;resize:none;outline:none;line-height:1.5;"></textarea>
+              <button onclick="teamQASaveMyAnswer(2)" style="width:100%;padding:11px;background:linear-gradient(135deg,rgba(100,60,160,.9),rgba(70,35,110,.9));border:1.5px solid rgba(123,94,168,.5);border-radius:10px;color:#fff;font-family:var(--kr);font-size:14px;font-weight:900;cursor:pointer;letter-spacing:.3px;">✅ 답글 저장</button>
+            </div>
+          </div>
+          <div style="margin-bottom:4px;">
+            <div id="teamQAOppNickLabel2" style="font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(160,128,204,.65);margin-bottom:6px;">▎ 상대방의 답글</div>
+            <div id="teamQAOppAnswerBox2" style="padding:11px 13px;background:rgba(20,10,30,.5);border:1px dashed rgba(123,94,168,.25);border-radius:10px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:16px;">⏳</span>
+                <div style="font-family:var(--kr);font-size:12px;color:rgba(160,128,204,.6);font-weight:600;" id="teamQAOppWaitingTxt2">상대방 임무수행중...</div>
+              </div>
+            </div>
+          </div>
+          <div id="teamQAStatusBanner2" style="display:none;margin-top:12px;padding:12px;text-align:center;border-radius:10px;"></div>
+        </div>
+
+        <!-- ══ 상태 C: 완료 도장 ══ -->
+        <div id="qaBoxComplete2" style="display:none;padding:16px;">
+          <div id="qaCompleteCard2" onclick="qaToggleDetail(2)"
+            style="cursor:pointer;position:relative;overflow:hidden;
+              background:linear-gradient(160deg,rgba(25,12,40,.95),rgba(15,8,28,.98));
+              border:2px solid rgba(123,94,168,.6);border-radius:14px;
+              box-shadow:0 0 24px rgba(123,94,168,.15);transition:all .3s;">
+            <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 14px,rgba(123,94,168,.03) 14px,rgba(123,94,168,.03) 15px);pointer-events:none;"></div>
+            <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(123,94,168,.8),transparent);"></div>
+            <div style="display:flex;align-items:center;gap:14px;padding:16px 16px 12px;">
+              <div style="flex-shrink:0;">
+                <svg width="64" height="64" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(160,128,204,.9)" stroke-width="3.5" stroke-dasharray="6 3"/>
+                  <circle cx="50" cy="50" r="37" fill="rgba(15,8,28,.6)" stroke="rgba(123,94,168,.6)" stroke-width="1.5"/>
+                  <text x="50" y="36" text-anchor="middle" font-size="20" fill="rgba(160,128,204,.95)">★</text>
+                  <text x="50" y="54" text-anchor="middle" font-family="Courier Prime,monospace" font-size="10.5" font-weight="900" fill="rgba(160,128,204,.95)" letter-spacing="1.5">COMPLETE</text>
+                  <line x1="20" y1="62" x2="80" y2="62" stroke="rgba(123,94,168,.45)" stroke-width="1"/>
+                  <text x="50" y="73" text-anchor="middle" font-family="Courier Prime,monospace" font-size="6.5" fill="rgba(160,128,204,.55)" letter-spacing="2.5">SPECIAL MISSION 2</text>
+                </svg>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(160,128,204,.6);margin-bottom:4px;">✅ MISSION ACCOMPLISHED</div>
+                <div style="font-family:var(--kr);font-size:16px;font-weight:900;color:#fff;line-height:1.3;">특수미션2 완료</div>
+                <div style="font-family:var(--kr);font-size:11px;color:rgba(160,128,204,.65);margin-top:3px;">팀 미션을 함께 완수했습니다</div>
+              </div>
+              <div id="qaDetailArrow2" style="flex-shrink:0;font-size:16px;color:rgba(160,128,204,.5);transition:transform .3s;">▼</div>
+            </div>
+            <div id="qaCompleteDetail2" style="display:none;padding:0 16px 16px;">
+              <div style="height:1px;background:rgba(123,94,168,.2);margin-bottom:12px;"></div>
+              <div style="padding:10px 12px;background:rgba(20,10,35,.7);border:1px solid rgba(123,94,168,.3);border-radius:10px;margin-bottom:10px;">
+                <div style="font-family:var(--orb);font-size:8px;letter-spacing:2px;color:rgba(160,128,204,.55);margin-bottom:5px;">Q. TEAM MISSION 2</div>
+                <div id="qaCompleteQuestion2" style="font-family:var(--kr);font-size:13px;font-weight:700;color:#fff;line-height:1.5;"></div>
+              </div>
+              <div id="qaCompleteAnswers2" style="display:flex;flex-direction:column;gap:6px;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
     </div><!-- /panelTeam -->
     </div>
 
@@ -7823,33 +7955,15 @@ window._mpHandleAccepted = async function(n){
    ================================================================ */
 
 window._teamQASubscribed = false;
-window._qaBoxState = 'locked'; /* locked | open | complete */
+window._qaBoxState = {};
 
-/* ── 헬퍼 ── */
-function _qaPartnerUid(){ return partnerData ? partnerData.uid : null; }
-function _qaPath(){
-  const pUid = _qaPartnerUid();
-  if(!pUid || !MY_UID) return null;
-  return PATH.teamRoom(MY_UID, pUid) + '/qa_mission';
-}
-function _qaMyKey(){
-  const pUid = _qaPartnerUid();
-  return MY_UID < pUid ? 'ans_a' : 'ans_b';
-}
-function _qaOppKey(){
-  const pUid = _qaPartnerUid();
-  return MY_UID < pUid ? 'ans_b' : 'ans_a';
-}
-function _qaPName(){ return (partnerData && partnerData.nickname) || '상대방'; }
+/* 미션별 설정 */
+const QA_MISSIONS = {
+  1: { threshold: 20000, path: 'qa_mission'  },
+  2: { threshold: 40000, path: 'qa_mission2' }
+};
 
-/* ── 비밀상자 잠금 해제 조건: 나 AND 상대 모두 20,000원 이상 ── */
-function _qaIsUnlocked(){
-  const myM  = window.calcTotalPersonalMoney ? calcTotalPersonalMoney() : 0;
-  const oppM = partnerData ? (partnerData.money || 0) : 0;
-  return myM >= 20000 && oppM >= 20000;
-}
-
-/* ── 팀 미션 질문 목록 ── */
+/* 오늘 질문 목록 */
 const TEAM_QA_QUESTIONS = [
   "오늘 우리 팀이 함께 이루고 싶은 목표는 무엇인가요?",
   "지금 가장 집중하고 싶은 한 가지 행동은 무엇인가요?",
@@ -7860,37 +7974,69 @@ const TEAM_QA_QUESTIONS = [
   "오늘 가장 아끼고 싶은 영역은 어디인가요? (식비/교통/쇼핑 등)",
   "우리 팀의 공통 저축 목표와 기한을 함께 적어보세요.",
   "오늘 서로에게 응원 한마디를 전한다면?",
-  "이번 작전을 성공시키기 위한 나만의 한 가지 전략은?"
+  "이번 작전을 성공시키기 위한 나만의 한 가지 전략은?",
+  "우리 팀이 이번 달 함께 달성하고 싶은 절약 금액은?",
+  "지금까지의 작전 중 가장 기억에 남는 성공 경험을 나눠보세요.",
+  "다음 목표를 향해 오늘 내가 할 수 있는 한 가지 작은 실천은?",
+  "우리 팀이 함께 피하고 싶은 소비 습관은 무엇인가요?",
+  "서로의 강점을 활용해 이번 작전을 어떻게 성공시킬까요?"
 ];
-function _getTodayQuestion(){
+function _getTodayQuestion(n){
   const dayIndex = Math.floor(Date.now() / (1000*60*60*24));
-  return TEAM_QA_QUESTIONS[dayIndex % TEAM_QA_QUESTIONS.length];
+  return TEAM_QA_QUESTIONS[(dayIndex + (n-1)*7) % TEAM_QA_QUESTIONS.length];
 }
 
+/* ── 헬퍼 ── */
+function _qaPartnerUid(){ return partnerData ? partnerData.uid : null; }
+function _qaPath(n){
+  const pUid = _qaPartnerUid();
+  if(!pUid || !MY_UID) return null;
+  return PATH.teamRoom(MY_UID, pUid) + '/' + QA_MISSIONS[n].path;
+}
+function _qaMyKey(){
+  const pUid = _qaPartnerUid();
+  return MY_UID < pUid ? 'ans_a' : 'ans_b';
+}
+function _qaOppKey(){
+  const pUid = _qaPartnerUid();
+  return MY_UID < pUid ? 'ans_b' : 'ans_a';
+}
+function _qaPName(){ return (partnerData && partnerData.nickname) || '상대방'; }
+function _qaIsUnlocked(n){
+  const th   = QA_MISSIONS[n].threshold;
+  const myM  = window.calcTotalPersonalMoney ? calcTotalPersonalMoney() : 0;
+  const oppM = partnerData ? (partnerData.money || 0) : 0;
+  return myM >= th && oppM >= th;
+}
+/* id 헬퍼 — 미션1은 suffix 없음, 미션2는 '2' */
+function _qid(id, n){ return document.getElementById(n===1 ? id : id+n); }
+
 /* ══════════════════════════════════════════════
-   비밀상자 메인 렌더 — 금액 기반 상태 전환
+   메인 렌더
 ══════════════════════════════════════════════ */
-function renderTeamQAMission(qaData){
-  const card = document.getElementById('teamQAMissionCard');
+function renderTeamQAMission(qaData, n){
+  n = n || 1;
+  const cardId = n===1 ? 'teamQAMissionCard' : 'teamQAMissionCard2';
+  const card = document.getElementById(cardId);
   if(!card) return;
 
+  const th    = QA_MISSIONS[n].threshold;
   const myM   = window.calcTotalPersonalMoney ? calcTotalPersonalMoney() : 0;
   const oppM  = partnerData ? (partnerData.money || 0) : 0;
   const pName = _qaPName();
-  const unlocked = myM >= 20000 && oppM >= 20000;
+  const unlocked = myM >= th && oppM >= th;
 
-  const myAns  = qaData ? (qaData[_qaMyKey()]  || null) : null;
-  const oppAns = qaData ? (qaData[_qaOppKey()] || null) : null;
+  const myAns   = qaData ? (qaData[_qaMyKey()]  || null) : null;
+  const oppAns  = qaData ? (qaData[_qaOppKey()] || null) : null;
   const bothDone = !!(myAns && oppAns);
 
-  /* ── 완료 상태 ── */
+  /* ── C: 완료 ── */
   if(bothDone){
-    _qaShowState('complete');
-    window._qaBoxState = 'complete';
-    const qEl = document.getElementById('qaCompleteQuestion');
-    const aEl = document.getElementById('qaCompleteAnswers');
-    const mn   = (myNickname && myNickname !== '') ? myNickname : '나';
-    if(qEl) qEl.textContent = qaData.question || _getTodayQuestion();
+    _qaShowState('complete', n);
+    const qEl = _qid('qaCompleteQuestion', n);
+    const aEl = _qid('qaCompleteAnswers', n);
+    const mn  = (myNickname && myNickname !== '') ? myNickname : '나';
+    if(qEl) qEl.textContent = qaData.question || _getTodayQuestion(n);
     if(aEl) aEl.innerHTML = `
       <div style="padding:8px 12px;background:rgba(18,50,16,.7);border:1px solid rgba(90,158,72,.4);border-radius:8px;display:flex;gap:8px;align-items:flex-start;">
         <span style="font-size:12px;flex-shrink:0;">✅</span>
@@ -7902,102 +8048,92 @@ function renderTeamQAMission(qaData){
         <div><div style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.7);margin-bottom:2px;">${pName}</div>
         <div style="font-family:var(--kr);font-size:12px;color:rgba(240,200,100,.95);font-weight:700;">${oppAns}</div></div>
       </div>`;
-    /* 처음 진입 시 펼침 패널 닫힘 상태로 초기화 */
-    const det = document.getElementById('qaCompleteDetail');
-    const arr = document.getElementById('qaDetailArrow');
-    if(det && window._qaBoxState !== 'complete'){ det.style.display='none'; }
-    if(arr) arr.style.transform='rotate(0deg)';
+    const det = _qid('qaCompleteDetail', n);
+    const arr = _qid('qaDetailArrow', n);
+    if(det && !window['_qaDetailOpen'+n]) det.style.display='none';
+    if(arr) arr.style.transform = window['_qaDetailOpen'+n] ? 'rotate(180deg)' : 'rotate(0deg)';
     return;
   }
 
-  /* ── 잠금 상태 ── */
+  /* ── A: 잠금 ── */
   if(!unlocked){
-    _qaShowState('locked');
-    window._qaBoxState = 'locked';
-    const myPct  = Math.min(100, Math.round(myM / 20000 * 100));
-    const oppPct = Math.min(100, Math.round(oppM / 20000 * 100));
-    const myBar  = document.getElementById('qaMyBar');
-    const oppBar = document.getElementById('qaOppBar');
-    const myTxt  = document.getElementById('qaMyMoneyTxt');
-    const oppTxt = document.getElementById('qaOppMoneyTxt');
-    const oppLockName = document.getElementById('qaOppNameLockTxt');
+    _qaShowState('locked', n);
+    const myPct  = Math.min(100, Math.round(myM / th * 100));
+    const oppPct = Math.min(100, Math.round(oppM / th * 100));
+    const fmt    = th.toLocaleString();
+    const myBar  = _qid('qaMyBar', n);
+    const oppBar = _qid('qaOppBar', n);
+    const myTxt  = _qid('qaMyMoneyTxt', n);
+    const oppTxt = _qid('qaOppMoneyTxt', n);
+    const oppLockName = _qid('qaOppNameLockTxt', n);
     if(myBar)  myBar.style.width  = myPct  + '%';
     if(oppBar) oppBar.style.width = oppPct + '%';
-    if(myTxt)  myTxt.textContent  = myM.toLocaleString() + '원 / 20,000원';
-    if(oppTxt) oppTxt.textContent = oppM.toLocaleString() + '원 / 20,000원';
+    if(myTxt)  myTxt.textContent  = myM.toLocaleString()  + '원 / ' + fmt + '원';
+    if(oppTxt) oppTxt.textContent = oppM.toLocaleString() + '원 / ' + fmt + '원';
     if(oppLockName) oppLockName.textContent = pName;
-
-    /* 잠금 상태 → 상자 색 맥박 애니메이션 */
-    const body = document.getElementById('qaBoxBody');
+    const body = _qid('qaBoxBody', n);
     if(body){
-      const myDone  = myM  >= 20000;
-      const oppDone = oppM >= 20000;
-      if(myDone || oppDone){
-        body.style.borderColor = 'rgba(200,168,75,.7)';
-        body.style.boxShadow   = '0 0 12px rgba(200,168,75,.25)';
+      if(myM >= th || oppM >= th){
+        body.style.borderColor = n===1 ? 'rgba(200,168,75,.7)' : 'rgba(160,128,204,.7)';
+        body.style.boxShadow   = n===1 ? '0 0 12px rgba(200,168,75,.25)' : '0 0 12px rgba(123,94,168,.25)';
       } else {
-        body.style.borderColor = 'rgba(200,168,75,.35)';
+        body.style.borderColor = n===1 ? 'rgba(200,168,75,.35)' : 'rgba(123,94,168,.35)';
         body.style.boxShadow   = 'none';
       }
     }
     return;
   }
 
-  /* ── 열림 상태 (미션 진행 중) ── */
-  _qaShowState('open');
-  window._qaBoxState = 'open';
-
-  /* 이전 상태가 locked였으면 잠금해제 토스트 */
-  if(!window._qaUnlockToasted){
-    window._qaUnlockToasted = true;
-    showToast('🎁 비밀 팀 미션이 열렸어요!');
+  /* ── B: 열림 ── */
+  _qaShowState('open', n);
+  if(!window['_qaUnlockToasted'+n]){
+    window['_qaUnlockToasted'+n] = true;
+    showToast('🎁 비밀 팀 미션 ' + n + '이 열렸어요!');
   }
-
-  /* 질문 세팅 */
-  const qText = document.getElementById('teamQAQuestionText');
-  if(qText) qText.textContent = (qaData && qaData.question) || _getTodayQuestion();
-
-  /* 닉네임 반영 */
-  const oppLbl = document.getElementById('teamQAOppNickLabel');
-  if(oppLbl) oppLbl.textContent = `▎ ${pName}의 답글`;
-  const waitTxt = document.getElementById('teamQAOppWaitingTxt');
-  if(waitTxt) waitTxt.textContent = `${pName} 임무수행중...`;
-
-  _updateQAAnswerUI(myAns, oppAns);
-  _updateQAStatus(myAns, oppAns);
+  const qText = _qid('teamQAQuestionText', n);
+  if(qText) qText.textContent = (qaData && qaData.question) || _getTodayQuestion(n);
+  const oppLbl = _qid('teamQAOppNickLabel', n);
+  if(oppLbl) oppLbl.textContent = String.fromCharCode(9618) + ' ' + pName + '의 답글';
+  const waitTxt = _qid('teamQAOppWaitingTxt', n);
+  if(waitTxt) waitTxt.textContent = pName + ' 임무수행중...';
+  _updateQAAnswerUI(myAns, oppAns, n);
+  _updateQAStatus(myAns, oppAns, n);
 }
 
-/* 세 패널 전환 헬퍼 */
-function _qaShowState(state){
-  const locked   = document.getElementById('qaBoxLocked');
-  const open     = document.getElementById('qaBoxOpen');
-  const complete = document.getElementById('qaBoxComplete');
+/* 세 패널 전환 */
+function _qaShowState(state, n){
+  const locked   = _qid('qaBoxLocked', n);
+  const open     = _qid('qaBoxOpen', n);
+  const complete = _qid('qaBoxComplete', n);
   if(locked)   locked.style.display   = state==='locked'   ? 'block' : 'none';
   if(open)     open.style.display     = state==='open'     ? 'block' : 'none';
   if(complete) complete.style.display = state==='complete' ? 'block' : 'none';
-
-  /* 카드 테두리 색 */
-  const card = document.getElementById('teamQAMissionCard');
+  const cardId = n===1 ? 'teamQAMissionCard' : 'teamQAMissionCard2';
+  const card = document.getElementById(cardId);
   if(!card) return;
   if(state==='complete'){
-    card.style.border='2px solid rgba(90,158,72,.6)';
-    card.style.boxShadow='0 0 24px rgba(90,158,72,.18)';
+    card.style.border     = n===1 ? '2px solid rgba(90,158,72,.6)'   : '2px solid rgba(123,94,168,.6)';
+    card.style.boxShadow  = n===1 ? '0 0 24px rgba(90,158,72,.18)'   : '0 0 24px rgba(123,94,168,.18)';
   } else if(state==='open'){
-    card.style.border='1.5px solid rgba(56,150,138,.5)';
-    card.style.boxShadow='0 0 18px rgba(56,150,138,.12)';
+    card.style.border     = n===1 ? '1.5px solid rgba(56,150,138,.5)' : '1.5px solid rgba(123,94,168,.5)';
+    card.style.boxShadow  = n===1 ? '0 0 18px rgba(56,150,138,.12)'  : '0 0 18px rgba(123,94,168,.12)';
   } else {
-    card.style.border='1.5px solid rgba(200,168,75,.3)';
-    card.style.boxShadow='0 0 14px rgba(200,168,75,.07)';
+    card.style.border     = n===1 ? '1.5px solid rgba(200,168,75,.3)' : '1.5px solid rgba(123,94,168,.3)';
+    card.style.boxShadow  = n===1 ? '0 0 14px rgba(200,168,75,.07)'  : '0 0 14px rgba(123,94,168,.07)';
   }
 }
 
-/* 나의 답글 UI */
-function _updateQAAnswerUI(myAns, oppAns){
-  const pName = _qaPName();
-  const displayEl = document.getElementById('teamQAMyAnswerDisplay');
-  const inputEl   = document.getElementById('teamQAMyAnswerInput');
-  const ansTextEl = document.getElementById('teamQAMyAnswerText');
-  const oppBox    = document.getElementById('teamQAOppAnswerBox');
+/* 답글 UI */
+function _updateQAAnswerUI(myAns, oppAns, n){
+  const pName     = _qaPName();
+  const displayEl = _qid('teamQAMyAnswerDisplay', n);
+  const inputEl   = _qid('teamQAMyAnswerInput', n);
+  const ansTextEl = _qid('teamQAMyAnswerText', n);
+  const oppBox    = _qid('teamQAOppAnswerBox', n);
+  const oc = n===1 ? 'rgba(200,168,75,.6)'   : 'rgba(160,128,204,.6)';
+  const ob = n===1 ? 'rgba(200,168,75,.5)'   : 'rgba(123,94,168,.5)';
+  const od = n===1 ? 'rgba(200,168,75,.25)'  : 'rgba(123,94,168,.25)';
+  const obg= n===1 ? 'rgba(20,15,5,.5)'      : 'rgba(20,10,30,.5)';
 
   if(myAns){
     if(displayEl){ displayEl.style.display='flex'; }
@@ -8006,71 +8142,66 @@ function _updateQAAnswerUI(myAns, oppAns){
   } else {
     if(displayEl){ displayEl.style.display='none'; }
     if(inputEl)  { inputEl.style.display='flex'; }
-    const ta = document.getElementById('teamQAMyAnswerTextarea');
+    const ta = _qid('teamQAMyAnswerTextarea', n);
     if(ta) ta.value='';
   }
-
   if(oppBox){
     if(oppAns){
-      oppBox.innerHTML=`<div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:14px;">✅</span>
-        <div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(240,200,100,.95);">${oppAns}</div>
-      </div>`;
+      oppBox.innerHTML=`<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:14px;">\u2705</span><div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(240,200,100,.95);">${oppAns}</div></div>`;
       oppBox.style.background='rgba(50,35,8,.6)';
-      oppBox.style.border='1.5px solid rgba(200,168,75,.5)';
+      oppBox.style.border='1.5px solid '+ob;
     } else {
-      oppBox.innerHTML=`<div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:16px;">⏳</span>
-        <div style="font-family:var(--kr);font-size:12px;color:rgba(200,168,75,.6);font-weight:600;" id="teamQAOppWaitingTxt">${pName} 임무수행중...</div>
-      </div>`;
-      oppBox.style.background='rgba(20,15,5,.5)';
-      oppBox.style.border='1px dashed rgba(200,168,75,.25)';
+      oppBox.innerHTML=`<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:16px;">\u23f3</span><div style="font-family:var(--kr);font-size:12px;color:${oc};font-weight:600;" id="teamQAOppWaitingTxt${n===1?'':n}">${pName} \uc784\ubb34\uc218\ud589\uc911...</div></div>`;
+      oppBox.style.background=obg;
+      oppBox.style.border='1px dashed '+od;
     }
   }
 }
 
 /* 상태 배너 + 뱃지 */
-function _updateQAStatus(myAns, oppAns){
-  const badge  = document.getElementById('teamQAStatusBadge');
-  const banner = document.getElementById('teamQAStatusBanner');
+function _updateQAStatus(myAns, oppAns, n){
+  const badge  = _qid('teamQAStatusBadge', n);
+  const banner = _qid('teamQAStatusBanner', n);
   const pName  = _qaPName();
   const bothDone = !!(myAns && oppAns);
   const myOnly   = !!(myAns && !oppAns);
   const oppOnly  = !!(!myAns && oppAns);
+  const gc  = n===1 ? 'rgba(92,184,172,.9)'   : 'rgba(160,128,204,.9)';
+  const gb  = n===1 ? 'rgba(56,150,138,.15)'  : 'rgba(123,94,168,.15)';
+  const gbd = n===1 ? 'rgba(56,150,138,.5)'   : 'rgba(123,94,168,.5)';
 
   if(bothDone){
-    if(badge){ badge.textContent='✅ 수행완료'; badge.style.cssText+='background:rgba(90,158,72,.2);border-color:rgba(90,158,72,.7);color:rgba(127,191,106,.95);'; }
+    if(badge){ badge.textContent='✅ 수행완료'; badge.style.background='rgba(90,158,72,.2)'; badge.style.borderColor='rgba(90,158,72,.7)'; badge.style.color='rgba(127,191,106,.95)'; }
     if(banner){ banner.style.display='block'; banner.style.background='rgba(20,55,18,.8)'; banner.style.border='1.5px solid rgba(90,158,72,.5)';
-      banner.innerHTML=`<div style="font-family:var(--kr);font-size:15px;font-weight:900;color:rgba(127,191,106,.95);">🎉 미션 수행완료!</div><div style="font-family:var(--kr);font-size:12px;color:rgba(200,240,180,.6);margin-top:4px;">나와 ${pName} 모두 답글을 남겼습니다</div>`; }
+      banner.innerHTML='<div style="font-family:var(--kr);font-size:15px;font-weight:900;color:rgba(127,191,106,.95);">\ud83c\udf89 \ubbf8\uc158 \uc218\ud589\uc644\ub8cc!</div><div style="font-family:var(--kr);font-size:12px;color:rgba(200,240,180,.6);margin-top:4px;">\ub098\uc640 '+pName+' \ubaa8\ub450 \ub2f5\uae00\uc744 \ub0a8\uacbc\uc2b5\ub2c8\ub2e4</div>'; }
   } else if(myOnly){
-    if(badge){ badge.textContent='⏳ 임무수행중'; badge.style.cssText+='background:rgba(255,184,71,.1);border-color:rgba(255,184,71,.5);color:rgba(255,184,71,.9);'; }
+    if(badge){ badge.textContent='⏳ 임무수행중'; badge.style.background='rgba(255,184,71,.1)'; badge.style.borderColor='rgba(255,184,71,.5)'; badge.style.color='rgba(255,184,71,.9)'; }
     if(banner){ banner.style.display='block'; banner.style.background='rgba(40,30,5,.7)'; banner.style.border='1px dashed rgba(200,168,75,.3)';
-      banner.innerHTML=`<div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,168,75,.85);">⏳ 임무수행중</div><div style="font-family:var(--kr);font-size:11px;color:rgba(200,168,75,.5);margin-top:3px;">${pName}이(가) 답글을 달면 완료됩니다</div>`; }
+      banner.innerHTML='<div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,168,75,.85);">⏳ 임무수행중</div><div style="font-family:var(--kr);font-size:11px;color:rgba(200,168,75,.5);margin-top:3px;">'+pName+'\uc774(\uac00) \ub2f5\uae00\uc744 \ub2ec\uba74 \uc644\ub8cc\ub429\ub2c8\ub2e4</div>'; }
   } else if(oppOnly){
-    if(badge){ badge.textContent='⏳ 임무수행중'; badge.style.cssText+='background:rgba(255,184,71,.1);border-color:rgba(255,184,71,.5);color:rgba(255,184,71,.9);'; }
+    if(badge){ badge.textContent='⏳ 임무수행중'; badge.style.background='rgba(255,184,71,.1)'; badge.style.borderColor='rgba(255,184,71,.5)'; badge.style.color='rgba(255,184,71,.9)'; }
     if(banner){ banner.style.display='block'; banner.style.background='rgba(40,30,5,.7)'; banner.style.border='1px dashed rgba(200,168,75,.3)';
-      banner.innerHTML=`<div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,168,75,.85);">⏳ 임무수행중</div><div style="font-family:var(--kr);font-size:11px;color:rgba(200,168,75,.5);margin-top:3px;">${pName}이(가) 이미 답글을 달았어요. 내 차례입니다!</div>`; }
+      banner.innerHTML='<div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,168,75,.85);">⏳ 임무수행중</div><div style="font-family:var(--kr);font-size:11px;color:rgba(200,168,75,.5);margin-top:3px;">'+pName+'\uc774(\uac00) \uc774\ubbf8 \ub2f5\uae00\uc744 \ub2ec\uc558\uc5b4\uc694. \ub0b4 \ucc28\ub840\uc785\ub2c8\ub2e4!</div>'; }
   } else {
-    if(badge){ badge.textContent='진행중'; badge.style.background='rgba(56,150,138,.15)'; badge.style.border='1px solid rgba(56,150,138,.5)'; badge.style.color='rgba(92,184,172,.9)'; }
+    if(badge){ badge.textContent='진행중'; badge.style.background=gb; badge.style.borderColor=gbd; badge.style.color=gc; }
     if(banner) banner.style.display='none';
   }
 }
 
 /* 답글 저장 */
-async function teamQASaveMyAnswer(){
-  const ta = document.getElementById('teamQAMyAnswerTextarea');
+async function teamQASaveMyAnswer(n){
+  n = n || 1;
+  const ta = _qid('teamQAMyAnswerTextarea', n);
   if(!ta) return;
   const ans = ta.value.trim();
   if(!ans){ showToast('답글을 입력해주세요.'); return; }
-
-  const path = _qaPath();
+  const path = _qaPath(n);
   if(!path){ showToast('팀원과 연결 후 사용 가능합니다.'); return; }
-  if(!_qaIsUnlocked()){ showToast('🔒 아직 비밀상자가 잠겨 있어요!'); return; }
-
-  const question = (document.getElementById('teamQAQuestionText') || {}).textContent || _getTodayQuestion();
+  if(!_qaIsUnlocked(n)){ showToast('🔒 아직 비밀상자가 잠겨 있어요!'); return; }
+  const qEl = _qid('teamQAQuestionText', n);
+  const question = (qEl && qEl.textContent) || _getTodayQuestion(n);
   const update = { question };
   update[_qaMyKey()] = ans;
-
   try{
     await _fbUpdate(path, update);
     showToast('✅ 답글이 저장되었습니다!');
@@ -8078,340 +8209,106 @@ async function teamQASaveMyAnswer(){
 }
 
 /* 답글 수정 */
-async function teamQAClearMyAnswer(){
-  const path = _qaPath();
+async function teamQAClearMyAnswer(n){
+  n = n || 1;
+  const path = _qaPath(n);
   if(!path) return;
   const update = {};
   update[_qaMyKey()] = null;
   try{ await _fbUpdate(path, update); } catch(e){ showToast('⚠ 수정 실패.'); }
 }
 
-/* Firebase 구독 */
-function teamQASubscribe(){
-  const path = _qaPath();
-  if(!path || !FB_READY || !_fbDb) return;
-  if(window._teamQASubscribed) return;
-  window._teamQASubscribed = true;
-
-  _fbOn(path, snap=>{
-    const qaData = snap.exists() ? snap.val() : null;
-    /* 날짜 바뀌면 리셋 (완료 상태 제외) */
-    const todayQ = _getTodayQuestion();
-    if(qaData && qaData.question && qaData.question !== todayQ && !(qaData[_qaMyKey()] && qaData[_qaOppKey()])){
-      _fbUpdate(path, { question: todayQ, ans_a: null, ans_b: null });
-      return;
-    }
-    renderTeamQAMission(qaData);
-
-    const oppAns = qaData ? (qaData[_qaOppKey()] || null) : null;
-    const myAns  = qaData ? (qaData[_qaMyKey()]  || null) : null;
-    if(oppAns && myAns && !window._qaCompleteNotified){
-      window._qaCompleteNotified = true;
-      showToast('🎉 팀 미션 수행완료! 완성 도장이 찍혔어요!');
-    } else if(oppAns && !myAns && !window._qaOppNotified){
-      window._qaOppNotified = true;
-      showToast('💬 ' + _qaPName() + '이(가) 팀 미션에 답글을 달았어요!');
-    }
-    if(!oppAns){ window._qaOppNotified = false; }
-    if(!myAns || !oppAns){ window._qaCompleteNotified = false; }
-  });
-}
-
-/* 금액 변화 시 상자 상태 갱신 (renderStatsRevenueCard / updateGemBoxes 에서 호출) */
-function teamQAUpdateBox(){
-  if(!partnerData) return;
-  const path = _qaPath();
-  if(!path) return;
-  /* 구독 중이면 이미 최신 qaData 있음 → renderTeamQAMission 다시 호출 */
-  if(window._teamQASubscribed){
-    /* 최신 qaData 재조회 */
-    try{
-      _fbGet(path).then(snap=>{
-        renderTeamQAMission(snap.exists() ? snap.val() : null);
-      }).catch(()=>{});
-    } catch(e){}
-  }
-}
-
-/* 완료 카드 펼치기 / 접기 */
-function qaToggleDetail(){
-  const detail = document.getElementById('qaCompleteDetail');
-  const arrow  = document.getElementById('qaDetailArrow');
+/* 펼치기 / 접기 */
+function qaToggleDetail(n){
+  n = n || 1;
+  const detail = _qid('qaCompleteDetail', n);
+  const arrow  = _qid('qaDetailArrow', n);
   if(!detail) return;
   const isOpen = detail.style.display !== 'none';
+  window['_qaDetailOpen'+n] = !isOpen;
   detail.style.display = isOpen ? 'none' : 'block';
   if(arrow) arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
 }
 
+/* Firebase 구독 */
+function teamQASubscribe(n){
+  n = n || 1;
+  const path = _qaPath(n);
+  if(!path || !FB_READY || !_fbDb) return;
+  if(window['_teamQASubscribed'+n]) return;
+  window['_teamQASubscribed'+n] = true;
+
+  _fbOn(path, snap=>{
+    const qaData = snap.exists() ? snap.val() : null;
+    const todayQ = _getTodayQuestion(n);
+    if(qaData && qaData.question && qaData.question !== todayQ && !(qaData[_qaMyKey()] && qaData[_qaOppKey()])){
+      _fbUpdate(path, { question: todayQ, ans_a: null, ans_b: null });
+      return;
+    }
+    renderTeamQAMission(qaData, n);
+    const oppAns = qaData ? (qaData[_qaOppKey()] || null) : null;
+    const myAns  = qaData ? (qaData[_qaMyKey()]  || null) : null;
+    if(oppAns && myAns && !window['_qaCompleteNotified'+n]){
+      window['_qaCompleteNotified'+n] = true;
+      showToast('🎉 팀 미션 ' + n + ' 완료! 완성 도장이 찍혔어요!');
+    } else if(oppAns && !myAns && !window['_qaOppNotified'+n]){
+      window['_qaOppNotified'+n] = true;
+      showToast('💬 ' + _qaPName() + '이(가) 미션' + n + '에 답글을 달았어요!');
+    }
+    if(!oppAns){ window['_qaOppNotified'+n] = false; }
+    if(!myAns || !oppAns){ window['_qaCompleteNotified'+n] = false; }
+  });
+}
+
+/* 금액 변화 시 두 상자 모두 갱신 */
+function teamQAUpdateBox(){
+  if(!partnerData) return;
+  [1, 2].forEach(n => {
+    const path = _qaPath(n);
+    if(!path) return;
+    if(window['_teamQASubscribed'+n]){
+      try{
+        _fbGet(path).then(snap => renderTeamQAMission(snap.exists() ? snap.val() : null, n)).catch(()=>{});
+      } catch(e){}
+    } else {
+      renderTeamQAMission(null, n);
+    }
+  });
+}
+
 /* 연결 시 */
 function teamQAOnConnect(){
-  const card = document.getElementById('teamQAMissionCard');
-  if(card) card.style.display='block';
-  window._teamQASubscribed = false;
-  window._qaOppNotified = false;
-  window._qaCompleteNotified = false;
-  window._qaUnlockToasted = false;
-  teamQASubscribe();
-  renderTeamQAMission(null);
+  [1, 2].forEach(n => {
+    const cardId = n===1 ? 'teamQAMissionCard' : 'teamQAMissionCard2';
+    const card = document.getElementById(cardId);
+    if(card) card.style.display='block';
+    window['_teamQASubscribed'+n]   = false;
+    window['_qaOppNotified'+n]      = false;
+    window['_qaCompleteNotified'+n] = false;
+    window['_qaUnlockToasted'+n]    = false;
+    teamQASubscribe(n);
+    renderTeamQAMission(null, n);
+  });
+  const pName = _qaPName();
+  [1,2].forEach(n=>{
+    const oppLbl = _qid('teamQAOppNickLabel', n);
+    if(oppLbl) oppLbl.textContent = '▎ ' + pName + '의 답글';
+    const waitTxt = _qid('teamQAOppWaitingTxt', n);
+    if(waitTxt) waitTxt.textContent = pName + ' 임무수행중...';
+    const oppLockName = _qid('qaOppNameLockTxt', n);
+    if(oppLockName) oppLockName.textContent = pName;
+  });
 }
 
 /* 연결 해제 시 */
 function teamQAOnDisconnect(){
-  const card = document.getElementById('teamQAMissionCard');
-  if(card) card.style.display='none';
-  window._teamQASubscribed = false;
-  window._qaUnlockToasted = false;
-}
-
-</script>
-
-/* 팀 미션 질문 목록 */
-const TEAM_QA_QUESTIONS = [
-  "오늘 우리 팀이 함께 이루고 싶은 목표는 무엇인가요?",
-  "지금 가장 집중하고 싶은 한 가지 행동은 무엇인가요?",
-  "오늘 하루 절약할 수 있는 금액과 방법을 적어보세요.",
-  "우리 팀이 함께 피해야 할 지출 유혹은 무엇인가요?",
-  "오늘의 작전에서 각자 맡을 역할을 한 문장으로 정의해보세요.",
-  "이번 주 가장 잘한 소비 결정은 무엇인가요?",
-  "오늘 가장 아끼고 싶은 영역은 어디인가요? (식비/교통/쇼핑 등)",
-  "우리 팀의 공통 저축 목표와 기한을 함께 적어보세요.",
-  "오늘 서로에게 응원 한마디를 전한다면?",
-  "이번 작전을 성공시키기 위한 나만의 한 가지 전략은?"
-];
-
-/* 오늘 날짜 기준으로 고정된 질문 선택 */
-function _getTodayQuestion(){
-  const today = new Date();
-  const dayIndex = Math.floor(today.getTime() / (1000*60*60*24));
-  return TEAM_QA_QUESTIONS[dayIndex % TEAM_QA_QUESTIONS.length];
-}
-
-/* 팀 미션 카드 렌더 */
-function renderTeamQAMission(qaData){
-  const card = document.getElementById('teamQAMissionCard');
-  if(!card) return;
-
-  const pName = _qaPName();
-  const oppLbl = document.getElementById('teamQAOppNickLabel');
-  if(oppLbl) oppLbl.textContent = `▎ ${pName}의 답글`;
-
-  if(!qaData){
-    /* 아직 미션 없음 → 오늘 질문 세팅 */
-    const qText = document.getElementById('teamQAQuestionText');
-    if(qText) qText.textContent = _getTodayQuestion();
-    _updateQAAnswerUI(null, null);
-    _updateQAStatus(null, null);
-    return;
-  }
-
-  /* 질문 */
-  const qText = document.getElementById('teamQAQuestionText');
-  if(qText) qText.textContent = qaData.question || _getTodayQuestion();
-
-  const myAns  = qaData[_qaMyKey()]  || null;
-  const oppAns = qaData[_qaOppKey()] || null;
-
-  _updateQAAnswerUI(myAns, oppAns);
-  _updateQAStatus(myAns, oppAns);
-}
-
-/* 나의 답글 UI 업데이트 */
-function _updateQAAnswerUI(myAns, oppAns){
-  const pName = _qaPName();
-  const displayEl  = document.getElementById('teamQAMyAnswerDisplay');
-  const inputEl    = document.getElementById('teamQAMyAnswerInput');
-  const ansTextEl  = document.getElementById('teamQAMyAnswerText');
-  const oppBox     = document.getElementById('teamQAOppAnswerBox');
-
-  /* 나의 답글 */
-  if(myAns){
-    if(displayEl){ displayEl.style.display='flex'; }
-    if(inputEl)  { inputEl.style.display='none'; }
-    if(ansTextEl){ ansTextEl.textContent = myAns; }
-  } else {
-    if(displayEl){ displayEl.style.display='none'; }
-    if(inputEl)  { inputEl.style.display='flex'; }
-    const ta = document.getElementById('teamQAMyAnswerTextarea');
-    if(ta) ta.value='';
-  }
-
-  /* 상대방 답글 */
-  if(oppBox){
-    if(oppAns){
-      oppBox.innerHTML=`<div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:14px;">✅</span>
-        <div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(240,200,100,.95);">${oppAns}</div>
-      </div>`;
-      oppBox.style.background='rgba(50,35,8,.6)';
-      oppBox.style.border='1.5px solid rgba(200,168,75,.45)';
-    } else {
-      oppBox.innerHTML=`<div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:16px;">⏳</span>
-        <div style="font-family:var(--kr);font-size:12px;color:rgba(200,168,75,.6);font-weight:600;">${pName} 임무수행중...</div>
-      </div>`;
-      oppBox.style.background='rgba(20,15,5,.5)';
-      oppBox.style.border='1px dashed rgba(200,168,75,.25)';
-    }
-  }
-}
-
-/* 상태 배너 + 뱃지 업데이트 */
-function _updateQAStatus(myAns, oppAns){
-  const badge  = document.getElementById('teamQAStatusBadge');
-  const banner = document.getElementById('teamQAStatusBanner');
-  const pName  = _qaPName();
-
-  const bothDone = !!(myAns && oppAns);
-  const myOnly   = !!(myAns && !oppAns);
-  const oppOnly  = !!(!myAns && oppAns);
-
-  if(bothDone){
-    if(badge){
-      badge.textContent='✅ 수행완료';
-      badge.style.background='rgba(90,158,72,.2)';
-      badge.style.border='1px solid rgba(90,158,72,.7)';
-      badge.style.color='rgba(127,191,106,.95)';
-    }
-    if(banner){
-      banner.style.display='block';
-      banner.style.background='rgba(20,55,18,.8)';
-      banner.style.border='1.5px solid rgba(90,158,72,.5)';
-      banner.innerHTML=`<div style="font-family:var(--kr);font-size:15px;font-weight:900;color:rgba(127,191,106,.95);">🎉 미션 수행완료!</div>
-        <div style="font-family:var(--kr);font-size:12px;color:rgba(200,240,180,.6);margin-top:4px;">나와 ${pName} 모두 답글을 남겼습니다</div>`;
-    }
-  } else if(myOnly){
-    if(badge){
-      badge.textContent='⏳ 임무수행중';
-      badge.style.background='rgba(255,184,71,.1)';
-      badge.style.border='1px solid rgba(255,184,71,.5)';
-      badge.style.color='rgba(255,184,71,.9)';
-    }
-    if(banner){
-      banner.style.display='block';
-      banner.style.background='rgba(40,30,5,.7)';
-      banner.style.border='1px dashed rgba(200,168,75,.3)';
-      banner.innerHTML=`<div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,168,75,.85);">⏳ 임무수행중</div>
-        <div style="font-family:var(--kr);font-size:11px;color:rgba(200,168,75,.5);margin-top:3px;">${pName}이(가) 답글을 달면 완료됩니다</div>`;
-    }
-  } else if(oppOnly){
-    if(badge){
-      badge.textContent='⏳ 임무수행중';
-      badge.style.background='rgba(255,184,71,.1)';
-      badge.style.border='1px solid rgba(255,184,71,.5)';
-      badge.style.color='rgba(255,184,71,.9)';
-    }
-    if(banner){
-      banner.style.display='block';
-      banner.style.background='rgba(40,30,5,.7)';
-      banner.style.border='1px dashed rgba(200,168,75,.3)';
-      banner.innerHTML=`<div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,168,75,.85);">⏳ 임무수행중</div>
-        <div style="font-family:var(--kr);font-size:11px;color:rgba(200,168,75,.5);margin-top:3px;">${pName}이(가) 이미 답글을 달았어요. 내 차례입니다!</div>`;
-    }
-  } else {
-    if(badge){
-      badge.textContent='미션 대기중';
-      badge.style.background='rgba(56,150,138,.15)';
-      badge.style.border='1px solid rgba(56,150,138,.5)';
-      badge.style.color='rgba(92,184,172,.9)';
-    }
-    if(banner) banner.style.display='none';
-  }
-}
-
-/* 답글 저장 */
-async function teamQASaveMyAnswer(){
-  const ta = document.getElementById('teamQAMyAnswerTextarea');
-  if(!ta) return;
-  const ans = ta.value.trim();
-  if(!ans){ showToast('답글을 입력해주세요.'); return; }
-
-  const path = _qaPath();
-  if(!path){ showToast('팀원과 연결 후 사용 가능합니다.'); return; }
-
-  const question = document.getElementById('teamQAQuestionText')
-    ? document.getElementById('teamQAQuestionText').textContent
-    : _getTodayQuestion();
-
-  const update = { question };
-  update[_qaMyKey()] = ans;
-
-  try{
-    await _fbUpdate(path, update);
-    showToast('✅ 답글이 저장되었습니다!');
-  } catch(e){
-    showToast('⚠ 저장 실패. 다시 시도해주세요.');
-  }
-}
-
-/* 답글 수정 (초기화) */
-async function teamQAClearMyAnswer(){
-  const path = _qaPath();
-  if(!path) return;
-  const update = {};
-  update[_qaMyKey()] = null;
-  try{
-    await _fbUpdate(path, update);
-  } catch(e){ showToast('⚠ 수정 실패.'); }
-}
-
-/* Firebase 실시간 구독 시작 */
-function teamQASubscribe(){
-  const path = _qaPath();
-  if(!path || !FB_READY || !_fbDb) return;
-  if(window._teamQASubscribed) return;
-  window._teamQASubscribed = true;
-
-  _fbOn(path, snap=>{
-    const qaData = snap.exists() ? snap.val() : null;
-    /* 오늘 날짜가 바뀌면 새 질문으로 초기화 */
-    const todayQ = _getTodayQuestion();
-    if(qaData && qaData.question && qaData.question !== todayQ){
-      /* 날짜 바뀜 → 새 미션으로 리셋 */
-      _fbUpdate(path, { question: todayQ, ans_a: null, ans_b: null });
-      return;
-    }
-    renderTeamQAMission(qaData);
-    /* 상대가 답글 달면 토스트 알림 */
-    const oppAns = qaData ? qaData[_qaOppKey()] : null;
-    const myAns  = qaData ? qaData[_qaMyKey()]  : null;
-    if(oppAns && myAns && !window._qaCompleteNotified){
-      window._qaCompleteNotified = true;
-      showToast('🎉 팀 미션 수행완료! 둘 다 답글을 남겼습니다.');
-    } else if(oppAns && !myAns && !window._qaOppNotified){
-      window._qaOppNotified = true;
-      const pName = _qaPName();
-      showToast('💬 '+pName+'이(가) 팀 미션에 답글을 달았어요!');
-    }
-    if(!oppAns){ window._qaOppNotified = false; }
-    if(!myAns || !oppAns){ window._qaCompleteNotified = false; }
+  [1, 2].forEach(n => {
+    const cardId = n===1 ? 'teamQAMissionCard' : 'teamQAMissionCard2';
+    const card = document.getElementById(cardId);
+    if(card) card.style.display='none';
+    window['_teamQASubscribed'+n] = false;
+    window['_qaUnlockToasted'+n]  = false;
   });
-}
-
-/* 연결 시 팀 미션 카드 표시 + 구독 시작 */
-function teamQAOnConnect(){
-  const card = document.getElementById('teamQAMissionCard');
-  if(card) card.style.display='block';
-
-  /* 닉네임 즉시 반영 */
-  const pName = _qaPName();
-  const oppLbl = document.getElementById('teamQAOppNickLabel');
-  if(oppLbl) oppLbl.textContent = `▎ ${pName}의 답글`;
-  const waitTxt = document.getElementById('teamQAOppWaitingTxt');
-  if(waitTxt) waitTxt.textContent = `${pName} 임무수행중...`;
-
-  window._teamQASubscribed = false;
-  window._qaOppNotified = false;
-  window._qaCompleteNotified = false;
-  teamQASubscribe();
-  /* 오늘 질문 초기 렌더 */
-  renderTeamQAMission(null);
-}
-
-/* 연결 해제 시 카드 숨김 */
-function teamQAOnDisconnect(){
-  const card = document.getElementById('teamQAMissionCard');
-  if(card) card.style.display='none';
-  window._teamQASubscribed = false;
 }
 
 </script>
