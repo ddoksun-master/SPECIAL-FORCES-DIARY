@@ -1119,6 +1119,77 @@ async function initFirebase(){
         }
         if(window.renderActiveMissionCard) renderActiveMissionCard();
         if(window.updateGemBoxes) updateGemBoxes();
+
+        /* ── mp_ 팝업 실시간 구독 추가 (작전 1~4) ── */
+        const _mpIds = [1,2,3,4];
+        _mpIds.forEach(mpId=>{
+          const mpRoomPath = PATH.teamRoom(MY_UID,partnerUid)+`/mp_${mpId}`;
+          _fbOn(mpRoomPath, mpSnap=>{
+            if(!mpSnap.exists()) return;
+            const mpRaw = mpSnap.val();
+            const d = window.mpData && window.mpData[mpId];
+
+            /* ── 파트너 팝업 열림 신호 감지 (day_N 하위) ── */
+            if(d){
+              const curDayData = mpRaw[`day_${d.curDay}`];
+              const oppPopupKey = `popupOpen_${partnerUid}`;
+              if(curDayData && curDayData[oppPopupKey]){
+                const pst = document.getElementById('mpPartnerState');
+                if(pst && window.mpCurrent===mpId && !d.partnerAnswer){
+                  pst.className='mp-partner-state mp-state-waiting';
+                  pst.textContent='👀 파트너가 팝업을 열었어요';
+                }
+              }
+            }
+
+            /* ── 파트너 답변 감지 (각 DAY별) ── */
+            if(!d) return;
+            const oppKey2 = MY_UID < partnerUid ? 'ans_b' : 'ans_a';
+            const myKey2  = MY_UID < partnerUid ? 'ans_a' : 'ans_b';
+
+            for(let dn=1; dn<=d.days; dn++){
+              const dayData = mpRaw[`day_${dn}`];
+              if(!dayData) continue;
+
+              /* 내 답변 복원 (다른 기기 재접속) */
+              if(dn===d.curDay && dayData[myKey2] && !d.myAnswer){
+                d.myAnswer = dayData[myKey2]||'';
+                d.myQ      = dayData[myKey2+'_q']||'';
+                if(d.status==='open') d.status='checking';
+              }
+
+              /* 파트너 답변 수신 */
+              if(dn===d.curDay && dayData[oppKey2] && !d.partnerAnswer){
+                d.partnerQ      = dayData[oppKey2+'_q']||'';
+                d.partnerAnswer = dayData[oppKey2]||'';
+
+                /* 파트너 상태 UI 즉시 갱신 */
+                const pst = document.getElementById('mpPartnerState');
+                if(pst && window.mpCurrent===mpId){
+                  pst.className='mp-partner-state mp-state-done';
+                  pst.textContent='✅ 답변 완료';
+                }
+                const pendTxt = document.getElementById('mpSvPendingTxt');
+                if(pendTxt && window.mpCurrent===mpId && d.status==='checking'){
+                  const pn=(window.partnerData&&window.partnerData.nickname)||'파트너';
+                  pendTxt.innerHTML=`<span style="color:rgba(127,191,106,.9);font-weight:900;">${pn} — ✅ 수행완료</span>`;
+                }
+
+                /* 완료 처리 */
+                if(d.status==='checking' && !d._partnerHandled){
+                  if(window.mpHandlePartnerAnswer) mpHandlePartnerAnswer(mpId);
+                }
+              }
+            }
+
+            /* kws/qs 공유 데이터 동기화 (팝업 미열린 상태에서도) */
+            if(!d.kws && mpRaw.kws){
+              d.kws  = mpRaw.kws;
+              d.qs   = mpRaw.qs;
+              d.days = mpRaw.days||1;
+            }
+          });
+        });
       });
       } /* end if _subscribedPartnerUid !== partnerUid */
     } else { partnerData=null; _subscribedPartnerUid=null; }
@@ -6799,23 +6870,43 @@ async function mpInit(id){
 
   mpData[id] = { kws, qs, days, curDay:1, completed:[], myAnswer:'', myQ:'', partnerAnswer:'', partnerQ:'', status:'open' };
 
-  /* 파트너 답변 실시간 리스닝 */
-  if(mpPath && partnerData){
+  /* ── 재진입 시 Firebase 기존 답변 복원 (한번만, teamRoom 구독이 실시간 처리 담당) ── */
+  if(mpPath && window.partnerData){
     const oppKey = MY_UID < partnerData.uid ? 'ans_b' : 'ans_a';
-    _fbOn(mpPath+`/day_${mpData[id].curDay}`, snap=>{
-      if(!snap.exists()) return;
-      const v = snap.val();
-      const d = mpData[id];
-      if(d && v[oppKey]){
-        d.partnerQ      = v[oppKey+'_q']||'';
-        d.partnerAnswer = v[oppKey]||'';
-        /* 제출완료 뷰에서 파트너 답변 수신 → 완료로 전환 */
-        if(d.status==='checking' && mpCurrent===id){
-          mpHandlePartnerAnswer(id);
+    const myKey  = MY_UID < partnerData.uid ? 'ans_a' : 'ans_b';
+    const d = mpData[id];
+    try{
+      const allSnap = await _fbGet(mpPath);
+      if(allSnap.exists()){
+        const allVal = allSnap.val();
+        for(let dn=1; dn<=days; dn++){
+          const dv = allVal[`day_${dn}`];
+          if(!dv || dn < d.curDay) continue;
+          if(dn === d.curDay){
+            if(dv[myKey]){ d.myAnswer=dv[myKey]||''; d.myQ=dv[myKey+'_q']||''; d.status='checking'; }
+            if(dv[oppKey]){ d.partnerQ=dv[oppKey+'_q']||''; d.partnerAnswer=dv[oppKey]||''; }
+            if(d.myAnswer && d.partnerAnswer && !d._partnerHandled){
+              d._partnerHandled=true;
+              d.completed.push({day:dn,myQ:d.myQ,myAnswer:d.myAnswer,partnerQ:d.partnerQ,partnerAnswer:d.partnerAnswer});
+              if(dn>=days){ d.status='complete'; }
+              else { d.curDay++; d.myAnswer=''; d.myQ=''; d.partnerAnswer=''; d.partnerQ=''; d._partnerHandled=false; d.status='open'; }
+            }
+          }
         }
       }
-    });
+    }catch(e){}
   }
+}
+
+/* 팝업 열릴 때 Firebase에 '팝업 열림' 신호 전송 */
+function mpSignalPopupOpen(id){
+  if(!FB_READY||!_fbDb||!window.partnerData) return;
+  const mpPath = PATH.teamRoom(MY_UID, partnerData.uid)+`/mp_${id}`;
+  const d = mpData[id];
+  if(!d) return;
+  const update = {};
+  update[`day_${d.curDay}/popupOpen_${MY_UID}`] = Date.now();
+  _fbUpdate(mpPath, update);
 }
 
 /* gemBox 클릭 시 팝업 열기 - 기존 openGemBox와 연동 */
@@ -6831,11 +6922,24 @@ async function mpOpen(id){
   document.getElementById('mpSub').textContent   = `MISSION ${id} · ${d.days}일 공동 임무`;
 
   /* 파트너 이름 */
-  const pName = (window.partnerData&&window.partnerData.shareCode)||'파트너';
-  document.getElementById('mpPartnerName').textContent = pName;
+  const pName = (window.partnerData&&window.partnerData.nickname)||(window.partnerData&&window.partnerData.shareCode)||'파트너';
+  const pCode = (window.partnerData&&window.partnerData.shareCode)||'';
+  document.getElementById('mpPartnerName').textContent = pName+(pCode?` (${pCode})`:'');
   document.getElementById('mpCvPartnerName').textContent = pName;
   const myName = window.myNickname||'나';
   document.getElementById('mpCvMyName').textContent = myName;
+
+  /* 파트너 상태 표시 초기화 */
+  const partnerStateEl = document.getElementById('mpPartnerState');
+  if(partnerStateEl){
+    if(d.partnerAnswer){
+      partnerStateEl.className='mp-partner-state mp-state-done';
+      partnerStateEl.textContent='✅ 답변 완료';
+    } else {
+      partnerStateEl.className='mp-partner-state mp-state-waiting';
+      partnerStateEl.textContent='⏳ 답변 대기 중...';
+    }
+  }
 
   /* 키워드 배지 */
   mpUpdateKwBadges(d);
@@ -6848,6 +6952,32 @@ async function mpOpen(id){
   document.getElementById('missionOverlay').classList.add('active');
   document.body.style.overflow='hidden';
   document.getElementById('mpCard').scrollTop=0;
+
+  /* Firebase에 팝업 열림 신호 전송 (파트너가 확인 가능) */
+  mpSignalPopupOpen(id);
+
+  /* Firebase에서 파트너 현재 답변 상태 즉시 확인 */
+  if(FB_READY&&_fbDb&&window.partnerData&&d.status!=='complete'){
+    const mpPath2 = PATH.teamRoom(MY_UID,partnerData.uid)+`/mp_${id}`;
+    const oppKey2 = MY_UID < partnerData.uid ? 'ans_b' : 'ans_a';
+    _fbGet(mpPath2+`/day_${d.curDay}`).then(snap=>{
+      if(!snap.exists()) return;
+      const v=snap.val();
+      if(v[oppKey2]){
+        d.partnerQ      = v[oppKey2+'_q']||'';
+        d.partnerAnswer = v[oppKey2]||'';
+        if(partnerStateEl){
+          partnerStateEl.className='mp-partner-state mp-state-done';
+          partnerStateEl.textContent='✅ 답변 완료';
+        }
+        if(d.status==='checking' && !d._partnerHandled){
+          mpHandlePartnerAnswer(id);
+        } else if(d.status==='checking'){
+          mpShowSubmitted(d);
+        }
+      }
+    }).catch(()=>{});
+  }
 }
 
 function mpUpdateKwBadges(d){
@@ -6950,25 +7080,26 @@ function mpSubmit(){
   if(FB_READY&&_fbDb&&window.partnerData){
     const mpPath = PATH.teamRoom(MY_UID, partnerData.uid)+`/mp_${mpCurrent}`;
     const myKey  = MY_UID < partnerData.uid ? 'ans_a' : 'ans_b';
-    const myQKey = myKey+'_q';
+    const oppKey = MY_UID < partnerData.uid ? 'ans_b' : 'ans_a';
     const dayRef = `day_${d.curDay}`;
     const update = {};
-    update[myKey]  = txt;
-    update[myQKey] = d.myQ;
-    _fbUpdate(mpPath+'/'+dayRef, update).then(()=>{
+    update[myKey]       = txt;
+    update[myKey+'_q']  = d.myQ;
+    update[`popupOpen_${MY_UID}`] = Date.now(); /* 팝업 상태 동기화 */
+    _fbUpdate(mpPath+'/'+dayRef, update).then(async ()=>{
       showToast('✅ 답변 저장! 상대방 답변을 기다리는 중...');
-    });
-
-    /* 상대 답변 실시간 감지 (혹시 아직 리스닝 안 된 경우 보완) */
-    const oppKey = MY_UID < partnerData.uid ? 'ans_b' : 'ans_a';
-    _fbOn(mpPath+'/'+dayRef, snap=>{
-      if(!snap.exists()) return;
-      const v = snap.val();
-      if(v[oppKey] && mpData[mpCurrent] && mpData[mpCurrent].status==='checking'){
-        mpData[mpCurrent].partnerQ      = v[oppKey+'_q']||'';
-        mpData[mpCurrent].partnerAnswer = v[oppKey]||'';
-        mpHandlePartnerAnswer(mpCurrent);
-      }
+      /* 파트너가 이미 먼저 답변했는지 즉시 확인 */
+      try{
+        const chk = await _fbGet(mpPath+'/'+dayRef);
+        if(chk.exists()){
+          const cv = chk.val();
+          if(cv[oppKey] && d.status==='checking' && !d._partnerHandled){
+            d.partnerQ      = cv[oppKey+'_q']||'';
+            d.partnerAnswer = cv[oppKey]||'';
+            mpHandlePartnerAnswer(mpCurrent);
+          }
+        }
+      }catch(e){}
     });
   }
 
@@ -7002,9 +7133,13 @@ function mpHandlePartnerAnswer(id){
     d._partnerHandled=false;
     d.status='open';
     mpUpdateGemBox(id);
+
     if(id===mpCurrent && document.getElementById('missionOverlay').classList.contains('active')){
       mpUpdateKwBadges(d);
       mpShowInput(d);
+      /* 파트너 상태 초기화 */
+      const pst=document.getElementById('mpPartnerState');
+      if(pst){pst.className='mp-partner-state mp-state-waiting';pst.textContent='⏳ 답변 대기 중...';}
       document.getElementById('mpCard').scrollTop=0;
     }
     showToast('✅ 상대방이 답변했어요! 다음 DAY를 진행하세요.');
@@ -7026,13 +7161,27 @@ function mpShowSubmitted(d){
   document.getElementById('mpComplete').style.display='none';
   document.getElementById('mpSvQ').textContent=`Q. ${d.myQ}`;
   document.getElementById('mpSvAns').textContent=d.myAnswer;
-  const pName=(window.partnerData&&window.partnerData.shareCode)||'파트너';
+  const pNick=(window.partnerData&&window.partnerData.nickname)||'파트너';
+  const pCode=(window.partnerData&&window.partnerData.shareCode)||'';
+  const pName = pNick+(pCode?` (${pCode})`:'');
   const partnerDone=!!(d.partnerAnswer);
   const statusTxt = partnerDone ? '✅ 수행완료' : '⏳ 임무수행중';
   const statusColor = partnerDone ? 'rgba(127,191,106,.9)' : 'rgba(255,184,71,.9)';
   document.getElementById('mpSvPendingTxt').innerHTML=
     `<span style="color:${statusColor};font-weight:900;">${pName} — ${statusTxt}</span>`+
     (partnerDone ? '' : `<br><span style="font-size:11px;color:rgba(255,255,255,.35);">상대방이 답변을 등록하면 함께 확인할 수 있어요</span>`);
+
+  /* 파트너 상태 박스도 동기화 */
+  const partnerStateEl = document.getElementById('mpPartnerState');
+  if(partnerStateEl){
+    if(partnerDone){
+      partnerStateEl.className='mp-partner-state mp-state-done';
+      partnerStateEl.textContent='✅ 답변 완료';
+    } else {
+      partnerStateEl.className='mp-partner-state mp-state-waiting';
+      partnerStateEl.textContent='⏳ 답변 대기 중...';
+    }
+  }
 }
 
 /* ─── 완료 뷰 ─── */
