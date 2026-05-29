@@ -1702,6 +1702,29 @@ function updateGemBoxes(){
       bx.style.borderColor=isActive?'rgba(127,191,106,.7)':ok?'rgba(200,168,75,.5)':'rgba(90,158,72,.2)';
       bx.style.boxShadow=isActive?'0 0 14px rgba(127,191,106,.25)':ok?'0 0 10px rgba(200,168,75,.15)':'none';
     }
+
+    /* ── 새 레이아웃: 달성 프로그레스 바 업데이트 ── */
+    const myBarEl  = document.getElementById('lockBar'+n+'My');
+    const oppBarEl = document.getElementById('lockBar'+n+'Opp');
+    if(myBarEl)  myBarEl.style.width  = Math.min(100, Math.round(myM/th*100))+'%';
+    if(oppBarEl) oppBarEl.style.width = Math.min(100, Math.round(oppM/th*100))+'%';
+
+    /* ── gemActionArea: specialOpAccepted 시 열기 버튼 ── */
+    const aa = document.getElementById('gemActionArea'+n);
+    if(aa){
+      if(n===1 && window._specialOpAccepted){
+        if(!aa.querySelector('#specialOpOpenBtn2')){
+          aa.innerHTML=`<button id="specialOpOpenBtn2" onclick="event.stopPropagation();openGemBoxWithMission(1)"
+            style="padding:4px 7px;background:linear-gradient(135deg,rgba(74,127,168,.25),rgba(56,150,138,.2));
+            border:1px solid rgba(74,127,168,.5);border-radius:7px;
+            color:rgba(114,200,220,.95);font-family:var(--kr);font-size:9px;font-weight:900;
+            cursor:pointer;white-space:nowrap;animation:mpPulse 2s ease-in-out infinite;">열기 ▶</button>`;
+        }
+      } else {
+        aa.innerHTML='';
+      }
+    }
+
     if(st){
       /* 이 작전(n)에 대한 상태를 독립적으로 계산 */
       const oppP=(window.teamData&&window.teamData.oppGemProposal||{})[n]||null;
@@ -1738,7 +1761,7 @@ function updateGemBoxes(){
     }
   });
 
-  /* 특수작전 연결 수락 상태면 gemBox1 열기 버튼 유지 */
+  /* 특수작전 연결 수락 상태면 gemBox1 열기 버튼 유지 (레거시 호환) */
   if(window._specialOpAccepted && typeof renderSpecialOpOpenBtn === 'function'){
     renderSpecialOpOpenBtn();
   }
@@ -5139,9 +5162,9 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div id="mpProposalBanner" style="display:none;margin-bottom:0;"></div>
 
       <!-- 팀전 잠금 해제 현황 + 특수작전 카드 (연결 시만 표시) -->
-      <div class="card" id="teamLockTableCard" style="margin-top:0;display:none;">
-        <div class="card-title">🔐 잠금 해제 현황</div>
-        <!-- 잠금 해제 프로그레스 (숨겨진 요소 - JS 호환) -->
+      <div class="card" id="teamLockTableCard" style="margin-top:0;display:none;padding:14px 12px;">
+
+        <!-- JS 호환용 숨김 요소 -->
         <div style="display:none;">
           <div id="teamLock1Card"></div><div id="lock1Bar"></div><div id="lock1Label"></div><div id="lock1Status"></div>
           <div id="teamLock2Card"></div><div id="lock2Bar"></div><div id="lock2Label"></div><div id="lock2Status"></div>
@@ -5149,61 +5172,189 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div id="teamLock4Card"></div><div id="lock4Bar"></div><div id="lock4Label"></div><div id="lock4Status"></div>
           <div id="teamLockSpecialCard"></div><div id="lockSpecialBar"></div><div id="lockSpecialLabel"></div><div id="lockSpecialStatus"></div>
         </div>
-        <!-- 수정 10: 특수임무 4개 (2x2 그리드) + 스페셜 1개 (가로 전체) -->
-        <!-- 수정 5,6: 특수카드 4개 4분할, 스폐셜 길게 하나, 보상 1~4만원 / 스폐셜 5day 2만씩 10만 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-          <!-- 특수작전 1 -->
-          <div id="gemBox1" class="gem-box" onclick="openGemBoxWithMission(1)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
-            <div id="gemLock1" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;justify-content:center;z-index:2;backdrop-filter:blur(1px);">
-              <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
-              <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">20,000원</div>
-            </div>
-            <div style="font-family:var(--orb);font-size:8px;letter-spacing:1px;color:rgba(127,191,106,.6);margin-bottom:4px;">MISSION 1</div>
-            <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:#fff;">특수작전1</div>
-            <div style="font-family:var(--orb);font-size:11px;font-weight:700;color:var(--green);margin-top:4px;">+10,000원</div>
-            <div id="gemOppStatus1" style="margin-top:5px;padding:2px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);">미등록</div>
-          </div>
-          <!-- 특수작전 2 -->
-          <div id="gemBox2" class="gem-box" onclick="openGemBoxWithMission(2)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
-            <div id="gemLock2" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;justify-content:center;z-index:2;backdrop-filter:blur(1px);">
-              <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
-              <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">40,000원</div>
-            </div>
-            <div style="font-family:var(--orb);font-size:8px;letter-spacing:1px;color:rgba(127,191,106,.6);margin-bottom:4px;">MISSION 2</div>
-            <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:#fff;">특수작전2</div>
-            <div style="font-family:var(--orb);font-size:11px;font-weight:700;color:var(--green);margin-top:4px;">+20,000원</div>
-            <div id="gemOppStatus2" style="margin-top:5px;padding:2px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);">미등록</div>
-          </div>
-          <!-- 특수작전 3 -->
-          <div id="gemBox3" class="gem-box" onclick="openGemBoxWithMission(3)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
-            <div id="gemLock3" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;justify-content:center;z-index:2;backdrop-filter:blur(1px);">
-              <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
-              <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">60,000원</div>
-            </div>
-            <div style="font-family:var(--orb);font-size:8px;letter-spacing:1px;color:rgba(127,191,106,.6);margin-bottom:4px;">MISSION 3</div>
-            <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:#fff;">특수작전3</div>
-            <div style="font-family:var(--orb);font-size:11px;font-weight:700;color:var(--green);margin-top:4px;">+30,000원</div>
-            <div id="gemOppStatus3" style="margin-top:5px;padding:2px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);">미등록</div>
-          </div>
-          <!-- 특수작전 4 -->
-          <div id="gemBox4" class="gem-box" onclick="openGemBoxWithMission(4)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
-            <div id="gemLock4" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;justify-content:center;z-index:2;backdrop-filter:blur(1px);">
-              <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
-              <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">80,000원</div>
-            </div>
-            <div style="font-family:var(--orb);font-size:8px;letter-spacing:1px;color:rgba(127,191,106,.6);margin-bottom:4px;">MISSION 4</div>
-            <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:#fff;">특수작전4</div>
-            <div style="font-family:var(--orb);font-size:11px;font-weight:700;color:var(--green);margin-top:4px;">+40,000원</div>
-            <div id="gemOppStatus4" style="margin-top:5px;padding:2px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);">미등록</div>
-          </div>
+
+        <!-- 헤더 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(200,168,75,.55);">🔐 UNLOCK STATUS</div>
+          <div style="font-family:var(--orb);font-size:8px;color:rgba(255,255,255,.2);letter-spacing:1px;">나 / 상대</div>
         </div>
-        <!-- 스페셜작전 — 보석함 디자인 (가로 전체 직사각형) -->
+
+        <!-- 특수작전 1~4 리스트 -->
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
+
+          <!-- 특수작전 1 -->
+          <div id="gemBox1" class="gem-box" onclick="openGemBoxWithMission(1)"
+            style="cursor:pointer;position:relative;padding:11px 12px;
+              background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);
+              border-radius:12px;display:flex;align-items:center;gap:10px;
+              transition:border-color .2s,background .2s;min-height:64px;">
+            <!-- 잠금 오버레이 -->
+            <div id="gemLock1" style="display:flex;align-items:center;gap:8px;
+              position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;
+              justify-content:center;z-index:2;backdrop-filter:blur(1px);">
+              <span style="font-size:20px;filter:drop-shadow(0 0 6px rgba(200,168,75,.4));">🔒</span>
+              <div style="font-family:var(--orb);font-size:10px;font-weight:700;color:rgba(200,168,75,.65);">20,000원</div>
+            </div>
+            <!-- 왼쪽: 작전 정보 -->
+            <div style="flex-shrink:0;text-align:center;width:52px;">
+              <div style="font-family:var(--orb);font-size:7px;letter-spacing:1px;color:rgba(127,191,106,.5);margin-bottom:2px;">MISSION</div>
+              <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:#fff;">1</div>
+              <div style="font-family:var(--orb);font-size:10px;font-weight:700;color:var(--green);">+1만</div>
+            </div>
+            <!-- 구분선 -->
+            <div style="width:1px;height:36px;background:rgba(255,255,255,.08);flex-shrink:0;"></div>
+            <!-- 중앙: 달성 현황 바 -->
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                <span style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.7);">나</span>
+                <span style="font-family:var(--orb);font-size:9px;color:rgba(255,255,255,.3);">목표 20,000원</span>
+              </div>
+              <div style="height:4px;background:rgba(30,50,30,.6);border-radius:3px;overflow:hidden;margin-bottom:4px;">
+                <div id="lockBar1My" style="height:100%;width:0%;background:linear-gradient(90deg,var(--green),var(--green-dim));border-radius:3px;transition:width .5s;"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                <span style="font-family:var(--kr);font-size:10px;color:rgba(180,150,220,.7);">상대</span>
+              </div>
+              <div style="height:4px;background:rgba(20,15,40,.6);border-radius:3px;overflow:hidden;">
+                <div id="lockBar1Opp" style="height:100%;width:0%;background:linear-gradient(90deg,rgba(140,100,220,.7),rgba(180,140,255,.85));border-radius:3px;transition:width .5s;"></div>
+              </div>
+            </div>
+            <!-- 오른쪽: 상태 -->
+            <div style="flex-shrink:0;text-align:center;min-width:54px;">
+              <div id="gemOppStatus1" style="padding:3px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);white-space:nowrap;">미등록</div>
+              <div id="gemActionArea1" style="margin-top:5px;"></div>
+            </div>
+          </div>
+
+          <!-- 특수작전 2 -->
+          <div id="gemBox2" class="gem-box" onclick="openGemBoxWithMission(2)"
+            style="cursor:pointer;position:relative;padding:11px 12px;
+              background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);
+              border-radius:12px;display:flex;align-items:center;gap:10px;
+              transition:border-color .2s,background .2s;min-height:64px;">
+            <div id="gemLock2" style="display:flex;align-items:center;gap:8px;
+              position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;
+              justify-content:center;z-index:2;backdrop-filter:blur(1px);">
+              <span style="font-size:20px;filter:drop-shadow(0 0 6px rgba(200,168,75,.4));">🔒</span>
+              <div style="font-family:var(--orb);font-size:10px;font-weight:700;color:rgba(200,168,75,.65);">40,000원</div>
+            </div>
+            <div style="flex-shrink:0;text-align:center;width:52px;">
+              <div style="font-family:var(--orb);font-size:7px;letter-spacing:1px;color:rgba(127,191,106,.5);margin-bottom:2px;">MISSION</div>
+              <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:#fff;">2</div>
+              <div style="font-family:var(--orb);font-size:10px;font-weight:700;color:var(--green);">+2만</div>
+            </div>
+            <div style="width:1px;height:36px;background:rgba(255,255,255,.08);flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                <span style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.7);">나</span>
+                <span style="font-family:var(--orb);font-size:9px;color:rgba(255,255,255,.3);">목표 40,000원</span>
+              </div>
+              <div style="height:4px;background:rgba(30,50,30,.6);border-radius:3px;overflow:hidden;margin-bottom:4px;">
+                <div id="lockBar2My" style="height:100%;width:0%;background:linear-gradient(90deg,var(--green),var(--green-dim));border-radius:3px;transition:width .5s;"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                <span style="font-family:var(--kr);font-size:10px;color:rgba(180,150,220,.7);">상대</span>
+              </div>
+              <div style="height:4px;background:rgba(20,15,40,.6);border-radius:3px;overflow:hidden;">
+                <div id="lockBar2Opp" style="height:100%;width:0%;background:linear-gradient(90deg,rgba(140,100,220,.7),rgba(180,140,255,.85));border-radius:3px;transition:width .5s;"></div>
+              </div>
+            </div>
+            <div style="flex-shrink:0;text-align:center;min-width:54px;">
+              <div id="gemOppStatus2" style="padding:3px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);white-space:nowrap;">미등록</div>
+              <div id="gemActionArea2" style="margin-top:5px;"></div>
+            </div>
+          </div>
+
+          <!-- 특수작전 3 -->
+          <div id="gemBox3" class="gem-box" onclick="openGemBoxWithMission(3)"
+            style="cursor:pointer;position:relative;padding:11px 12px;
+              background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);
+              border-radius:12px;display:flex;align-items:center;gap:10px;
+              transition:border-color .2s,background .2s;min-height:64px;">
+            <div id="gemLock3" style="display:flex;align-items:center;gap:8px;
+              position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;
+              justify-content:center;z-index:2;backdrop-filter:blur(1px);">
+              <span style="font-size:20px;filter:drop-shadow(0 0 6px rgba(200,168,75,.4));">🔒</span>
+              <div style="font-family:var(--orb);font-size:10px;font-weight:700;color:rgba(200,168,75,.65);">60,000원</div>
+            </div>
+            <div style="flex-shrink:0;text-align:center;width:52px;">
+              <div style="font-family:var(--orb);font-size:7px;letter-spacing:1px;color:rgba(127,191,106,.5);margin-bottom:2px;">MISSION</div>
+              <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:#fff;">3</div>
+              <div style="font-family:var(--orb);font-size:10px;font-weight:700;color:var(--green);">+3만</div>
+            </div>
+            <div style="width:1px;height:36px;background:rgba(255,255,255,.08);flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                <span style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.7);">나</span>
+                <span style="font-family:var(--orb);font-size:9px;color:rgba(255,255,255,.3);">목표 60,000원</span>
+              </div>
+              <div style="height:4px;background:rgba(30,50,30,.6);border-radius:3px;overflow:hidden;margin-bottom:4px;">
+                <div id="lockBar3My" style="height:100%;width:0%;background:linear-gradient(90deg,var(--green),var(--green-dim));border-radius:3px;transition:width .5s;"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                <span style="font-family:var(--kr);font-size:10px;color:rgba(180,150,220,.7);">상대</span>
+              </div>
+              <div style="height:4px;background:rgba(20,15,40,.6);border-radius:3px;overflow:hidden;">
+                <div id="lockBar3Opp" style="height:100%;width:0%;background:linear-gradient(90deg,rgba(140,100,220,.7),rgba(180,140,255,.85));border-radius:3px;transition:width .5s;"></div>
+              </div>
+            </div>
+            <div style="flex-shrink:0;text-align:center;min-width:54px;">
+              <div id="gemOppStatus3" style="padding:3px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);white-space:nowrap;">미등록</div>
+              <div id="gemActionArea3" style="margin-top:5px;"></div>
+            </div>
+          </div>
+
+          <!-- 특수작전 4 -->
+          <div id="gemBox4" class="gem-box" onclick="openGemBoxWithMission(4)"
+            style="cursor:pointer;position:relative;padding:11px 12px;
+              background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);
+              border-radius:12px;display:flex;align-items:center;gap:10px;
+              transition:border-color .2s,background .2s;min-height:64px;">
+            <div id="gemLock4" style="display:flex;align-items:center;gap:8px;
+              position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;
+              justify-content:center;z-index:2;backdrop-filter:blur(1px);">
+              <span style="font-size:20px;filter:drop-shadow(0 0 6px rgba(200,168,75,.4));">🔒</span>
+              <div style="font-family:var(--orb);font-size:10px;font-weight:700;color:rgba(200,168,75,.65);">80,000원</div>
+            </div>
+            <div style="flex-shrink:0;text-align:center;width:52px;">
+              <div style="font-family:var(--orb);font-size:7px;letter-spacing:1px;color:rgba(127,191,106,.5);margin-bottom:2px;">MISSION</div>
+              <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:#fff;">4</div>
+              <div style="font-family:var(--orb);font-size:10px;font-weight:700;color:var(--green);">+4만</div>
+            </div>
+            <div style="width:1px;height:36px;background:rgba(255,255,255,.08);flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                <span style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.7);">나</span>
+                <span style="font-family:var(--orb);font-size:9px;color:rgba(255,255,255,.3);">목표 80,000원</span>
+              </div>
+              <div style="height:4px;background:rgba(30,50,30,.6);border-radius:3px;overflow:hidden;margin-bottom:4px;">
+                <div id="lockBar4My" style="height:100%;width:0%;background:linear-gradient(90deg,var(--green),var(--green-dim));border-radius:3px;transition:width .5s;"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                <span style="font-family:var(--kr);font-size:10px;color:rgba(180,150,220,.7);">상대</span>
+              </div>
+              <div style="height:4px;background:rgba(20,15,40,.6);border-radius:3px;overflow:hidden;">
+                <div id="lockBar4Opp" style="height:100%;width:0%;background:linear-gradient(90deg,rgba(140,100,220,.7),rgba(180,140,255,.85));border-radius:3px;transition:width .5s;"></div>
+              </div>
+            </div>
+            <div style="flex-shrink:0;text-align:center;min-width:54px;">
+              <div id="gemOppStatus4" style="padding:3px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);white-space:nowrap;">미등록</div>
+              <div id="gemActionArea4" style="margin-top:5px;"></div>
+            </div>
+          </div>
+
+        </div><!-- /특수작전 1~4 리스트 -->
+
+        <!-- 구분선 -->
+        <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(200,168,75,.2),transparent);margin:4px 0 10px;"></div>
+
+        <!-- 스페셜작전 — 가로 전체 -->
         <div id="gemBoxSpecial" class="gem-box" onclick="openGemBox('special')"
           style="cursor:pointer;position:relative;overflow:hidden;
-            width:100%;min-height:88px;border-radius:14px;
+            width:100%;min-height:72px;border-radius:14px;
             background:linear-gradient(160deg,rgba(35,25,3,.95) 0%,rgba(55,38,5,.9) 50%,rgba(30,20,2,.95) 100%);
             border:2px solid rgba(200,168,75,.35);
-            display:flex;align-items:center;gap:0;
+            display:flex;align-items:center;
             box-shadow:0 4px 20px rgba(0,0,0,.6);">
 
           <!-- 잠금 오버레이 -->
@@ -5212,16 +5363,11 @@ document.addEventListener('DOMContentLoaded',()=>{
               position:absolute;inset:0;border-radius:12px;z-index:5;
               background:linear-gradient(135deg,rgba(12,9,2,.88),rgba(20,14,3,.88));
               justify-content:center;">
-            <!-- 잠긴 보석함 SVG -->
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <!-- 함 몸통 -->
+            <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
               <rect x="4" y="20" width="32" height="16" rx="3" fill="rgba(120,80,20,.8)" stroke="rgba(200,140,40,.5)" stroke-width="1.5"/>
-              <!-- 함 뚜껑 -->
               <path d="M4 23 Q4 14 20 14 Q36 14 36 23 L36 20 Q36 14 20 14 Q4 14 4 20 Z" fill="rgba(160,105,25,.8)" stroke="rgba(200,140,40,.5)" stroke-width="1.5"/>
-              <!-- 자물쇠 -->
               <rect x="16" y="24" width="8" height="7" rx="2" fill="rgba(200,155,40,.9)"/>
               <path d="M17 24 L17 21 Q17 18 20 18 Q23 18 23 21 L23 24" stroke="rgba(200,155,40,.9)" stroke-width="2" fill="none"/>
-              <!-- 금테 줄 -->
               <line x1="4" y1="21" x2="36" y2="21" stroke="rgba(220,170,50,.6)" stroke-width="1"/>
             </svg>
             <div>
@@ -5230,31 +5376,23 @@ document.addEventListener('DOMContentLoaded',()=>{
             </div>
           </div>
 
-          <!-- 열린 상태 콘텐츠 -->
           <!-- 빛 반사 효과 -->
           <div style="position:absolute;top:0;left:-30%;width:40%;height:100%;
             background:linear-gradient(105deg,transparent,rgba(255,220,100,.07),transparent);
             pointer-events:none;animation:chestShine 3s ease-in-out infinite;"></div>
 
-          <!-- 왼쪽: 보석함 그림 -->
-          <div style="flex-shrink:0;width:80px;display:flex;justify-content:center;align-items:center;padding:10px 0 10px 12px;">
-            <!-- 열린 보석함 SVG -->
+          <!-- 왼쪽: 보석함 아이콘 -->
+          <div style="flex-shrink:0;width:70px;display:flex;justify-content:center;align-items:center;padding:10px 0 10px 12px;">
             <div class="chest-unlocked" style="position:relative;">
-              <svg width="56" height="52" viewBox="0 0 56 52" fill="none">
-                <!-- 함 몸통 -->
+              <svg width="48" height="44" viewBox="0 0 56 52" fill="none">
                 <rect x="4" y="28" width="48" height="20" rx="4" fill="rgba(140,90,20,.9)" stroke="rgba(220,160,40,.7)" stroke-width="1.5"/>
-                <!-- 금 장식 줄 (몸통) -->
                 <line x1="4" y1="35" x2="52" y2="35" stroke="rgba(240,185,55,.5)" stroke-width="1.2"/>
-                <!-- 자물쇠 열림 -->
                 <rect x="22" y="31" width="12" height="9" rx="2.5" fill="rgba(230,175,45,.95)"/>
-                <!-- 보석들 -->
                 <circle cx="20" cy="23" r="4" fill="rgba(255,80,180,.9)" style="filter:drop-shadow(0 0 4px rgba(255,80,180,.8));"/>
                 <circle cx="28" cy="18" r="5.5" fill="rgba(100,200,255,.9)" style="filter:drop-shadow(0 0 6px rgba(100,200,255,.8));"/>
                 <circle cx="36" cy="23" r="4" fill="rgba(255,200,50,.9)" style="filter:drop-shadow(0 0 4px rgba(255,200,50,.8));"/>
-                <!-- 반짝임 -->
                 <line x1="28" y1="10" x2="28" y2="14" stroke="rgba(255,255,255,.8)" stroke-width="1.5"/>
                 <line x1="24" y1="12" x2="32" y2="12" stroke="rgba(255,255,255,.8)" stroke-width="1.5"/>
-                <!-- 열린 뚜껑 -->
                 <path class="chest-lid" d="M4 30 Q4 16 28 14 Q52 16 52 30 L52 29 Q52 15 28 13 Q4 15 4 29 Z"
                   fill="rgba(170,110,25,.9)" stroke="rgba(220,160,40,.7)" stroke-width="1.5"
                   style="transform-origin:50% 30px;"/>
@@ -5262,31 +5400,31 @@ document.addEventListener('DOMContentLoaded',()=>{
             </div>
           </div>
 
-          <!-- 오른쪽: 텍스트 -->
-          <div style="flex:1;padding:12px 14px 12px 4px;">
-            <div style="font-family:var(--orb);font-size:8px;letter-spacing:2.5px;color:rgba(200,168,75,.65);margin-bottom:4px;">✦ SPECIAL MISSION</div>
-            <div style="font-family:var(--kr);font-size:15px;font-weight:900;color:rgba(245,210,100,.97);letter-spacing:.3px;">스페셜 작전</div>
-            <div style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.6);margin-top:3px;line-height:1.5;">5일 연속 달성<br>매일 <span style="color:rgba(240,200,70,.9);font-weight:700;">2만원</span> × 5일</div>
+          <!-- 중앙: 텍스트 -->
+          <div style="flex:1;padding:10px 10px 10px 2px;">
+            <div style="font-family:var(--orb);font-size:7px;letter-spacing:2px;color:rgba(200,168,75,.65);margin-bottom:3px;">✦ SPECIAL MISSION</div>
+            <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:rgba(245,210,100,.97);">스페셜 작전</div>
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,75,.6);margin-top:2px;line-height:1.5;">5일 연속 · 매일 <span style="color:rgba(240,200,70,.9);font-weight:700;">2만원</span>×5일</div>
           </div>
 
           <!-- 오른쪽: 보상 + 상태 -->
-          <div style="flex-shrink:0;text-align:right;padding:12px 14px 12px 0;">
-            <div style="font-family:var(--orb);font-size:16px;font-weight:900;
-              color:rgba(200,168,75,.98);
-              text-shadow:0 0 12px rgba(200,168,75,.5);">+100,000</div>
-            <div style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.6);">원</div>
+          <div style="flex-shrink:0;text-align:right;padding:10px 14px 10px 0;">
+            <div style="font-family:var(--orb);font-size:15px;font-weight:900;color:rgba(200,168,75,.98);text-shadow:0 0 12px rgba(200,168,75,.5);">+100,000</div>
+            <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.6);">원</div>
             <div id="gemOppStatusSpecial"
-              style="margin-top:6px;padding:3px 9px;
+              style="margin-top:5px;padding:3px 8px;
                 background:rgba(50,35,5,.6);border:1px solid rgba(200,130,40,.3);
                 border-radius:8px;font-family:var(--kr);font-size:9px;
-                color:rgba(200,168,75,.65);">미등록</div>
+                color:rgba(200,168,75,.65);white-space:nowrap;">미등록</div>
           </div>
         </div>
-        <!-- 스페셜 5DAY 진행바 (활성화 시 표시) -->
+
+        <!-- 스페셜 5DAY 진행바 -->
         <div id="specialDayBar" style="display:none;margin-top:8px;padding:10px;background:rgba(20,15,5,.6);border:1px solid rgba(200,168,75,.2);border-radius:10px;">
           <div style="font-family:var(--orb);font-size:9px;letter-spacing:1.5px;color:rgba(200,168,75,.65);margin-bottom:8px;">◆ 5DAY PROGRESS</div>
           <div id="specialDayGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;"></div>
         </div>
+
       </div>
 
       <!-- 작전 진행 카드들 (확정 미션 이후 표시) -->
