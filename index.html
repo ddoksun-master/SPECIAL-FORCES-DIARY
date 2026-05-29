@@ -6993,32 +6993,32 @@ function mpCloseOnBg(e){
 /* ── openGemBox 후크: 잠금/연결 체크 통과 후 미션 팝업으로 연결 ──
    기존 openGemBox 함수 실행 후 팝업 열기를 가로채는 래퍼 */
 window.openGemBoxWithMission = function(n){
-  /* 연결 체크 */
-  const connOk = window.connectionStatus==='connected';
+  /* 연결 체크 — connectionStatus는 let 변수라 window에 없음, openGemBox와 동일하게 직접 참조 */
+  const connOk = (typeof connectionStatus !== 'undefined' ? connectionStatus : 'none') === 'connected';
   if(!connOk){
     alert('팀원과 연결된 후 특수작전을 진행할 수 있습니다.\n팀작전 탭에서 친구 코드로 연결하세요.');
     return;
   }
   /* 잠금 체크 */
-  const total = window.calcTotalPersonalMoney ? window.calcTotalPersonalMoney() : 0;
-  const th = (window.GEM_THRESHOLDS&&window.GEM_THRESHOLDS[n])||0;
-  const oppM = window.partnerData ? (window.partnerData.money||0) : (window.teamData ? (window.teamData.oppMoney||0) : 0);
+  const total = typeof calcTotalPersonalMoney === 'function' ? calcTotalPersonalMoney() : 0;
+  const th = (typeof GEM_THRESHOLDS !== 'undefined' && GEM_THRESHOLDS[n])||0;
+  const oppM = (typeof partnerData !== 'undefined' && partnerData) ? (partnerData.money||0) : (window.teamData ? (window.teamData.oppMoney||0) : 0);
   const unlocked = total>=th && oppM>=th;
   if(!unlocked){
     const label=n==='special'?'스페셜작전':'특수작전'+n;
-    if(window.showToast) window.showToast(`🎯 ${label}: 양쪽 모두 ${th.toLocaleString()}원 필요 (나: ${total.toLocaleString()}원 / 상대: ${oppM.toLocaleString()}원)`);
+    if(typeof showToast === 'function') showToast(`🎯 ${label}: 양쪽 모두 ${th.toLocaleString()}원 필요 (나: ${total.toLocaleString()}원 / 상대: ${oppM.toLocaleString()}원)`);
     return;
   }
   /* 스페셜은 기존 모달 유지 */
-  if(n==='special'){ if(window.openSpecialModal) window.openSpecialModal(); return; }
+  if(n==='special'){ if(typeof openSpecialModal === 'function') openSpecialModal(); return; }
   /* 이미 진행중인 작전 체크 */
   if(window.teamData&&window.teamData.todayMission){
-    if(window.showToast) window.showToast('⚔ 작전 진행중! 팀작전 탭에서 완료하거나 철회하세요.');
+    if(typeof showToast === 'function') showToast('⚔ 작전 진행중! 팀작전 탭에서 완료하거나 철회하세요.');
     return;
   }
   /* 수립 중인 다른 작전 체크 */
   if(window.teamData&&window.teamData.activeGemN && String(window.teamData.activeGemN)!==String(n)){
-    if(window.showToast) window.showToast('수립 중인 작전이 있습니다. 팀작전 탭에서 확인하세요.');
+    if(typeof showToast === 'function') showToast('수립 중인 작전이 있습니다. 팀작전 탭에서 확인하세요.');
     return;
   }
   /* 미션 팝업 열기 */
