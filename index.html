@@ -7594,6 +7594,27 @@ window.openGemBoxWithMission = async function(n){
 
   if(!FB_READY||!_fbDb||!window.partnerData){ showToast('팀원 연결 상태를 확인해주세요.'); return; }
 
+  /* ── specialOpAccepted 완료 상태: mp_proposal 단계 전부 건너뛰고 바로 미션 팝업 ── */
+  if(isSpecialOpAccepted){
+    /* Firebase mp_1 공유 질문 없으면 먼저 생성 (먼저 누른 쪽이 만들고 상대는 재사용) */
+    const mpRoomPath = PATH.teamRoom(MY_UID, partnerData.uid)+`/mp_${n}`;
+    let roomSnap;
+    try { roomSnap = await _fbGet(mpRoomPath); } catch(e){ roomSnap = null; }
+    if(!roomSnap || !roomSnap.exists()){
+      const days = mpGetDays(n);
+      const kws = Array.from({length:days}, ()=>mpRandKw());
+      const qs  = kws.map(k=>mpRandItems(MP_MISSIONS[k].questions,3));
+      try { await _fbSet(mpRoomPath, {kws, qs, days, createdAt:Date.now()}); }
+      catch(e){ showToast('⚠ 임무 데이터 저장 실패. 잠시 후 다시 시도해주세요.'); return; }
+    }
+    /* 로컬 mpData 초기화 후 팝업 바로 오픈 */
+    if(window.mpData) delete window.mpData[n];
+    await mpInit(n);
+    mpOpen(n);
+    return;
+  }
+
+  /* ── 일반 플로우: mp_proposal 제안 → 상대 수락 → 팝업 ── */
   const mpPropPath = PATH.teamRoom(MY_UID, partnerData.uid)+'/mp_proposal';
   let snap;
   try { snap = await _fbGet(mpPropPath); }
@@ -7614,14 +7635,14 @@ window.openGemBoxWithMission = async function(n){
   }
 
   /* 키워드/질문 — Firebase에 이미 있으면 재사용, 없으면 새로 생성 */
-  const mpRoomPath = PATH.teamRoom(MY_UID, partnerData.uid)+`/mp_${n}`;
-  let roomSnap;
-  try { roomSnap = await _fbGet(mpRoomPath); } catch(e){ roomSnap = null; }
-  if(!roomSnap || !roomSnap.exists()){
+  const mpRoomPath2 = PATH.teamRoom(MY_UID, partnerData.uid)+`/mp_${n}`;
+  let roomSnap2;
+  try { roomSnap2 = await _fbGet(mpRoomPath2); } catch(e){ roomSnap2 = null; }
+  if(!roomSnap2 || !roomSnap2.exists()){
     const days = mpGetDays(n);
     const kws = Array.from({length:days}, ()=>mpRandKw());
     const qs  = kws.map(k=>mpRandItems(MP_MISSIONS[k].questions,3));
-    try { await _fbSet(mpRoomPath, {kws, qs, days, createdAt:Date.now()}); }
+    try { await _fbSet(mpRoomPath2, {kws, qs, days, createdAt:Date.now()}); }
     catch(e){ showToast('⚠ 임무 데이터 저장 실패. 잠시 후 다시 시도해주세요.'); return; }
   }
 
