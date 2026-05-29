@@ -217,6 +217,9 @@ html,body{
 .scroll-area::-webkit-scrollbar-track{background:transparent;}
 .scroll-area::-webkit-scrollbar-thumb{background:rgba(200,168,75,.15);border-radius:2px;}
 
+@keyframes mpPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.1)}}
+@keyframes mpScan{0%{background-position:-200% 0}100%{background-position:200% 0}}
+
 /* ===== CARD ===== */
 .card{
   position:relative;overflow:hidden;
@@ -1121,6 +1124,17 @@ async function initFirebase(){
         if(window.renderActiveMissionCard) renderActiveMissionCard();
         if(window.updateGemBoxes) updateGemBoxes();
 
+        /* ── mp_proposal 실시간 구독 (수락/거절 배너 제어) ── */
+        const _mpProposalPath = PATH.teamRoom(MY_UID, partnerUid)+'/mp_proposal';
+        _fbOn(_mpProposalPath, propSnap=>{
+          const pv = propSnap.exists() ? propSnap.val() : null;
+          renderMpProposalBanner(pv, partnerUid);
+          /* 내가 제안자이고 상대가 수락했으면 자동 팝업 */
+          if(pv && pv.status==='accepted' && pv.proposerUid===MY_UID){
+            if(window._mpHandleAccepted) window._mpHandleAccepted(pv.missionId);
+          }
+        });
+
         /* ── mp_ 팝업 실시간 구독 추가 (작전 1~4) ── */
         const _mpIds = [1,2,3,4];
         _mpIds.forEach(mpId=>{
@@ -1176,10 +1190,11 @@ async function initFirebase(){
                   pendTxt.innerHTML=`<span style="color:rgba(127,191,106,.9);font-weight:900;">${pn} — ✅ 수행완료</span>`;
                 }
 
-                /* 완료 처리 */
+                /* 완료 처리 — checking이면 즉시, open이면 내 제출 후 자동 처리됨 */
                 if(d.status==='checking' && !d._partnerHandled){
                   if(window.mpHandlePartnerAnswer) mpHandlePartnerAnswer(mpId);
                 }
+                /* open 상태: 파트너 답변만 미리 저장해두고 내가 제출할 때 처리됨 */
               }
             }
 
@@ -4926,6 +4941,9 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div id="disconnectArea" style="margin-top:6px;"></div>
       </div>
 
+      <!-- ⚔ 특수작전 임무 제안 배너 (동적 렌더) -->
+      <div id="mpProposalBanner" style="display:none;margin-bottom:0;"></div>
+
       <!-- 팀전 잠금 해제 현황 + 특수작전 카드 (연결 시만 표시) -->
       <div class="card" id="teamLockTableCard" style="margin-top:0;display:none;">
         <div class="card-title">🔐 잠금 해제 현황</div>
@@ -6922,6 +6940,11 @@ async function mpInit(id){
       kws = Array.from({length:days}, ()=>mpRandKw());
       qs  = kws.map(k=>mpRandItems(MP_MISSIONS[k].questions,3));
       await _fbSet(mpPath, {kws, qs, days, createdAt:Date.now()});
+      /* 저장 후 Firebase에서 재확인해서 로컬을 덮어씀 (레이스 컨디션 방지) */
+      try{
+        const reSnap = await _fbGet(mpPath);
+        if(reSnap.exists()){ const rv=reSnap.val(); kws=rv.kws; qs=rv.qs; }
+      }catch(e){}
     }
   } else {
     kws = Array.from({length:days}, ()=>mpRandKw());
@@ -7136,6 +7159,11 @@ function mpSubmit(){
   d.myAnswer=txt;
   d.myQ=qs[mpSelQ];
 
+  /* ★ status를 Firebase 저장 전에 먼저 checking으로 변경 (타이밍 버그 수정) */
+  d.status='checking';
+  mpUpdateGemBox(mpCurrent);
+  mpShowSubmitted(d);
+
   /* Firebase에 내 답변 저장 */
   if(FB_READY&&_fbDb&&window.partnerData){
     const mpPath = PATH.teamRoom(MY_UID, partnerData.uid)+`/mp_${mpCurrent}`;
@@ -7148,7 +7176,11 @@ function mpSubmit(){
     update[`popupOpen_${MY_UID}`] = Date.now(); /* 팝업 상태 동기화 */
     _fbUpdate(mpPath+'/'+dayRef, update).then(async ()=>{
       showToast('✅ 답변 저장! 상대방 답변을 기다리는 중...');
-      /* 파트너가 이미 먼저 답변했는지 즉시 확인 */
+      /* 파트너가 이미 먼저 답변했는지 즉시 확인 (로컬에 이미 있으면 바로 처리) */
+      if(d.partnerAnswer && d.status==='checking' && !d._partnerHandled){
+        mpHandlePartnerAnswer(mpCurrent);
+        return;
+      }
       try{
         const chk = await _fbGet(mpPath+'/'+dayRef);
         if(chk.exists()){
@@ -7163,13 +7195,14 @@ function mpSubmit(){
     });
   }
 
-  /* 상태를 checking(파트너 대기)으로 변경 */
-  d.status='checking';
-  mpUpdateGemBox(mpCurrent);
-  mpShowSubmitted(d);
+  /* 파트너 상태 박스도 동기화 */
+  const partnerStateEl = document.getElementById('mpPartnerState');
+  if(partnerStateEl){
+    partnerStateEl.className='mp-partner-state mp-state-waiting';
+    partnerStateEl.textContent='⏳ 답변 대기 중...';
+  }
 }
 
-/* ─── 파트너 답변 수신 후 처리 ─── */
 function mpHandlePartnerAnswer(id){
   const d=mpData[id];
   if(!d||d.status!=='checking') return;
@@ -7326,40 +7359,191 @@ function mpCloseOnBg(e){
   if(e.target===document.getElementById('missionOverlay')) mpClose();
 }
 
-/* ── openGemBox 후크: 잠금/연결 체크 통과 후 미션 팝업으로 연결 ──
-   기존 openGemBox 함수 실행 후 팝업 열기를 가로채는 래퍼 */
-window.openGemBoxWithMission = function(n){
-  /* 연결 체크 — connectionStatus는 let 변수라 window에 없음, openGemBox와 동일하게 직접 참조 */
+/* ── openGemBox 후크: 잠금/연결 체크 통과 후 → 제안 플로우로 진입 ── */
+window.openGemBoxWithMission = async function(n){
   const connOk = (typeof connectionStatus !== 'undefined' ? connectionStatus : 'none') === 'connected';
   if(!connOk){
     alert('팀원과 연결된 후 특수작전을 진행할 수 있습니다.\n팀작전 탭에서 친구 코드로 연결하세요.');
     return;
   }
-  /* 잠금 체크 */
   const total = typeof calcTotalPersonalMoney === 'function' ? calcTotalPersonalMoney() : 0;
   const th = (typeof GEM_THRESHOLDS !== 'undefined' && GEM_THRESHOLDS[n])||0;
-  const oppM = (typeof partnerData !== 'undefined' && partnerData) ? (partnerData.money||0) : (window.teamData ? (window.teamData.oppMoney||0) : 0);
+  const oppM = (typeof partnerData !== 'undefined' && partnerData) ? (partnerData.money||0) : 0;
   const unlocked = total>=th && oppM>=th;
   if(!unlocked){
-    const label=n==='special'?'스페셜작전':'특수작전'+n;
+    const label='특수작전'+n;
     if(typeof showToast === 'function') showToast(`🎯 ${label}: 양쪽 모두 ${th.toLocaleString()}원 필요 (나: ${total.toLocaleString()}원 / 상대: ${oppM.toLocaleString()}원)`);
     return;
   }
-  /* 스페셜은 기존 모달 유지 */
   if(n==='special'){ if(typeof openSpecialModal === 'function') openSpecialModal(); return; }
-  /* 이미 진행중인 작전 체크 */
-  if(window.teamData&&window.teamData.todayMission){
-    if(typeof showToast === 'function') showToast('⚔ 작전 진행중! 팀작전 탭에서 완료하거나 철회하세요.');
-    return;
+
+  if(!FB_READY||!_fbDb||!window.partnerData){ showToast('Firebase 연결 오류'); return; }
+
+  const mpPropPath = PATH.teamRoom(MY_UID, partnerData.uid)+'/mp_proposal';
+  const snap = await _fbGet(mpPropPath);
+  const existing = snap.exists() ? snap.val() : null;
+
+  /* 이미 수락된 작전이면 바로 팝업 열기 */
+  if(existing && existing.missionId===n && existing.status==='accepted'){
+    mpOpen(n); return;
   }
-  /* 수립 중인 다른 작전 체크 */
-  if(window.teamData&&window.teamData.activeGemN && String(window.teamData.activeGemN)!==String(n)){
-    if(typeof showToast === 'function') showToast('수립 중인 작전이 있습니다. 팀작전 탭에서 확인하세요.');
-    return;
+  /* 내가 이미 제안한 상태 */
+  if(existing && existing.proposerUid===MY_UID && existing.status==='pending'){
+    showToast('⏳ 이미 수락 대기 중입니다. 상대방을 기다려주세요.'); return;
   }
-  /* 미션 팝업 열기 */
-  mpOpen(n);
+  /* 상대방이 다른 작전 제안 중 */
+  if(existing && existing.status==='pending'){
+    showToast('⚠ 상대방이 다른 작전을 제안 중입니다. 배너를 확인하세요.'); return;
+  }
+
+  /* 키워드/질문 미리 생성해서 Firebase에 저장 (레이스 컨디션 차단) */
+  const days = mpGetDays(n);
+  const kws = Array.from({length:days}, ()=>mpRandKw());
+  const qs  = kws.map(k=>mpRandItems(MP_MISSIONS[k].questions,3));
+  const mpRoomPath = PATH.teamRoom(MY_UID, partnerData.uid)+`/mp_${n}`;
+  await _fbSet(mpRoomPath, {kws, qs, days, createdAt:Date.now()});
+
+  /* 제안 저장 */
+  await _fbSet(mpPropPath, {
+    missionId: n,
+    proposerUid: MY_UID,
+    proposerNickname: window.myNickname||'나',
+    status: 'pending',
+    createdAt: Date.now()
+  });
+  showToast(`⚔ 특수작전${n} 임무 제안을 전송했습니다!`);
 };
+
+/* ─────────────────────────────────────────────
+   mp 제안 배너 렌더
+───────────────────────────────────────────── */
+function renderMpProposalBanner(pv, partnerUid){
+  const el = document.getElementById('mpProposalBanner');
+  if(!el) return;
+
+  /* 데이터 없거나 완료/거절 상태면 숨김 */
+  if(!pv || pv.status==='rejected' || pv.status==='accepted'){
+    el.style.display='none';
+    el.innerHTML='';
+    /* accepted 상태이고 내가 팝업을 안 열었으면 mpInit 초기화 */
+    if(pv && pv.status==='accepted' && window.mpData && !window.mpData[pv.missionId]){
+      mpInit(pv.missionId);
+    }
+    return;
+  }
+
+  if(pv.status !== 'pending') return;
+
+  const n = pv.missionId;
+  const label = '특수작전'+n;
+  const iAmProposer = pv.proposerUid === MY_UID;
+  const propNick = pv.proposerNickname || '상대방';
+
+  el.style.display = 'block';
+
+  if(iAmProposer){
+    /* 내가 제안한 쪽: 대기 배너 */
+    el.innerHTML = `
+<div style="
+  margin:0 0 10px 0;
+  padding:14px 16px;
+  background:linear-gradient(135deg,rgba(20,45,25,.97),rgba(30,35,8,.95));
+  border:1.5px solid rgba(255,184,71,.45);
+  border-radius:14px;
+  box-shadow:0 4px 20px rgba(0,0,0,.5),0 0 0 1px rgba(255,184,71,.08);
+  position:relative;overflow:hidden;
+">
+  <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(255,184,71,.6),transparent);"></div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div style="font-size:22px;animation:mpPulse 1.5s ease-in-out infinite;flex-shrink:0;">⏳</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-family:var(--orb);font-size:8px;letter-spacing:2px;color:rgba(255,184,71,.6);margin-bottom:3px;">AWAITING RESPONSE</div>
+      <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#fff;line-height:1.3;">${label} 임무 수락 대기 중</div>
+      <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.4);margin-top:3px;">상대방이 수락하면 자동으로 시작됩니다</div>
+    </div>
+    <button onclick="mpCancelProposal()" style="
+      padding:7px 12px;
+      background:rgba(220,60,60,.15);border:1px solid rgba(220,60,60,.3);
+      border-radius:8px;color:rgba(255,100,100,.8);
+      font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;
+    ">취소</button>
+  </div>
+</div>`;
+  } else {
+    /* 상대방이 제안한 쪽: 수락/거절 배너 */
+    el.innerHTML = `
+<div style="
+  margin:0 0 10px 0;
+  padding:14px 16px;
+  background:linear-gradient(135deg,rgba(15,35,50,.97),rgba(20,45,30,.95));
+  border:1.5px solid rgba(74,127,168,.55);
+  border-radius:14px;
+  box-shadow:0 4px 20px rgba(0,0,0,.5),0 0 0 1px rgba(74,127,168,.1);
+  position:relative;overflow:hidden;
+">
+  <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(74,127,168,.7),transparent);animation:mpScan 2s linear infinite;"></div>
+  <div style="font-family:var(--orb);font-size:8px;letter-spacing:2px;color:rgba(74,127,168,.7);margin-bottom:6px;">⚔ MISSION ALERT</div>
+  <div style="font-family:var(--kr);font-size:15px;font-weight:900;color:#fff;margin-bottom:3px;">${label} 임무가 발생했습니다</div>
+  <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.45);margin-bottom:12px;"><span style="color:rgba(114,168,204,.85);font-weight:700;">${propNick}</span> 님이 임무를 제안했습니다. 수락하시겠습니까?</div>
+  <div style="display:flex;gap:8px;">
+    <button onclick="mpAcceptProposal(${n})" style="
+      flex:1;padding:11px;
+      background:linear-gradient(135deg,rgba(50,120,35,.9),rgba(30,80,20,.95));
+      border:1.5px solid rgba(90,158,72,.5);border-radius:10px;
+      color:#9de870;font-family:var(--kr);font-size:13px;font-weight:900;cursor:pointer;
+      box-shadow:0 2px 12px rgba(90,158,72,.2);
+    ">✅ 수락</button>
+    <button onclick="mpRejectProposal()" style="
+      flex:1;padding:11px;
+      background:rgba(40,15,15,.7);
+      border:1.5px solid rgba(180,50,50,.3);border-radius:10px;
+      color:rgba(255,100,100,.7);font-family:var(--kr);font-size:13px;font-weight:700;cursor:pointer;
+    ">❌ 거절</button>
+  </div>
+</div>`;
+  }
+}
+
+/* 수락 */
+async function mpAcceptProposal(n){
+  if(!FB_READY||!_fbDb||!window.partnerData) return;
+  const mpPropPath = PATH.teamRoom(MY_UID, partnerData.uid)+'/mp_proposal';
+  await _fbUpdate(mpPropPath, {status:'accepted', acceptedAt:Date.now()});
+  showToast(`✅ ${`특수작전${n}`} 임무를 수락했습니다!`);
+  /* mpData 초기화 후 팝업 열기 */
+  if(window.mpData) delete window.mpData[n];
+  await mpInit(n);
+  mpOpen(n);
+}
+
+/* 거절 */
+async function mpRejectProposal(){
+  if(!FB_READY||!_fbDb||!window.partnerData) return;
+  const mpPropPath = PATH.teamRoom(MY_UID, partnerData.uid)+'/mp_proposal';
+  await _fbUpdate(mpPropPath, {status:'rejected', rejectedAt:Date.now()});
+  showToast('임무를 거절했습니다.');
+}
+
+/* 제안 취소 (제안자) */
+async function mpCancelProposal(){
+  if(!FB_READY||!_fbDb||!window.partnerData) return;
+  const mpPropPath = PATH.teamRoom(MY_UID, partnerData.uid)+'/mp_proposal';
+  await _fbSet(mpPropPath, null);
+  showToast('임무 제안을 취소했습니다.');
+}
+
+/* 수락 후 제안자에게 팝업 자동 열기 (Firebase 리스너에서 호출) */
+window._mpHandleAccepted = async function(n){
+  if(window.mpData) delete window.mpData[n];
+  await mpInit(n);
+  /* 팝업이 닫혀 있을 때만 자동 오픈 */
+  const overlay = document.getElementById('missionOverlay');
+  if(overlay && !overlay.classList.contains('active')){
+    mpOpen(n);
+    showToast(`✅ 상대방이 특수작전${n} 임무를 수락했습니다!`);
+  }
+};
+
 
 </script>
 </body>
