@@ -1429,11 +1429,11 @@ function updateGemBoxes(){
         st.style.background='rgba(30,20,5,.5)';st.style.borderColor='rgba(200,130,40,.2)';
       } else if(ok && !isThisActive) {
         /* 잠금 해제됨 — activeGemN이 없거나 다른 작전이 활성 중이어도 탭 가능 표시 */
-        st.textContent='탭해서 제안';st.style.color='rgba(255,180,60,.9)';
+        st.textContent='임무수행';st.style.color='rgba(255,180,60,.9)';
         st.style.background='rgba(55,35,5,.6)';st.style.borderColor='rgba(220,150,40,.4)';
         st.style.fontWeight='700';
       } else {
-        st.textContent='탭해서 제안';st.style.color='rgba(255,160,50,.65)';
+        st.textContent='임무수행';st.style.color='rgba(255,160,50,.65)';
         st.style.background='rgba(50,30,5,.5)';st.style.borderColor='rgba(200,130,40,.25)';
       }
     }
@@ -4844,7 +4844,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         <!-- 수정 5,6: 특수카드 4개 4분할, 스폐셜 길게 하나, 보상 1~4만원 / 스폐셜 5day 2만씩 10만 -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
           <!-- 특수작전 1 -->
-          <div id="gemBox1" class="gem-box" onclick="openGemBox(1)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
+          <div id="gemBox1" class="gem-box" onclick="openGemBoxWithMission(1)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
             <div id="gemLock1" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;justify-content:center;z-index:2;backdrop-filter:blur(1px);">
               <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
               <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">20,000원</div>
@@ -4855,7 +4855,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             <div id="gemOppStatus1" style="margin-top:5px;padding:2px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);">미등록</div>
           </div>
           <!-- 특수작전 2 -->
-          <div id="gemBox2" class="gem-box" onclick="openGemBox(2)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
+          <div id="gemBox2" class="gem-box" onclick="openGemBoxWithMission(2)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
             <div id="gemLock2" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;justify-content:center;z-index:2;backdrop-filter:blur(1px);">
               <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
               <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">40,000원</div>
@@ -4866,7 +4866,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             <div id="gemOppStatus2" style="margin-top:5px;padding:2px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);">미등록</div>
           </div>
           <!-- 특수작전 3 -->
-          <div id="gemBox3" class="gem-box" onclick="openGemBox(3)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
+          <div id="gemBox3" class="gem-box" onclick="openGemBoxWithMission(3)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
             <div id="gemLock3" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;justify-content:center;z-index:2;backdrop-filter:blur(1px);">
               <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
               <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">60,000원</div>
@@ -4877,7 +4877,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             <div id="gemOppStatus3" style="margin-top:5px;padding:2px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);">미등록</div>
           </div>
           <!-- 특수작전 4 -->
-          <div id="gemBox4" class="gem-box" onclick="openGemBox(4)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
+          <div id="gemBox4" class="gem-box" onclick="openGemBoxWithMission(4)" style="cursor:pointer;position:relative;padding:12px 10px;background:rgba(20,40,28,.75);border:1.5px solid rgba(98,170,78,.25);border-radius:12px;text-align:center;min-height:95px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:border-color .2s,background .2s;">
             <div id="gemLock4" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;justify-content:center;z-index:2;backdrop-filter:blur(1px);">
               <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
               <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">80,000원</div>
@@ -6992,35 +6992,38 @@ function mpCloseOnBg(e){
 
 /* ── openGemBox 후크: 잠금/연결 체크 통과 후 미션 팝업으로 연결 ──
    기존 openGemBox 함수 실행 후 팝업 열기를 가로채는 래퍼 */
-(function(){
-  const _orig = window.openGemBox;
-  window.openGemBoxWithMission = function(n){
-    /* 연결 체크 */
-    const connOk = window.connectionStatus==='connected';
-    if(!connOk){ alert('팀원과 연결된 후 특수작전을 진행할 수 있습니다.'); return; }
-    /* 잠금 체크 */
-    const total = window.calcTotalPersonalMoney ? window.calcTotalPersonalMoney() : 0;
-    const th = (window.GEM_THRESHOLDS&&window.GEM_THRESHOLDS[n])||0;
-    const oppM = window.partnerData ? window.partnerData.money : 0;
-    const unlocked = total>=th && oppM>=th;
-    if(!unlocked){
-      const label=n==='special'?'스페셜작전':'특수작전'+n;
-      if(window.showToast) window.showToast(`🎯 ${label}: 양쪽 모두 ${th.toLocaleString()}원 필요`);
-      return;
-    }
-    /* 스페셜은 기존 모달 유지 */
-    if(n==='special'){ if(window.openSpecialModal) window.openSpecialModal(); return; }
-    /* 일반 특수작전 → 미션 팝업 열기 */
-    mpOpen(n);
-  };
-  /* gemBox onclick을 새 함수로 교체 */
-  document.addEventListener('DOMContentLoaded',()=>{
-    [1,2,3,4].forEach(n=>{
-      const box=document.getElementById('gemBox'+n);
-      if(box) box.onclick=()=>window.openGemBoxWithMission(n);
-    });
-  });
-})();
+window.openGemBoxWithMission = function(n){
+  /* 연결 체크 */
+  const connOk = window.connectionStatus==='connected';
+  if(!connOk){
+    alert('팀원과 연결된 후 특수작전을 진행할 수 있습니다.\n팀작전 탭에서 친구 코드로 연결하세요.');
+    return;
+  }
+  /* 잠금 체크 */
+  const total = window.calcTotalPersonalMoney ? window.calcTotalPersonalMoney() : 0;
+  const th = (window.GEM_THRESHOLDS&&window.GEM_THRESHOLDS[n])||0;
+  const oppM = window.partnerData ? (window.partnerData.money||0) : (window.teamData ? (window.teamData.oppMoney||0) : 0);
+  const unlocked = total>=th && oppM>=th;
+  if(!unlocked){
+    const label=n==='special'?'스페셜작전':'특수작전'+n;
+    if(window.showToast) window.showToast(`🎯 ${label}: 양쪽 모두 ${th.toLocaleString()}원 필요 (나: ${total.toLocaleString()}원 / 상대: ${oppM.toLocaleString()}원)`);
+    return;
+  }
+  /* 스페셜은 기존 모달 유지 */
+  if(n==='special'){ if(window.openSpecialModal) window.openSpecialModal(); return; }
+  /* 이미 진행중인 작전 체크 */
+  if(window.teamData&&window.teamData.todayMission){
+    if(window.showToast) window.showToast('⚔ 작전 진행중! 팀작전 탭에서 완료하거나 철회하세요.');
+    return;
+  }
+  /* 수립 중인 다른 작전 체크 */
+  if(window.teamData&&window.teamData.activeGemN && String(window.teamData.activeGemN)!==String(n)){
+    if(window.showToast) window.showToast('수립 중인 작전이 있습니다. 팀작전 탭에서 확인하세요.');
+    return;
+  }
+  /* 미션 팝업 열기 */
+  mpOpen(n);
+};
 
 </script>
 </body>
