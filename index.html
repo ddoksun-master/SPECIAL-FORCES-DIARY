@@ -4964,13 +4964,13 @@ document.addEventListener('DOMContentLoaded',()=>{
             </div>
           </div>
           <div style="height:1px;background:rgba(200,168,75,.12);margin-bottom:6px;"></div>
-          <!-- 개인임무 한도 안내 -->
-          <div id="personalCapInfo" style="padding:7px 10px;background:rgba(10,25,12,.5);border:1px solid rgba(90,158,72,.15);border-radius:8px;margin-bottom:7px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.7);">개인임무 한도</span>
-              <span id="personalCapAmt" style="font-family:var(--orb);font-size:12px;font-weight:900;color:rgba(127,191,106,.9);">100,000원</span>
+          <!-- 개인임무 한도 안내 (특수임무 1~3 완료 후 활성화) -->
+          <div id="personalCapInfo" style="padding:9px 11px;background:rgba(10,25,12,.5);border:1px solid rgba(90,158,72,.15);border-radius:8px;margin-bottom:7px;transition:.3s;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+              <span style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.7);">📋 개인임무 가용 한도</span>
+              <span id="personalCapAmt" style="font-family:var(--orb);font-size:13px;font-weight:900;color:rgba(127,191,106,.9);">100,000원</span>
             </div>
-            <div id="personalCapNote" style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.3);margin-top:2px;">특수임무 합계에 따라 자동 조정</div>
+            <div id="personalCapNote" style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.3);line-height:1.5;">특수임무 완료 후 한도 조정 (현재 0/3 완료)</div>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <span style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.5);">현재 달성률</span>
@@ -5212,6 +5212,7 @@ document.addEventListener('DOMContentLoaded',()=>{
                   oninput="tmHQCheckReady()"
                   id="tmHQDetailTA"
                   style="width:100%;padding:10px 12px;border-radius:9px;font-family:var(--kr);font-size:13px;resize:none;outline:none;line-height:1.5;border:1.5px solid;background:rgba(255,255,255,.07);color:#fff;"></textarea>
+                <div id="tmHQAnsHint" style="display:none;margin-top:4px;font-family:var(--kr);font-size:10px;color:rgba(255,120,120,.8);letter-spacing:.2px;"></div>
               </div>
               <div id="tmHQMyDisplay" style="display:none;padding:10px 12px;border-radius:9px;border:1.5px solid;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,.08);">
                 <div style="display:flex;align-items:center;gap:7px;flex:1;"><span>✅</span><div id="tmHQMyText" style="font-family:var(--kr);font-size:13px;font-weight:700;color:#fff;flex:1;word-break:break-word;"></div></div>
@@ -5808,12 +5809,13 @@ function renderQ(){
         const done=quests[oi].cumDone||[];
         if(!done.every(Boolean)) return;
       }
-      /* 30만원 달성 시 추가 완료 차단 (철회는 허용) */
+      /* 개인임무 한도 체크 */
       if(!quests[oi].completed){
-        const totalAll = calcTotalPersonalMoney() + calcTeamRewardMoney();
+        const rawPersonal = Object.values(allData).reduce((sum,items)=>
+          sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
+        );
         const cap = calcRewardCap();
-        const currentPersonal = calcTotalPersonalMoney();
-        if(currentPersonal >= cap.personalCap){
+        if(rawPersonal >= cap.personalCap){
           _showCapReachedNotice();
           return;
         }
@@ -5846,11 +5848,27 @@ function renderQ(){
   const total=quests.reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0);
   const rem=10000-total;
   const bar=document.getElementById('addOpBar');
-  if(total<10000){
+  const rawPersonal = Object.values(allData).reduce((sum,items)=>
+    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
+  );
+  const capNow = calcRewardCap();
+  const capReached = rawPersonal >= capNow.personalCap;
+
+  if(total<10000 && !capReached){
     bar.classList.remove('hidden');
+    bar.style.color='#ffffff';
+    bar.style.borderColor='rgba(75,200,100,.24)';
     bar.textContent=`+ 작전 추가  (${rem.toLocaleString()}원 남음)`;
     bar.onclick=openCatAndScroll;
-  }else bar.classList.add('hidden');
+  } else if(capReached){
+    bar.classList.remove('hidden');
+    bar.style.color='rgba(255,184,71,.85)';
+    bar.style.borderColor='rgba(255,184,71,.28)';
+    bar.textContent='🎖 한도 달성! 꾸준히 하면 보급상점 특별지급 기회가 있어요';
+    bar.onclick=()=>{ const e=CAP_ENCOURAGE_MSGS[Math.floor(Math.random()*CAP_ENCOURAGE_MSGS.length)]; showToast(e); };
+  } else {
+    bar.classList.add('hidden');
+  }
 
   document.getElementById('opsCnt').textContent=`${comp} / ${quests.length}`;
 
@@ -5864,7 +5882,7 @@ function renderQ(){
 }
 function closeDone(){document.getElementById('doneScreen').style.display='none';document.getElementById('qList').style.display='flex';}
 
-/* ── 30만원 달성 / 개인임무 한도 안내 ── */
+/* ── 한도 달성 안내 팝업 ── */
 const CAP_ENCOURAGE_MSGS = [
   '꾸준한 작전 수행이 전술본부 보급상점 특별지급 확률을 높입니다! 🎖',
   '매일 임무를 수행하면 보급상점에서 특별 보상이 기다릴 수 있어요! 🪖',
@@ -5875,27 +5893,39 @@ const CAP_ENCOURAGE_MSGS = [
 
 function _showCapReachedNotice(){
   const cap = calcRewardCap();
-  const totalAll = calcTotalPersonalMoney() + calcTeamRewardMoney();
-  const isMonthlyFull = totalAll >= 300000;
+  const rawPersonal = Object.values(allData).reduce((sum,items)=>
+    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
+  );
   const encourage = CAP_ENCOURAGE_MSGS[Math.floor(Math.random()*CAP_ENCOURAGE_MSGS.length)];
 
+  let title, bodyMsg;
+  if(!cap.allSpecialDone){
+    /* 특수임무 미완료인데 10만원 초과 — 기본 개인한도 도달 */
+    title = '개인임무 한도 달성!';
+    bodyMsg = `개인임무 기본 한도 <span style="color:var(--gold);font-weight:900;">100,000원</span>에 도달했습니다.<br>
+      특수임무 1~3을 완료하면 실제 남은 한도를 확인할 수 있어요.<br>
+      <span style="font-size:10px;color:rgba(255,255,255,.35);">특수임무 합계에 따라 개인임무 한도가 조정됩니다</span>`;
+  } else if(cap.personalCap <= 0){
+    title = '개인임무 한도 0원';
+    bodyMsg = `특수임무 합계 <span style="color:rgba(255,100,100,.9);font-weight:900;">${cap.specialTotal.toLocaleString()}원</span>이 10만원을 초과했습니다.<br>
+      개인임무로 추가 금액을 얻을 수 없습니다.<br>
+      <span style="font-size:10px;color:rgba(255,255,255,.35);">(특수임무가 12만원까지는 특수임무 금액으로만 인정)</span>`;
+  } else {
+    title = '개인임무 가용 한도 달성!';
+    bodyMsg = `개인임무로 채울 수 있는 한도 <span style="color:var(--gold);font-weight:900;">${cap.personalCap.toLocaleString()}원</span>에 도달했습니다.<br>
+      누적 금액이 더 이상 올라가지 않습니다.`;
+  }
+
   const overlay = document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.style.cssText='position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.84);display:flex;align-items:center;justify-content:center;padding:20px;';
   overlay.onclick = e=>{ if(e.target===overlay) overlay.remove(); };
   overlay.innerHTML = `
     <div style="background:var(--card);border:1.5px solid rgba(200,168,75,.4);border-radius:18px;padding:22px 20px;max-width:340px;width:100%;text-align:center;">
-      <div style="font-size:40px;margin-bottom:10px;">${isMonthlyFull?'🎊':'🎖'}</div>
-      <div style="font-family:var(--title);font-size:16px;font-weight:900;color:var(--gold-dim);margin-bottom:8px;">
-        ${isMonthlyFull ? '이번 달 작전 자금 완료!' : '개인임무 한도 달성!'}
-      </div>
-      <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.6);line-height:1.7;margin-bottom:14px;">
-        ${isMonthlyFull
-          ? `총 <span style="color:var(--gold);font-weight:900;">300,000원</span> 달성! 이번 달 누적 자금이 모두 완료되었습니다.<br>누적 금액이 더 이상 올라가지 않습니다.`
-          : `개인임무 한도 <span style="color:var(--gold);font-weight:900;">${cap.personalCap.toLocaleString()}원</span>에 도달했습니다.<br>누적 금액이 더 이상 올라가지 않습니다.`
-        }
-      </div>
-      <div style="background:rgba(200,168,75,.08);border:1px dashed rgba(200,168,75,.3);border-radius:10px;padding:11px 13px;margin-bottom:16px;">
-        <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.6);letter-spacing:1.5px;margin-bottom:5px;">▸ 전술본부 보급상점</div>
+      <div style="font-size:38px;margin-bottom:10px;">🎖</div>
+      <div style="font-family:var(--title);font-size:16px;font-weight:900;color:var(--gold-dim);margin-bottom:10px;">${title}</div>
+      <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.6);line-height:1.75;margin-bottom:14px;">${bodyMsg}</div>
+      <div style="background:rgba(200,168,75,.07);border:1px dashed rgba(200,168,75,.28);border-radius:10px;padding:11px 13px;margin-bottom:16px;">
+        <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.55);letter-spacing:1.5px;margin-bottom:5px;">▸ 전술본부 보급상점 안내</div>
         <div style="font-family:var(--kr);font-size:11px;color:rgba(255,220,120,.85);line-height:1.65;">${encourage}</div>
       </div>
       <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;padding:12px;background:linear-gradient(135deg,rgba(120,90,0,.8),rgba(80,60,0,.9));border:1px solid rgba(200,168,75,.45);border-radius:10px;color:#fff;font-family:var(--kr);font-size:14px;font-weight:900;cursor:pointer;">✅ 확인</button>
@@ -5907,30 +5937,34 @@ function _showCapReachedNotice(){
 function renderShopActivity(){
   const inner = document.getElementById('shopActivityInner');
   if(!inner) return;
-  /* 전체 기간 수행 임무 집계 */
-  let totalCompleted=0, totalEarnedAmt=0, dayCount=0;
-  Object.entries(allData).forEach(([ds,items])=>{
+  let totalCompleted=0, dayCount=0;
+  Object.entries(allData).forEach(([,items])=>{
     const comp = (items||[]).filter(q=>q.completed);
-    if(comp.length){ dayCount++; totalCompleted+=comp.length; totalEarnedAmt+=comp.reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0); }
+    if(comp.length){ dayCount++; totalCompleted+=comp.length; }
   });
   const cap = calcRewardCap();
-  const totalAll = calcTotalPersonalMoney() + calcTeamRewardMoney();
-  const capReached = totalAll >= 300000 || calcTotalPersonalMoney() >= cap.personalCap;
+  const rawPersonal = Object.values(allData).reduce((sum,items)=>
+    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
+  );
+  const capReached = rawPersonal >= cap.personalCap;
+  const encourage = CAP_ENCOURAGE_MSGS[Math.floor(Math.random()*CAP_ENCOURAGE_MSGS.length)];
 
   inner.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <div style="text-align:center;padding:8px;background:rgba(90,158,72,.08);border:1px solid rgba(90,158,72,.15);border-radius:8px;">
-        <div style="font-family:var(--orb);font-size:16px;font-weight:900;color:var(--green-dim);">${dayCount}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+      <div style="text-align:center;padding:9px;background:rgba(90,158,72,.08);border:1px solid rgba(90,158,72,.15);border-radius:8px;">
+        <div style="font-family:var(--orb);font-size:18px;font-weight:900;color:var(--green-dim);">${dayCount}</div>
         <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;">수행 일수</div>
       </div>
-      <div style="text-align:center;padding:8px;background:rgba(200,168,75,.08);border:1px solid rgba(200,168,75,.15);border-radius:8px;">
-        <div style="font-family:var(--orb);font-size:16px;font-weight:900;color:var(--gold-dim);">${totalCompleted}</div>
+      <div style="text-align:center;padding:9px;background:rgba(200,168,75,.08);border:1px solid rgba(200,168,75,.15);border-radius:8px;">
+        <div style="font-family:var(--orb);font-size:18px;font-weight:900;color:var(--gold-dim);">${totalCompleted}</div>
         <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;">완료 임무</div>
       </div>
     </div>
-    ${capReached ? `<div style="padding:8px 10px;background:rgba(200,168,75,.06);border:1px dashed rgba(200,168,75,.25);border-radius:8px;font-family:var(--kr);font-size:11px;color:rgba(255,220,100,.7);line-height:1.6;">
-      🎖 한도 달성 후에도 꾸준히 수행하면 보급상점 특별지급 확률이 올라가요!
-    </div>` : `<div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.35);">임무를 꾸준히 수행하면 보급상점 혜택이 열릴 수 있어요!</div>`}`;
+    <div style="padding:9px 11px;background:rgba(200,168,75,.06);border:1px dashed rgba(200,168,75,.22);border-radius:9px;font-family:var(--kr);font-size:11px;color:rgba(255,220,100,.75);line-height:1.65;">
+      ${capReached
+        ? `🎖 한도를 달성했어도 꾸준히 임무를 완료하면 보급상점 특별지급 확률이 올라가요!`
+        : `💪 임무를 꾸준히 수행하면 보급상점 오픈 시 혜택을 받을 수 있어요!`}
+    </div>`;
 }
 
 /* ── HUD ── */
@@ -6128,14 +6162,6 @@ function addTemplate(){
   const v=document.getElementById('qInput').value.trim();
   const d=document.getElementById('diffSel').value;
   if(!v) return;
-
-  /* 특수임무 최소 10글자 검증 */
-  if(d==='hard' && v.length < 10){
-    const cumErrEl=document.getElementById('cumErrMsg');
-    cumErrEl.textContent='⚠ 특수임무는 최소 10글자 이상 작성해야 합니다. (현재 '+v.length+'자)';
-    cumErrEl.style.display='block';
-    return;
-  }
 
   /* 위생 필터 */
   if(checkHygiene(v)){
@@ -6343,14 +6369,13 @@ const GEM_REWARDS={1:10000,2:20000,3:30000,4:40000,special:100000};
 const SPECIAL_DAY_REWARD=20000;
 
 function calcTotalPersonalMoney(){
-  /* allData 전체 합산 */
+  /* allData 전체 합산 (raw) */
   const raw = Object.values(allData).reduce((sum,items)=>
     sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
   );
-  /* 개인임무 상한: 10만원 - 특수임무(HQ) 합계 (최소 0) */
-  const specialTotal = [1,2,3].reduce((s,n)=>s+(window['tmMyReward'+n]||0),0);
-  const personalCap = Math.max(0, Math.min(100000, 100000 - specialTotal));
-  return Math.min(raw, personalCap);
+  /* 개인임무 상한 적용 */
+  const cap = calcRewardCap();
+  return Math.min(raw, cap.personalCap);
 }
 
 /* renderTeamPanel — Firebase 모듈에서 window.renderTeamPanel로 재정의됨. fallback */
@@ -7061,14 +7086,37 @@ function renderStatsRevenueCard(){
   const cap = calcRewardCap();
   const personalCapEl = document.getElementById('personalCapAmt');
   const personalCapNote = document.getElementById('personalCapNote');
-  if(personalCapEl){
-    personalCapEl.textContent = cap.personalCap.toLocaleString()+'원';
-    if(cap.personalCap < 100000){
-      personalCapEl.style.color='rgba(255,184,71,.9)';
-      if(personalCapNote) personalCapNote.textContent=`특수임무 ${cap.specialTotal.toLocaleString()}원 획득 → 한도 조정됨`;
+  const personalCapInfo = document.getElementById('personalCapInfo');
+
+  if(personalCapInfo){
+    if(!cap.allSpecialDone){
+      /* 특수임무 미완료: 기본 10만원, 진행 현황 표시 */
+      const doneCount = [1,2,3].filter(n=>window['tmRewardDone'+n]).length;
+      personalCapInfo.style.background='rgba(10,25,12,.5)';
+      personalCapInfo.style.borderColor='rgba(90,158,72,.15)';
+      if(personalCapEl){
+        personalCapEl.textContent='100,000원';
+        personalCapEl.style.color='rgba(127,191,106,.9)';
+      }
+      if(personalCapNote) personalCapNote.textContent=`특수임무 완료 후 한도 조정 (현재 ${doneCount}/3 완료)`;
+    } else if(cap.personalCap <= 0){
+      /* 특수임무 합계 ≥ 10만: 개인임무 0원 */
+      personalCapInfo.style.background='rgba(60,10,10,.4)';
+      personalCapInfo.style.borderColor='rgba(200,50,50,.3)';
+      if(personalCapEl){
+        personalCapEl.textContent='0원 (한도 초과)';
+        personalCapEl.style.color='rgba(255,80,80,.9)';
+      }
+      if(personalCapNote) personalCapNote.textContent=`특수임무 ${cap.specialTotal.toLocaleString()}원 ≥ 10만원 → 개인임무 추가 없음`;
     } else {
-      personalCapEl.style.color='rgba(127,191,106,.9)';
-      if(personalCapNote) personalCapNote.textContent='특수임무 합계에 따라 자동 조정';
+      /* 특수임무 완료, 개인임무 남은 한도 있음 */
+      personalCapInfo.style.background='rgba(50,35,4,.5)';
+      personalCapInfo.style.borderColor='rgba(255,184,71,.25)';
+      if(personalCapEl){
+        personalCapEl.textContent=cap.personalCap.toLocaleString()+'원';
+        personalCapEl.style.color='rgba(255,184,71,.9)';
+      }
+      if(personalCapNote) personalCapNote.textContent=`특수임무 ${cap.specialTotal.toLocaleString()}원 완료 → 나머지 ${cap.personalCap.toLocaleString()}원 개인임무로 채울 수 있음`;
     }
   }
 
@@ -9434,17 +9482,41 @@ async function tmHQDayCompleteTester(){
    - 월 최대 30만원
 ═══════════════════════════════════════════════════════ */
 function calcRewardCap(){
-  /* 특수임무 1~3 합계 */
-  let specialTotal = 0;
-  for(let i=1; i<=3; i++){
-    specialTotal += (window['tmMyReward'+i] || 0);
+  /* 특수임무 1~3 각 완료 여부 & 합계 */
+  const s1 = window['tmMyReward1']||0;
+  const s2 = window['tmMyReward2']||0;
+  const s3 = window['tmMyReward3']||0;
+  const d1 = window['tmRewardDone1']||false;
+  const d2 = window['tmRewardDone2']||false;
+  const d3 = window['tmRewardDone3']||false;
+  const allSpecialDone = d1 && d2 && d3;
+  const specialTotal = s1 + s2 + s3;
+
+  /* 스페셜임무(4번) */
+  const specialOp = window['tmMyReward4']||0;
+
+  /*
+   * 개인임무 한도 규칙:
+   * - 특수임무 1~3 미완료: 기본 10만원
+   * - 특수임무 1~3 모두 완료 후:
+   *     특수임무 합계가 10만 미만 → 개인임무로 (10만 - 합계)만큼 채울 수 있음
+   *     특수임무 합계가 10만 이상 → 개인임무 0원
+   *   (최대 특수임무 12만 + 개인 0 = 12만 / 최소 특수임무 6만 + 개인 4만 = 10만)
+   */
+  let personalCap;
+  if(!allSpecialDone){
+    personalCap = 100000; /* 아직 미완료: 기본 10만 */
+  } else {
+    personalCap = Math.max(0, 100000 - specialTotal);
   }
-  /* 스페셜임무 */
-  const specialOp = window['tmMyReward4'] || 0;
-  /* 개인임무 한도: 10만 - 특수임무 합계 (최소 0, 최대 10만) */
-  const personalCap = Math.max(0, Math.min(100000, 100000 - specialTotal));
-  return { specialTotal, specialOp, personalCap,
-           total: Math.min(300000, specialTotal + specialOp + personalCap) };
+
+  return {
+    specialTotal,
+    specialOp,
+    allSpecialDone,
+    personalCap,
+    total: Math.min(300000, specialTotal + specialOp + personalCap)
+  };
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -10004,10 +10076,23 @@ function tmHQCheckReady(){
   const cfg=TM[n]||TM[1];
   const ta=document.getElementById('tmHQTA');
   const myDispVisible=document.getElementById('tmHQMyDisplay')?.style.display!=='none';
-  const hasAns=myDispVisible||(ta&&ta.value.trim().length>0);
+  const ansVal = ta ? ta.value.trim() : '';
+  const hasAns = myDispVisible || ansVal.length>0;
   const isSpecial=(n===4);
-  const hasSel=isSpecial?true:(_tmHQBoxSel!==null); /* 스페셜은 상자선택 불필요 */
+  const hasSel=isSpecial?true:(_tmHQBoxSel!==null);
   const saved=!!window['tmHQMySaved'+n];
+
+  /* 10글자 미만 힌트 (미션 1~3, 미저장 상태) */
+  const hintEl = document.getElementById('tmHQAnsHint');
+  if(hintEl && !isSpecial && !myDispVisible){
+    if(ansVal.length > 0 && ansVal.length < 10){
+      hintEl.textContent = `⚠ 최소 10글자 이상 작성해주세요 (${ansVal.length}/10)`;
+      hintEl.style.display='block';
+    } else {
+      hintEl.style.display='none';
+    }
+  }
+
   if(saved){
     btn.disabled=true; btn.style.cursor='not-allowed';
     btn.textContent='✅ 제출 완료';
@@ -10016,7 +10101,9 @@ function tmHQCheckReady(){
     btn.style.borderColor='rgba(255,255,255,.1)';
     return;
   }
-  const ready=hasAns&&hasSel;
+  /* 미션 1~3: 10글자 이상이어야 ready */
+  const ansOk = isSpecial ? hasAns : (myDispVisible || ansVal.length >= 10);
+  const ready = ansOk && hasSel;
   btn.disabled=!ready;
   btn.style.cursor=ready?'pointer':'not-allowed';
   if(ready){
@@ -10042,6 +10129,7 @@ async function tmHQSave(){
   const isSpecial=(n===4);
 
   if(!val){ showToast('답글을 입력해주세요'); return; }
+  if(!isSpecial && val.length < 10){ showToast('⚠ 답글은 최소 10글자 이상 작성해주세요'); return; }
   if(!isSpecial && _tmHQBoxSel===null){ showToast('보물상자를 선택해주세요'); return; }
 
   const path=_tmPath(n);
