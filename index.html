@@ -1444,7 +1444,10 @@ async function acceptConnectRequest(){
   }
   renderConnectCard();
   renderStatsRevenueCard();
-  setTimeout(()=>{ if(typeof mpStartAllAbSubscriptions==='function') mpStartAllAbSubscriptions(); }, 600);
+  setTimeout(()=>{
+    if(typeof mpStartAllAbSubscriptions==='function') mpStartAllAbSubscriptions();
+    if(typeof _startSpecialSelectWatch==='function') _startSpecialSelectWatch();
+  }, 600);
 }
 
 async function rejectConnectRequest(){
@@ -5015,10 +5018,27 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     <!-- ====== 보급상점 패널 ====== -->
     <div class="panel" id="panelShop">
-      <div class="card">
-        <div class="card-title">보급 상점</div>
-        <div style="color:rgba(215,172,80,.38);font-size:13px;text-align:center;padding:28px 0;">
-          🏪<br><br>준비 중인 상점입니다
+      <div class="card" style="margin-top:10px;background:linear-gradient(145deg,rgba(30,20,4,.97),rgba(20,14,2,.98));border-color:rgba(200,168,75,.25);">
+        <div class="card-title" style="color:var(--gold-dim);">🏪 보급상점</div>
+        <!-- 준비중 배너 -->
+        <div style="text-align:center;padding:18px 10px 10px;">
+          <div style="font-size:44px;margin-bottom:12px;filter:drop-shadow(0 0 12px rgba(200,168,75,.3));">🪖</div>
+          <div style="font-family:var(--title);font-size:15px;font-weight:900;color:rgba(200,168,75,.85);margin-bottom:6px;">보급상점 준비중</div>
+          <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.4);line-height:1.7;margin-bottom:16px;">꾸준한 임무 수행 기록이 쌓이면<br>특별 보급품이 지급될 예정입니다</div>
+        </div>
+        <!-- 특별지급 안내 카드 -->
+        <div style="background:rgba(200,168,75,.07);border:1px dashed rgba(200,168,75,.28);border-radius:12px;padding:13px 14px;margin-bottom:12px;">
+          <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.6);letter-spacing:2px;margin-bottom:7px;">▸ SPECIAL SUPPLY DROP</div>
+          <div style="font-family:var(--kr);font-size:12px;color:rgba(255,220,120,.85);line-height:1.7;">
+            한도 달성 후에도 <strong style="color:rgba(200,168,75,.95);">꾸준히 임무를 등록하고 수행</strong>하면<br>
+            전술본부에서 <strong style="color:rgba(255,184,71,.9);">랜덤 특별지급</strong>이 있을 수 있어요!<br>
+            <span style="font-size:10px;color:rgba(255,255,255,.35);">※ 보급상점 오픈 시 수행 기록이 반영됩니다</span>
+          </div>
+        </div>
+        <!-- 나의 수행 기록 요약 -->
+        <div id="shopActivitySummary" style="background:rgba(10,20,10,.6);border:1px solid rgba(90,158,72,.15);border-radius:10px;padding:11px 13px;">
+          <div style="font-family:var(--orb);font-size:8px;color:rgba(127,191,106,.5);letter-spacing:1.5px;margin-bottom:7px;">▸ 나의 임무 수행 기록</div>
+          <div id="shopActivityInner" style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.45);">불러오는 중...</div>
         </div>
       </div>
       <!-- 데이터 초기화 -->
@@ -5542,10 +5562,10 @@ function switchPanel(name,el){
     else renderTeamPanel();
     const myMoneyEl=document.getElementById('teamMyMoney');
     if(myMoneyEl) myMoneyEl.textContent=calcTotalPersonalMoney().toLocaleString()+'원';
-    /* 항상 최신 상태 렌더 */
     renderActiveMissionCard();
     updateGemBoxes();
   }
+  if(name==='shop') renderShopActivity();
 }
 
 /* ── 요일 탭 ── */
@@ -5788,6 +5808,16 @@ function renderQ(){
         const done=quests[oi].cumDone||[];
         if(!done.every(Boolean)) return;
       }
+      /* 30만원 달성 시 추가 완료 차단 (철회는 허용) */
+      if(!quests[oi].completed){
+        const totalAll = calcTotalPersonalMoney() + calcTeamRewardMoney();
+        const cap = calcRewardCap();
+        const currentPersonal = calcTotalPersonalMoney();
+        if(currentPersonal >= cap.personalCap){
+          _showCapReachedNotice();
+          return;
+        }
+      }
       quests[oi].completed=!quests[oi].completed;
       saveQ();renderQ();updateHUD();
       document.getElementById('hiddenSec').style.display='none';
@@ -5833,6 +5863,75 @@ function renderQ(){
   updateHUD();
 }
 function closeDone(){document.getElementById('doneScreen').style.display='none';document.getElementById('qList').style.display='flex';}
+
+/* ── 30만원 달성 / 개인임무 한도 안내 ── */
+const CAP_ENCOURAGE_MSGS = [
+  '꾸준한 작전 수행이 전술본부 보급상점 특별지급 확률을 높입니다! 🎖',
+  '매일 임무를 수행하면 보급상점에서 특별 보상이 기다릴 수 있어요! 🪖',
+  '작전을 계속 등록하면 전술본부에서 깜짝 특별지급이 있을 수 있습니다! 💪',
+  '한도를 달성했어도 꾸준히 하는 군인에게는 보급상점의 혜택이 있을 수 있어요! 🎁',
+  '임무 수행 기록이 쌓이면 전술본부 보급상점에서 특별 지급을 받을 확률이 올라갑니다! 🏆',
+];
+
+function _showCapReachedNotice(){
+  const cap = calcRewardCap();
+  const totalAll = calcTotalPersonalMoney() + calcTeamRewardMoney();
+  const isMonthlyFull = totalAll >= 300000;
+  const encourage = CAP_ENCOURAGE_MSGS[Math.floor(Math.random()*CAP_ENCOURAGE_MSGS.length)];
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.onclick = e=>{ if(e.target===overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div style="background:var(--card);border:1.5px solid rgba(200,168,75,.4);border-radius:18px;padding:22px 20px;max-width:340px;width:100%;text-align:center;">
+      <div style="font-size:40px;margin-bottom:10px;">${isMonthlyFull?'🎊':'🎖'}</div>
+      <div style="font-family:var(--title);font-size:16px;font-weight:900;color:var(--gold-dim);margin-bottom:8px;">
+        ${isMonthlyFull ? '이번 달 작전 자금 완료!' : '개인임무 한도 달성!'}
+      </div>
+      <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.6);line-height:1.7;margin-bottom:14px;">
+        ${isMonthlyFull
+          ? `총 <span style="color:var(--gold);font-weight:900;">300,000원</span> 달성! 이번 달 누적 자금이 모두 완료되었습니다.<br>누적 금액이 더 이상 올라가지 않습니다.`
+          : `개인임무 한도 <span style="color:var(--gold);font-weight:900;">${cap.personalCap.toLocaleString()}원</span>에 도달했습니다.<br>누적 금액이 더 이상 올라가지 않습니다.`
+        }
+      </div>
+      <div style="background:rgba(200,168,75,.08);border:1px dashed rgba(200,168,75,.3);border-radius:10px;padding:11px 13px;margin-bottom:16px;">
+        <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.6);letter-spacing:1.5px;margin-bottom:5px;">▸ 전술본부 보급상점</div>
+        <div style="font-family:var(--kr);font-size:11px;color:rgba(255,220,120,.85);line-height:1.65;">${encourage}</div>
+      </div>
+      <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;padding:12px;background:linear-gradient(135deg,rgba(120,90,0,.8),rgba(80,60,0,.9));border:1px solid rgba(200,168,75,.45);border-radius:10px;color:#fff;font-family:var(--kr);font-size:14px;font-weight:900;cursor:pointer;">✅ 확인</button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+/* ── 보급상점 활동 요약 ── */
+function renderShopActivity(){
+  const inner = document.getElementById('shopActivityInner');
+  if(!inner) return;
+  /* 전체 기간 수행 임무 집계 */
+  let totalCompleted=0, totalEarnedAmt=0, dayCount=0;
+  Object.entries(allData).forEach(([ds,items])=>{
+    const comp = (items||[]).filter(q=>q.completed);
+    if(comp.length){ dayCount++; totalCompleted+=comp.length; totalEarnedAmt+=comp.reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0); }
+  });
+  const cap = calcRewardCap();
+  const totalAll = calcTotalPersonalMoney() + calcTeamRewardMoney();
+  const capReached = totalAll >= 300000 || calcTotalPersonalMoney() >= cap.personalCap;
+
+  inner.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <div style="text-align:center;padding:8px;background:rgba(90,158,72,.08);border:1px solid rgba(90,158,72,.15);border-radius:8px;">
+        <div style="font-family:var(--orb);font-size:16px;font-weight:900;color:var(--green-dim);">${dayCount}</div>
+        <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;">수행 일수</div>
+      </div>
+      <div style="text-align:center;padding:8px;background:rgba(200,168,75,.08);border:1px solid rgba(200,168,75,.15);border-radius:8px;">
+        <div style="font-family:var(--orb);font-size:16px;font-weight:900;color:var(--gold-dim);">${totalCompleted}</div>
+        <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;">완료 임무</div>
+      </div>
+    </div>
+    ${capReached ? `<div style="padding:8px 10px;background:rgba(200,168,75,.06);border:1px dashed rgba(200,168,75,.25);border-radius:8px;font-family:var(--kr);font-size:11px;color:rgba(255,220,100,.7);line-height:1.6;">
+      🎖 한도 달성 후에도 꾸준히 수행하면 보급상점 특별지급 확률이 올라가요!
+    </div>` : `<div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.35);">임무를 꾸준히 수행하면 보급상점 혜택이 열릴 수 있어요!</div>`}`;
+}
 
 /* ── HUD ── */
 function updateHUD(){
@@ -6245,9 +6344,13 @@ const SPECIAL_DAY_REWARD=20000;
 
 function calcTotalPersonalMoney(){
   /* allData 전체 합산 */
-  return Object.values(allData).reduce((sum,items)=>
+  const raw = Object.values(allData).reduce((sum,items)=>
     sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
   );
+  /* 개인임무 상한: 10만원 - 특수임무(HQ) 합계 (최소 0) */
+  const specialTotal = [1,2,3].reduce((s,n)=>s+(window['tmMyReward'+n]||0),0);
+  const personalCap = Math.max(0, Math.min(100000, 100000 - specialTotal));
+  return Math.min(raw, personalCap);
 }
 
 /* renderTeamPanel — Firebase 모듈에서 window.renderTeamPanel로 재정의됨. fallback */
@@ -6867,7 +6970,7 @@ function navToToday(){
    수익구조 통계 패널 렌더
    ==================================================== */
 function calcTeamRewardMoney(){
-  /* 팀전 완료 보상 누적 계산 (수정 6: 1~4만원, 스페셜 day×2만) */
+  /* 팀전 완료 보상 누적 계산 */
   const td=window.teamData||{};
   let sum=0;
   /* 완료된 작전 기록에서 계산 */
@@ -6879,8 +6982,15 @@ function calcTeamRewardMoney(){
       sum+=(td['gem'+n+'Reward']||0);
     }
   }
-  /* 스페셜: 완료 일수 × 2만원 */
+  /* 스페셜: 완료 일수 × 2만원 (구 방식) */
   sum+=(td['specialUsed']||0)*SPECIAL_DAY_REWARD;
+  /* HQ 특수임무 1~4 보상 포함 (새 방식) */
+  for(let n=1;n<=4;n++){
+    const rwd = window['tmMyReward'+n]||0;
+    /* completedMissions에 이미 반영된 경우 중복 방지 */
+    const alreadyCounted = td.completedMissions && td.completedMissions.some(m=>m.n===n);
+    if(!alreadyCounted && rwd>0) sum+=rwd;
+  }
   return sum;
 }
 
@@ -6981,14 +7091,25 @@ function renderStatsRevenueCard(){
   /* ── 팀전 누적 보상 ── */
   const tmEl=document.getElementById('statsTeamMoney');
   if(tmEl) tmEl.textContent=teamRew.toLocaleString()+'원';
-  /* statsTeamRewardDetail 업데이트 (있으면) */
   const tmDetail=document.getElementById('statsTeamRewardDetail');
   if(tmDetail){
     const td=window.teamData||{};
     const cm=td.completedMissions||[];
-    if(cm.length){
-      tmDetail.innerHTML=cm.slice(-3).reverse().map(m=>`<div style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.55);margin-top:2px;">✅ 특수작전${m.n}: +${(m.reward||0).toLocaleString()}원</div>`).join('');
+    let detailLines=[];
+    /* HQ 특수임무 1~4 */
+    for(let n=1;n<=4;n++){
+      const rwd=window['tmMyReward'+n]||0;
+      if(rwd>0){
+        const lbl=TM&&TM[n]?TM[n].label:('특수임무'+n);
+        detailLines.push(`<div style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.55);margin-top:2px;">✅ ${lbl}: +${rwd.toLocaleString()}원</div>`);
+      }
     }
+    /* 구 completedMissions (중복 방지) */
+    cm.slice(-3).reverse().forEach(m=>{
+      const alreadyInHQ=[1,2,3,4].some(n=>(window['tmMyReward'+n]||0)>0 && m.n===n);
+      if(!alreadyInHQ) detailLines.push(`<div style="font-family:var(--kr);font-size:10px;color:rgba(200,168,75,.55);margin-top:2px;">✅ 특수작전${m.n}: +${(m.reward||0).toLocaleString()}원</div>`);
+    });
+    tmDetail.innerHTML=detailLines.join('');
   }
 
   /* ── 총 누적 합계 ── */
@@ -9050,7 +9171,7 @@ function tmHQRenderHome(){
           </div>
           ${done ? `<div style="font-family:var(--kr);font-size:11px;color:${cfg.color};">보상 획득 완료</div>` : `
           <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);margin-bottom:6px;">${unlocked?'임무 진행 가능':'해제 조건: '+(cfg.th/10000).toFixed(0)+'만원 달성'}</div>
-          ${unlocked && n===4 ? `<button onclick="event.stopPropagation();openSpecialMissionSelect()" style="padding:5px 12px;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.4);border-radius:7px;color:rgba(251,191,36,.9);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;margin-bottom:5px;">💎 스페셜임무 선택</button>` : ''}
+          ${unlocked && n===4 ? `<button onclick="event.stopPropagation();_openSpecialSelectWithStatus()" style="padding:6px 12px;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.4);border-radius:7px;color:rgba(251,191,36,.9);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;margin-bottom:5px;width:100%;">💎 스페셜임무 선택 / 현황 확인</button>` : ''}
           <div style="height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-bottom:2px;">
             <div style="height:100%;width:${myPct}%;background:linear-gradient(90deg,${cfg.color},${cfg.colorDim});border-radius:2px;transition:width .5s;"></div>
           </div>
@@ -9327,54 +9448,109 @@ function calcRewardCap(){
 }
 
 /* ═══════════════════════════════════════════════════════
-   스페셜임무 선택 시스템 (요청 10번)
-   - 서로의 작전수첩 특수임무 목록에서 1개씩 선택
-   - 양쪽 선택 완료 시 랜덤 1개를 실제 미션으로 확정
+   스페셜임무 선택 시스템 (보물상자 방식)
+   - 각자 내 특수임무 1개 선택 → Firebase 저장
+   - 양쪽 등록 확인 시 "임무수행 시작" 버튼 활성화
+   - 버튼 클릭 → 랜덤 1개 확정 → DAY 미션 시작
 ═══════════════════════════════════════════════════════ */
 
-/* 스페셜임무 선택 팝업 열기 */
-function openSpecialMissionSelect(){
+/* 스페셜임무 선택 팝업 — Firebase 상태 로드 후 열기 */
+async function _openSpecialSelectWithStatus(){
   if(!partnerData){ showToast('팀원과 연결 후 이용 가능합니다'); return; }
+  const path = _tmPath(4);
+  if(!path){ showToast('Firebase 연결이 필요합니다'); return; }
+  const mk = _tmMK(), ok = _tmOK();
+  try{
+    const snap = await _fbGet(path+'/special_select');
+    const d = snap && snap.exists() ? snap.val() : {};
+    _renderSpecialSelectUI(tplData['hard']||[], d[mk]||null, d[ok]||null, _tmPN(), mk, ok);
+  } catch(e){
+    _renderSpecialSelectUI(tplData['hard']||[], null, null, _tmPN(), mk, ok);
+  }
+}
 
-  /* 내 특수임무(hard) 목록 */
-  const myHards = (tplData['hard'] || []);
-  const pName = _tmPN();
+/* 스페셜임무 선택 팝업 열기 (구 인터페이스 호환) */
+function openSpecialMissionSelect(){
+  _openSpecialSelectWithStatus();
+}
 
+function _renderSpecialSelectUI(myHards, myChoice, oppChoice, pName, mk, ok){
+  /* 기존 팝업 제거 */
+  const prev = document.getElementById('specialSelectOverlay');
+  if(prev) prev.remove();
+
+  const bothReady = !!(myChoice && oppChoice);
   const overlay = document.createElement('div');
   overlay.id = 'specialSelectOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.85);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
-  overlay.onclick = e => { if(e.target===overlay) overlay.remove(); };
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.88);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
+  overlay.onclick = e=>{ if(e.target===overlay) overlay.remove(); };
 
   overlay.innerHTML = `
-    <div style="background:var(--card);border:1.5px solid rgba(251,191,36,.35);border-radius:18px;padding:20px;max-width:390px;width:100%;margin-top:20px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+    <div style="background:var(--card);border:1.5px solid rgba(251,191,36,.4);border-radius:18px;padding:20px;max-width:390px;width:100%;margin-top:20px;">
+      <!-- 헤더 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
         <div style="font-family:var(--title);font-size:15px;font-weight:900;color:rgba(251,191,36,.95);">💎 스페셜임무 선택</div>
         <button onclick="document.getElementById('specialSelectOverlay').remove()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:20px;cursor:pointer;">✕</button>
       </div>
-      <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.45);margin-bottom:14px;line-height:1.6;">
-        상대에게 수행시킬 <span style="color:rgba(251,191,36,.8);font-weight:700;">나의 특수임무 1개</span>를 선택하세요.<br>
-        양쪽 선택 완료 시 <span style="color:rgba(255,100,100,.8);">랜덤</span>으로 1개가 스페셜임무로 확정됩니다.
+
+      <!-- 상태 카드: 나 vs 상대 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+        <!-- 내 선택 상태 -->
+        <div style="padding:11px;background:${myChoice?'rgba(251,191,36,.1)':'rgba(255,255,255,.04)'};border:1.5px solid ${myChoice?'rgba(251,191,36,.55)':'rgba(255,255,255,.1)'};border-radius:12px;text-align:center;">
+          <div style="font-size:20px;margin-bottom:5px;">${myChoice?'✅':'📋'}</div>
+          <div style="font-family:var(--kr);font-size:10px;font-weight:700;color:${myChoice?'rgba(251,191,36,.9)':'rgba(255,255,255,.4)'};">나</div>
+          <div style="font-family:var(--kr);font-size:10px;color:${myChoice?'rgba(255,220,100,.8)':'rgba(255,255,255,.3)'};margin-top:3px;line-height:1.4;word-break:keep-all;">${myChoice?myChoice.name:'선택 대기중'}</div>
+        </div>
+        <!-- 상대 선택 상태 -->
+        <div style="padding:11px;background:${oppChoice?'rgba(180,150,220,.1)':'rgba(255,255,255,.04)'};border:1.5px solid ${oppChoice?'rgba(180,150,220,.45)':'rgba(255,255,255,.1)'};border-radius:12px;text-align:center;">
+          <div style="font-size:20px;margin-bottom:5px;">${oppChoice?'✅':'⏳'}</div>
+          <div style="font-family:var(--kr);font-size:10px;font-weight:700;color:${oppChoice?'rgba(180,150,220,.9)':'rgba(255,255,255,.4)'};">${pName}</div>
+          <div style="font-family:var(--kr);font-size:10px;color:${oppChoice?'rgba(200,170,255,.8)':'rgba(255,255,255,.3)'};margin-top:3px;line-height:1.4;">${oppChoice?oppChoice.name:'선택 대기중'}</div>
+        </div>
       </div>
-      ${myHards.length === 0 ? `
-        <div style="text-align:center;padding:24px;color:rgba(255,255,255,.3);font-family:var(--kr);font-size:13px;">
-          📋 등록된 특수임무가 없습니다<br>
-          <span style="font-size:11px;color:rgba(255,255,255,.2);">작전수첩에서 특수임무를 먼저 등록하세요</span>
+
+      <!-- 양쪽 준비 완료 → 임무수행 시작 버튼 -->
+      ${bothReady ? `
+        <div style="margin-bottom:14px;padding:12px;background:rgba(251,191,36,.1);border:1.5px solid rgba(251,191,36,.5);border-radius:12px;text-align:center;">
+          <div style="font-family:var(--orb);font-size:8px;color:rgba(251,191,36,.7);letter-spacing:2px;margin-bottom:6px;">◈ 양쪽 선택 완료!</div>
+          <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.6);margin-bottom:10px;">버튼을 눌러 랜덤으로 임무를 확정하세요</div>
+          <button onclick="startSpecialMissionRandom()" style="width:100%;padding:13px;background:linear-gradient(135deg,rgba(180,130,0,.9),rgba(120,85,0,.95));border:2px solid rgba(251,191,36,.65);border-radius:11px;color:#fff;font-family:var(--title);font-size:15px;font-weight:900;cursor:pointer;letter-spacing:.5px;box-shadow:0 0 18px rgba(251,191,36,.2);">
+            🎲 임무수행 시작 (랜덤 확정)
+          </button>
         </div>
       ` : `
-        <div style="display:flex;flex-direction:column;gap:7px;max-height:300px;overflow-y:auto;">
-          ${myHards.map((m,i)=>`
-            <div onclick="confirmSpecialMissionSelect(${i})" style="padding:12px 14px;background:rgba(28,6,6,.85);border:1.5px solid rgba(220,60,60,.25);border-radius:11px;cursor:pointer;transition:.15s;" 
-              onmouseover="this.style.borderColor='rgba(220,60,60,.6)'" onmouseout="this.style.borderColor='rgba(220,60,60,.25)'">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:14px;">⚡</span>
-                <div style="flex:1;">
-                  <div style="font-family:var(--kr);font-size:13px;font-weight:800;color:#fff;">${m.name}</div>
-                  <div style="font-family:var(--orb);font-size:9px;color:rgba(255,120,120,.6);margin-top:2px;">특수임무 · 탭하여 선택</div>
+        <div style="margin-bottom:14px;padding:9px 12px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.12);border-radius:10px;font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.4);text-align:center;">
+          ⏳ ${myChoice?pName+'의 선택을 기다리는 중...':'내 특수임무를 선택해주세요'}
+        </div>
+      `}
+
+      <!-- 내 특수임무 목록 (미선택 시만 표시) -->
+      ${!myChoice ? `
+        <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.45);margin-bottom:10px;">📋 상대에게 수행시킬 나의 특수임무 선택:</div>
+        ${myHards.length === 0 ? `
+          <div style="text-align:center;padding:20px;color:rgba(255,255,255,.3);font-size:12px;">
+            특수임무가 없습니다. 작전수첩에서 먼저 등록하세요.
+          </div>
+        ` : `
+          <div style="display:flex;flex-direction:column;gap:7px;max-height:250px;overflow-y:auto;">
+            ${myHards.map((m,i)=>`
+              <div onclick="pickMySpecialMission(${i})" style="padding:11px 14px;background:rgba(28,6,6,.85);border:1.5px solid rgba(220,60,60,.22);border-radius:11px;cursor:pointer;transition:.15s;"
+                onmouseover="this.style.borderColor='rgba(220,60,60,.55)'" onmouseout="this.style.borderColor='rgba(220,60,60,.22)'">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:13px;">⚡</span>
+                  <div style="flex:1;">
+                    <div style="font-family:var(--kr);font-size:13px;font-weight:800;color:#fff;">${m.name}</div>
+                    <div style="font-family:var(--orb);font-size:9px;color:rgba(255,120,120,.55);margin-top:2px;">특수임무 · 탭하여 선택</div>
+                  </div>
+                  <div style="color:rgba(255,80,80,.6);font-size:16px;">›</div>
                 </div>
-                <div style="font-family:var(--orb);font-size:10px;color:rgba(255,80,80,.7);">▶</div>
               </div>
-            </div>
-          `).join('')}
+            `).join('')}
+          </div>
+        `}
+      ` : `
+        <div style="text-align:center;padding:10px;">
+          <button onclick="_cancelSpecialMissionSelect()" style="padding:8px 18px;background:rgba(60,10,10,.6);border:1px solid rgba(200,50,50,.3);border-radius:8px;color:rgba(255,80,80,.7);font-family:var(--kr);font-size:12px;cursor:pointer;">선택 취소</button>
         </div>
       `}
     </div>`;
@@ -9382,44 +9558,100 @@ function openSpecialMissionSelect(){
   document.body.appendChild(overlay);
 }
 
-/* 스페셜임무 선택 확정 */
-async function confirmSpecialMissionSelect(idx){
+/* 내 특수임무 선택 */
+async function pickMySpecialMission(idx){
   const myHards = tplData['hard'] || [];
   const mission = myHards[idx];
-  if(!mission){ return; }
-
+  if(!mission) return;
   const path = _tmPath(4);
   if(!path){ showToast('Firebase 연결이 필요합니다'); return; }
+  const mk = _tmMK(), ok = _tmOK();
 
-  const mk = _tmMK();
-  /* Firebase에 내 선택 저장 */
   await _fbUpdate(path+'/special_select', {
     [mk]: { name: mission.name, idx, selectedAt: Date.now() }
   }).catch(()=>{});
 
-  /* 상대방도 선택했는지 확인 */
-  const ok = _tmOK();
+  /* 현재 상대 선택 확인 */
   const snap = await _fbGet(path+'/special_select').catch(()=>null);
   const d = snap && snap.exists() ? snap.val() : {};
+  const oppChoice = d[ok] || null;
+  const myChoice = d[mk] || { name: mission.name };
 
+  showToast(`✅ "${mission.name}" 선택 완료!`);
+  _renderSpecialSelectUI(myHards, myChoice, oppChoice, _tmPN(), mk, ok);
+  tmHQRenderHome();
+}
+
+/* 선택 취소 */
+async function _cancelSpecialMissionSelect(){
+  const path = _tmPath(4);
+  if(!path) return;
+  const mk = _tmMK(), ok = _tmOK();
+  await _fbUpdate(path+'/special_select', { [mk]: null }).catch(()=>{});
+  const myHards = tplData['hard'] || [];
+  const snap = await _fbGet(path+'/special_select').catch(()=>null);
+  const d = snap && snap.exists() ? snap.val() : {};
+  _renderSpecialSelectUI(myHards, null, d[ok]||null, _tmPN(), mk, ok);
+  tmHQRenderHome();
+}
+
+/* 스페셜 선택 실시간 감시 — 상대방 선택 시 팝업 자동 갱신 */
+let _specialSelectSubFn = null;
+function _startSpecialSelectWatch(){
+  if(_specialSelectSubFn){ try{_specialSelectSubFn();}catch(e){} }
+  const path = _tmPath(4);
+  if(!path||!FB_READY||!_fbDb) return;
+  const mk = _tmMK(), ok = _tmOK();
+  _fbOn(path+'/special_select', snap=>{
+    const d = snap && snap.exists() ? snap.val() : {};
+    const overlay = document.getElementById('specialSelectOverlay');
+    if(overlay){
+      _renderSpecialSelectUI(tplData['hard']||[], d[mk]||null, d[ok]||null, _tmPN(), mk, ok);
+    }
+    tmHQRenderHome();
+  });
+  _specialSelectSubFn = ()=>{};
+}
+
+/* 임무수행 시작 — 랜덤 확정 */
+async function startSpecialMissionRandom(){
+  const path = _tmPath(4);
+  if(!path){ showToast('Firebase 연결이 필요합니다'); return; }
+  const mk = _tmMK(), ok = _tmOK();
+
+  const snap = await _fbGet(path+'/special_select').catch(()=>null);
+  const d = snap && snap.exists() ? snap.val() : {};
+  const myChoice = d[mk];
+  const oppChoice = d[ok];
+
+  if(!myChoice || !oppChoice){ showToast('양쪽 선택이 완료되지 않았습니다'); return; }
+
+  /* 랜덤으로 1개 확정 */
+  const chosen = Math.random() < 0.5 ? myChoice : oppChoice;
+  const confirmedMission = chosen.name;
+
+  await _fbUpdate(path, {
+    'special_confirmed': { name: confirmedMission, confirmedAt: Date.now() },
+    'question': `[스페셜임무] ${confirmedMission}`
+  }).catch(()=>{});
+
+  /* 선택 overlay 닫기 */
   const overlay = document.getElementById('specialSelectOverlay');
   if(overlay) overlay.remove();
 
-  if(d[ok]){
-    /* 양쪽 모두 선택 완료 → 랜덤 1개 확정 */
-    const chosen = Math.random() < 0.5 ? d[mk] : d[ok];
-    const pickerKey = 'special_confirmed';
-    await _fbUpdate(path, {
-      [pickerKey]: { name: chosen.name, confirmedAt: Date.now() },
-      question: `[스페셜임무] ${chosen.name}`
-    }).catch(()=>{});
-
-    showToast(`🎲 스페셜임무 확정: "${chosen.name}"`);
-  } else {
-    showToast(`✅ 선택 완료! 상대방의 선택을 기다리는 중...`);
-  }
-
-  tmHQRenderHome();
+  /* 결과 팝업 */
+  const flash = document.createElement('div');
+  flash.style.cssText='position:fixed;inset:0;z-index:9800;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:20px;';
+  flash.innerHTML = `
+    <div style="text-align:center;max-width:300px;width:100%;">
+      <div style="font-size:56px;margin-bottom:12px;filter:drop-shadow(0 0 18px rgba(251,191,36,.6));">🎲</div>
+      <div style="font-family:var(--orb);font-size:9px;letter-spacing:3px;color:rgba(251,191,36,.6);margin-bottom:8px;">MISSION CONFIRMED</div>
+      <div style="font-family:var(--title);font-size:18px;font-weight:900;color:#fff;margin-bottom:6px;">스페셜임무 확정!</div>
+      <div style="font-family:var(--kr);font-size:14px;color:rgba(251,191,36,.95);font-weight:700;padding:12px 16px;background:rgba(251,191,36,.1);border:1.5px solid rgba(251,191,36,.4);border-radius:12px;margin-bottom:20px;line-height:1.5;">"${confirmedMission}"</div>
+      <button onclick="this.closest('[style*=fixed]').remove();tmHQRenderHome();" style="padding:13px 32px;background:linear-gradient(135deg,rgba(120,90,0,.9),rgba(80,60,0,.95));border:2px solid rgba(251,191,36,.55);border-radius:12px;color:#fff;font-family:var(--title);font-size:15px;font-weight:900;cursor:pointer;">✅ 임무 시작!</button>
+    </div>`;
+  document.body.appendChild(flash);
+  setTimeout(()=>{ if(flash.parentNode) flash.remove(); tmHQRenderHome(); }, 5000);
 }
 
 function tmHQBack(){
