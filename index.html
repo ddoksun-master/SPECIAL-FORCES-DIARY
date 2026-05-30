@@ -8000,7 +8000,7 @@ function tmBuildCard(n){
       <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(200,168,75,.6);margin-bottom:10px;">◈ SPECIAL 5-DAY CHALLENGE</div>
       <div id="tmDayBars" style="display:flex;gap:4px;margin-bottom:10px;">
         ${[1,2,3,4,5].map(d=>`<div style="flex:1;text-align:center;">
-          <div id="tmDay${d}" style="height:36px;background:rgba(30,22,3,.8);border:1px solid rgba(200,168,75,.25);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.4);transition:all .4s;">D${d}</div>
+          <div id="tmDay${d}" style="height:44px;background:rgba(20,16,3,.6);border:1px solid rgba(200,168,75,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;font-family:var(--orb);font-size:10px;color:rgba(200,168,75,.28);transition:all .4s;">D${d}</div>
         </div>`).join('')}
       </div>
       <div id="tmDayStatus" style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.45);text-align:center;">오늘 답글을 등록하면 DAY 카운트됩니다</div>
@@ -8243,36 +8243,95 @@ function tmUpdateStatus(myAns, oppAns, n){
    스페셜임무 5일 DAY 렌더
 ────────────────────────────────────────── */
 function tmRenderDays(myDays, oppDays, qaData){
+  const completedDays = qaData ? (qaData.completedDays||0) : 0;
   for(let d=1;d<=5;d++){
     const el = document.getElementById('tmDay'+d);
     if(!el) continue;
     const myDone  = myDays[d-1]===true||myDays[d-1]==='true';
     const oppDone = oppDays[d-1]===true||oppDays[d-1]==='true';
     const both    = myDone && oppDone;
-    if(both){
-      el.style.background='linear-gradient(135deg,rgba(40,30,3,.9),rgba(60,45,5,.9))';
-      el.style.border='1.5px solid rgba(200,168,75,.8)';
-      el.style.color='rgba(200,168,75,1)';
-      el.style.boxShadow='0 0 8px rgba(200,168,75,.3)';
-      el.textContent='D'+d+' ✓';
+    const isPast  = (d-1) < completedDays; /* 이미 완료된 과거 DAY */
+
+    if(both || isPast){
+      /* 둘 다 완료 — 금색 점등 */
+      el.style.cssText=`
+        height:44px;
+        background:linear-gradient(160deg,rgba(55,42,5,.98),rgba(80,60,6,.92));
+        border:2px solid rgba(220,185,65,.85);
+        border-radius:8px;
+        display:flex;align-items:center;justify-content:center;
+        flex-direction:column;gap:1px;
+        box-shadow:0 0 12px rgba(200,168,75,.45),inset 0 1px 0 rgba(255,220,80,.15);
+        transition:all .4s;
+        cursor:default;
+      `;
+      el.innerHTML=`
+        <div style="font-family:var(--orb);font-size:10px;font-weight:900;color:rgba(255,215,60,1);letter-spacing:.5px;line-height:1;">D${d}</div>
+        <div style="font-size:11px;line-height:1;margin-top:1px;">⭐</div>
+      `;
     } else if(myDone){
-      el.style.background='rgba(18,50,16,.8)';
-      el.style.border='1px solid rgba(90,158,72,.5)';
-      el.style.color='rgba(127,191,106,.8)';
-      el.textContent='D'+d+' ½';
+      /* 나만 완료 — 초록 */
+      el.style.cssText=`
+        height:44px;
+        background:rgba(15,45,18,.9);
+        border:1.5px solid rgba(90,158,72,.6);
+        border-radius:8px;
+        display:flex;align-items:center;justify-content:center;
+        flex-direction:column;gap:1px;
+        box-shadow:0 0 6px rgba(90,158,72,.2);
+        transition:all .4s;
+        cursor:default;
+      `;
+      el.innerHTML=`
+        <div style="font-family:var(--orb);font-size:10px;font-weight:700;color:rgba(127,191,106,.9);letter-spacing:.5px;line-height:1;">D${d}</div>
+        <div style="font-size:10px;line-height:1;margin-top:1px;color:rgba(127,191,106,.7);">✓</div>
+      `;
+    } else if(oppDone){
+      /* 상대만 완료 — 앰버 */
+      el.style.cssText=`
+        height:44px;
+        background:rgba(38,28,4,.85);
+        border:1.5px solid rgba(200,168,75,.4);
+        border-radius:8px;
+        display:flex;align-items:center;justify-content:center;
+        flex-direction:column;gap:1px;
+        transition:all .4s;
+        cursor:default;
+      `;
+      el.innerHTML=`
+        <div style="font-family:var(--orb);font-size:10px;font-weight:700;color:rgba(200,168,75,.7);letter-spacing:.5px;line-height:1;">D${d}</div>
+        <div style="font-size:10px;line-height:1;margin-top:1px;color:rgba(200,168,75,.5);">½</div>
+      `;
     } else {
-      el.style.background='rgba(30,22,3,.8)';
-      el.style.border='1px solid rgba(200,168,75,.2)';
-      el.style.color='rgba(200,168,75,.35)';
-      el.textContent='D'+d;
+      /* 미완료 */
+      el.style.cssText=`
+        height:44px;
+        background:rgba(20,16,3,.6);
+        border:1px solid rgba(200,168,75,.15);
+        border-radius:8px;
+        display:flex;align-items:center;justify-content:center;
+        flex-direction:column;gap:1px;
+        transition:all .4s;
+        cursor:default;
+      `;
+      el.innerHTML=`
+        <div style="font-family:var(--orb);font-size:10px;color:rgba(200,168,75,.28);letter-spacing:.5px;line-height:1;">D${d}</div>
+        <div style="font-size:9px;line-height:1;margin-top:1px;color:rgba(200,168,75,.2);">—</div>
+      `;
     }
   }
-  const completedDays = qaData ? (qaData.completedDays||0) : 0;
   const ds = document.getElementById('tmDayStatus');
   if(ds){
-    if(completedDays>=5) ds.textContent='🏆 5일 챌린지 완료!';
-    else if(completedDays>0) ds.textContent='진행중: '+completedDays+'/5일 완료';
-    else ds.textContent='오늘 답글을 등록하면 DAY 카운트됩니다';
+    if(completedDays>=5){
+      ds.innerHTML='<span style="color:rgba(255,215,60,1);font-weight:900;">🏆 5일 챌린지 완료!</span>';
+    } else if(completedDays>0){
+      const pips = Array.from({length:5},(_,i)=>
+        `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${i<completedDays?'rgba(200,168,75,.9)':'rgba(200,168,75,.18)'};box-shadow:${i<completedDays?'0 0 5px rgba(200,168,75,.5)':'none'};"></span>`
+      ).join('');
+      ds.innerHTML=`<span style="color:rgba(255,184,71,.8);font-weight:700;">진행중 ${completedDays}/5일</span> <span style="display:inline-flex;gap:3px;vertical-align:middle;margin-left:4px;">${pips}</span>`;
+    } else {
+      ds.innerHTML='<span style="color:rgba(255,255,255,.35);">오늘 답글을 등록하면 DAY 카운트됩니다</span>';
+    }
   }
 }
 
@@ -8844,28 +8903,24 @@ function tmHQRenderHome(){
         <rect x="5" y="40" width="8" height="6" rx="2" fill="rgba(200,168,75,.3)" stroke="rgba(200,168,75,.35)" stroke-width="1"/>
         <rect x="51" y="40" width="8" height="6" rx="2" fill="rgba(200,168,75,.3)" stroke="rgba(200,168,75,.35)" stroke-width="1"/>
       ` : boxState==='done' ? `
-        <!-- 완료: 활짝 열린 + 보상 빛 -->
-        <!-- 빛 오라 -->
-        <ellipse cx="32" cy="18" rx="24" ry="10" fill="${cGlow}" opacity=".55" filter="url(#glow${n})"/>
-        <!-- 뚜껑 (뒤로 젖힘) -->
-        <rect x="5" y="2" width="54" height="14" rx="5" fill="url(#chestLid${n})" transform="rotate(-30 32 14)" opacity=".88"/>
-        <rect x="5" y="2" width="54" height="7" rx="5" fill="url(#chestShine${n})" transform="rotate(-30 32 14)" opacity=".6"/>
-        <!-- 몸통 -->
-        <rect x="4" y="26" width="56" height="27" rx="5" fill="url(#chestBody${n})" opacity=".88"/>
-        <rect x="4" y="26" width="56" height="27" rx="5" fill="none" stroke="${c1}" stroke-width="1.5"/>
+        <!-- 완료: COMPLETE 도장 -->
+        <!-- 몸통 (어두운 배경) -->
+        <rect x="4" y="20" width="56" height="34" rx="5" fill="url(#chestBody${n})" opacity=".55"/>
+        <rect x="4" y="20" width="56" height="34" rx="5" fill="none" stroke="${c1}" stroke-width="1.2"/>
         <!-- 금속 밴드 -->
-        <rect x="4" y="26" width="56" height="4" fill="url(#bandGrad${n})" opacity=".7"/>
-        <rect x="28" y="26" width="8" height="27" rx="2" fill="url(#bandGrad${n})" opacity=".5"/>
-        <!-- 꺾쇠 장식 -->
-        <rect x="5" y="41" width="8" height="6" rx="2" fill="rgba(200,168,75,.5)" stroke="rgba(200,168,75,.6)" stroke-width="1"/>
-        <rect x="51" y="41" width="8" height="6" rx="2" fill="rgba(200,168,75,.5)" stroke="rgba(200,168,75,.6)" stroke-width="1"/>
-        <!-- 빛 방사선 -->
-        <line x1="32" y1="18" x2="20" y2="6" stroke="${c1}" stroke-width="1" opacity=".5"/>
-        <line x1="32" y1="18" x2="44" y2="6" stroke="${c1}" stroke-width="1" opacity=".5"/>
-        <line x1="32" y1="18" x2="14" y2="14" stroke="${c1}" stroke-width="1" opacity=".35"/>
-        <line x1="32" y1="18" x2="50" y2="14" stroke="${c1}" stroke-width="1" opacity=".35"/>
-        <!-- 완료 체크 -->
-        <text x="32" y="46" text-anchor="middle" font-size="16" filter="url(#glow${n})">✅</text>
+        <rect x="4" y="20" width="56" height="3.5" fill="url(#bandGrad${n})" opacity=".6"/>
+        <rect x="28" y="20" width="8" height="34" rx="2" fill="url(#bandGrad${n})" opacity=".4"/>
+        <!-- 뚜껑 (젖혀짐) -->
+        <rect x="6" y="3" width="52" height="13" rx="4" fill="url(#chestLid${n})" transform="rotate(-25 32 12)" opacity=".75"/>
+        <!-- 빛 오라 -->
+        <ellipse cx="32" cy="20" rx="20" ry="7" fill="${cGlow}" opacity=".5" filter="url(#glow${n})"/>
+        <!-- COMPLETE 도장 원 -->
+        <circle cx="32" cy="37" r="13" fill="rgba(0,0,0,.45)" stroke="${c1}" stroke-width="1.8" stroke-dasharray="4 2.5"/>
+        <circle cx="32" cy="37" r="9.5" fill="${c3}" stroke="${c1}" stroke-width="1"/>
+        <!-- 별 -->
+        <text x="32" y="34" text-anchor="middle" font-size="8" fill="${c0}" font-weight="900">★</text>
+        <!-- DONE 텍스트 -->
+        <text x="32" y="42" text-anchor="middle" font-family="Courier Prime,monospace" font-size="5.5" font-weight="900" fill="${c1}" letter-spacing="1.5">DONE</text>
       ` : `
         <!-- 해제: 반쯤 열린 보물상자 -->
         <!-- 빛 흘러나옴 -->
