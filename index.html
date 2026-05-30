@@ -281,46 +281,46 @@ html,body{
 .nav-label{font-size:10px;font-weight:700;white-space:nowrap;color:rgba(180,210,175,.4);}
 .nav-item.active .nav-label{color:var(--gold-dim);}
 
-/* ===== 요일 탭 ===== */
+/* ===== 요일 탭 (틸 테마) ===== */
 .day-tabs{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
 .dtab{
   display:flex;flex-direction:column;align-items:center;gap:3px;
   padding:8px 2px 7px;
-  background:rgba(8,18,10,.4);
-  border:1.5px solid rgba(90,158,72,.1);
+  background:rgba(4,28,34,.55);
+  border:1.5px solid rgba(56,150,138,.15);
   border-radius:10px;
   cursor:pointer;
   transition:all .15s;
   min-width:0;
 }
-/* 요일·날짜 기본 색상 */
-.dtab-nm{font-size:9px;font-weight:700;color:rgba(180,150,60,.45);line-height:1;}
-.dtab-dt{font-size:14px;font-weight:600;color:rgba(200,168,75,.45);line-height:1.2;}
-.dtab-pct{font-size:9px;font-weight:700;color:rgba(200,168,75,.4);line-height:1;}
+/* 요일·날짜 기본 색상 — 틸 계열 */
+.dtab-nm{font-size:9px;font-weight:700;color:rgba(92,184,172,.5);line-height:1;}
+.dtab-dt{font-size:14px;font-weight:600;color:rgba(92,184,172,.55);line-height:1.2;}
+.dtab-pct{font-size:9px;font-weight:700;color:rgba(92,184,172,.45);line-height:1;}
 
 /* ── 오늘 ── */
-.dtab.today .dtab-nm{color:rgba(127,191,106,.8);}
-.dtab.today .dtab-dt{color:rgba(127,191,106,.95);font-weight:700;}
-.dtab.today .dtab-pct{color:rgba(127,191,106,.75);}
+.dtab.today .dtab-nm{color:rgba(92,184,172,.9);}
+.dtab.today .dtab-dt{color:rgba(92,184,172,1);font-weight:700;}
+.dtab.today .dtab-pct{color:rgba(92,184,172,.8);}
 
 /* ── 선택됨 ── */
 .dtab.sel{
-  background:rgba(60,44,6,.85);
-  border-color:rgba(200,168,75,.65);
-  box-shadow:0 0 10px rgba(200,168,75,.2);
+  background:rgba(4,45,48,.88);
+  border-color:rgba(92,184,172,.7);
+  box-shadow:0 0 10px rgba(56,150,138,.25);
 }
-.dtab.sel .dtab-nm{color:rgba(230,195,80,.9);}
+.dtab.sel .dtab-nm{color:rgba(92,220,210,.9);}
 .dtab.sel .dtab-dt{color:#fff;font-weight:800;}
-.dtab.sel .dtab-pct{color:rgba(230,195,80,.7);}
+.dtab.sel .dtab-pct{color:rgba(92,220,210,.75);}
 
 /* ── 오늘이면서 선택됨 ── */
 .dtab.today.sel{
-  background:rgba(15,50,16,.88);
-  border-color:rgba(90,158,72,.75);
-  box-shadow:0 0 10px rgba(90,158,72,.25);
+  background:rgba(4,55,50,.92);
+  border-color:rgba(56,180,168,.8);
+  box-shadow:0 0 12px rgba(56,150,138,.3);
 }
-.dtab.today.sel .dtab-nm{color:rgba(140,220,120,.95);}
-.dtab.today.sel .dtab-dt{color:#c8ffc0;font-weight:800;}
+.dtab.today.sel .dtab-nm{color:rgba(120,230,220,.95);}
+.dtab.today.sel .dtab-dt{color:#b0fff8;font-weight:800;}
 
 /* ── 일요일 ── */
 .dtab.sun .dtab-nm,.dtab.sun .dtab-dt{color:rgba(255,90,90,.5);}
@@ -332,13 +332,13 @@ html,body{
 .dtab.past-fail .dtab-nm,.dtab.past-fail .dtab-dt,.dtab.past-fail .dtab-pct{color:rgba(255,90,90,.55);}
 .dtab.past-none .dtab-nm,.dtab.past-none .dtab-dt{color:rgba(180,150,60,.18);}
 
-/* ===== 카테고리 탭 ===== */
+/* ===== 카테고리 탭 (작전분류 — 앰버/골드 테마) ===== */
 .cat-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
 .ctab{
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
   padding:15px 8px;
-  background:rgba(12,30,14,.8);
-  border:1.5px solid rgba(90,158,72,.15);border-radius:14px;
+  background:rgba(30,20,4,.85);
+  border:1.5px solid rgba(200,168,75,.18);border-radius:14px;
   cursor:pointer;transition:all .2s;
   position:relative;overflow:hidden;
 }
@@ -351,29 +351,29 @@ html,body{
 .ctab-lbl{font-size:12px;font-weight:800;color:rgba(200,200,200,.55);letter-spacing:.2px;white-space:nowrap;}
 .ctab-sub{font-size:10px;font-weight:700;font-family:var(--orb);letter-spacing:.5px;color:rgba(255,255,255,.25);}
 
-/* 일반임무 — 올리브 그린 */
-.ctab-easy{background:rgba(12,40,36,.85);border-color:rgba(56,150,138,.2);}
-.ctab-easy .ci svg{filter:none;stroke:rgba(90,158,72,.5);}
+/* 일반임무 — 틸 그린 */
+.ctab-easy{background:rgba(4,28,28,.85);border-color:rgba(56,150,138,.2);}
+.ctab-easy .ci svg{filter:none;stroke:rgba(56,150,138,.5);}
 .ctab-easy.active{
-  background:linear-gradient(145deg,rgba(16,55,50,.95),rgba(10,42,38,.92));
-  border-color:rgba(90,158,72,.7);
-  box-shadow:0 4px 18px rgba(90,158,72,.2),inset 0 1px 0 rgba(90,158,72,.12);
+  background:linear-gradient(145deg,rgba(4,50,44,.95),rgba(2,35,32,.92));
+  border-color:rgba(56,150,138,.75);
+  box-shadow:0 4px 18px rgba(56,150,138,.22),inset 0 1px 0 rgba(56,150,138,.12);
 }
-.ctab-easy.active .ctab-lbl{color:#9de870;text-shadow:0 0 12px rgba(90,158,72,.4);}
-.ctab-easy.active .ctab-sub{color:rgba(127,191,106,.65);}
-.ctab-easy.active .ci svg{stroke:#7FBF6A;filter:drop-shadow(0 0 4px rgba(90,158,72,.6));}
+.ctab-easy.active .ctab-lbl{color:#6ee8d8;text-shadow:0 0 12px rgba(56,150,138,.4);}
+.ctab-easy.active .ctab-sub{color:rgba(92,184,172,.65);}
+.ctab-easy.active .ci svg{stroke:#6ee8d8;filter:drop-shadow(0 0 4px rgba(56,150,138,.6));}
 
-/* 위험임무 — 앰버 골드 */
-.ctab-medium{background:rgba(36,26,5,.85);border-color:rgba(212,174,82,.2);}
-.ctab-medium .ci svg{filter:none;stroke:rgba(200,168,75,.5);}
+/* 위험임무 — 앰버 */
+.ctab-medium{background:rgba(36,24,4,.85);border-color:rgba(255,184,71,.2);}
+.ctab-medium .ci svg{filter:none;stroke:rgba(255,184,71,.5);}
 .ctab-medium.active{
-  background:linear-gradient(145deg,rgba(48,34,4,.95),rgba(32,22,4,.92));
-  border-color:rgba(200,168,75,.7);
-  box-shadow:0 4px 18px rgba(200,168,75,.2),inset 0 1px 0 rgba(200,168,75,.1);
+  background:linear-gradient(145deg,rgba(55,36,4,.95),rgba(38,24,2,.92));
+  border-color:rgba(255,184,71,.75);
+  box-shadow:0 4px 18px rgba(255,184,71,.22),inset 0 1px 0 rgba(255,184,71,.1);
 }
-.ctab-medium.active .ctab-lbl{color:#E8C870;text-shadow:0 0 12px rgba(200,168,75,.4);}
-.ctab-medium.active .ctab-sub{color:rgba(200,168,75,.65);}
-.ctab-medium.active .ci svg{stroke:#E8C870;filter:drop-shadow(0 0 4px rgba(200,168,75,.6));}
+.ctab-medium.active .ctab-lbl{color:#ffd080;text-shadow:0 0 12px rgba(255,184,71,.4);}
+.ctab-medium.active .ctab-sub{color:rgba(255,184,71,.65);}
+.ctab-medium.active .ci svg{stroke:#ffd080;filter:drop-shadow(0 0 4px rgba(255,184,71,.6));}
 
 /* 특수임무 — 레드 */
 .ctab-hard{background:rgba(28,6,6,.85);border-color:rgba(220,60,60,.18);}
@@ -523,10 +523,10 @@ html,body{
 .qitem.medium .qstripe{background:linear-gradient(180deg,#E8C870,#C8A84B);box-shadow:1px 0 6px rgba(200,168,75,.3);}
 .qitem.hard   .qstripe{background:linear-gradient(180deg,#ff5555,#c42020);box-shadow:1px 0 6px rgba(200,50,50,.3);}
 
-/* 카드 배경 */
-.qitem.easy  {background:linear-gradient(135deg,rgba(10,34,30,.97) 30%,rgba(14,45,40,.94));}
-.qitem.medium{background:linear-gradient(135deg,rgba(22,18,4,.97) 30%,rgba(32,24,5,.94));}
-.qitem.hard  {background:linear-gradient(135deg,rgba(24,6,6,.97) 30%,rgba(34,7,7,.94));}
+/* 카드 배경 — 더 밝고 구분되게 */
+.qitem.easy  {background:linear-gradient(135deg,rgba(4,36,32,.97) 30%,rgba(6,48,42,.94));}
+.qitem.medium{background:linear-gradient(135deg,rgba(32,22,4,.97) 30%,rgba(44,30,5,.94));}
+.qitem.hard  {background:linear-gradient(135deg,rgba(32,6,6,.97) 30%,rgba(42,8,8,.94));}
 
 .qbody{flex:1;padding:10px 10px 10px 14px;min-width:0;position:relative;z-index:1;}
 
@@ -544,11 +544,11 @@ html,body{
 .qitem.medium .dtag{background:rgba(90,65,8,.7);color:#f0d060;border:1.5px solid rgba(220,185,75,.6);}
 .qitem.hard   .dtag{background:rgba(100,15,15,.7);color:#ff8888;border:1.5px solid rgba(230,60,60,.6);}
 
-/* 임무명 — 이미지처럼 크고 bold, 난이도 뱃지와 간격 */
+/* 임무명 — wrap 가능하게 */
 .qname{
-  font-family:var(--kr);font-size:16px;font-weight:800;color:#ffffff;
+  font-family:var(--kr);font-size:15px;font-weight:800;color:#ffffff;
   margin-top:2px;margin-bottom:0;letter-spacing:-.1px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+  white-space:normal;overflow:visible;text-overflow:unset;word-break:keep-all;max-width:100%;
 }
 .qmeta{font-family:var(--kr);font-size:11px;color:rgba(245,205,105,.6);margin-bottom:2px;}
 .qcat{
@@ -635,15 +635,15 @@ html,body{
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:4px;}
 .cday-blank{background:transparent;border:none;}
 .cday{
-  background:rgba(12,38,16,.62);border:1px solid rgba(175,135,42,.08);
+  background:rgba(6,42,50,.65);border:1px solid rgba(56,150,138,.15);
   border-radius:7px;padding:7px 2px;text-align:center;font-size:10px;
-  cursor:pointer;transition:.15s;color:rgba(148,198,148,.42);
+  cursor:pointer;transition:.15s;color:rgba(92,184,172,.55);
 }
-.cday.today{border-color:rgba(200,168,75,.5);color:var(--gold-dim);transform:scale(1.04);}
-.cday.sel-d{box-shadow:0 0 0 2px rgba(138,222,80,.5) inset;}
-.cday.success{background:rgba(18,86,26,.72);border-color:rgba(55,178,68,.22);color:#F5C84A;}
-.cday.partial{background:rgba(75,56,6,.72);border-color:rgba(178,138,18,.22);color:#ffc84a;}
-.cday.fail{background:rgba(48,12,12,.62);color:rgba(198,85,85,.38);}
+.cday.today{border-color:rgba(92,184,172,.65);color:var(--teal-dim);transform:scale(1.04);}
+.cday.sel-d{box-shadow:0 0 0 2px rgba(92,184,172,.55) inset;}
+.cday.success{background:rgba(4,65,50,.72);border-color:rgba(56,180,130,.28);color:#70E8B8;}
+.cday.partial{background:rgba(60,42,4,.72);border-color:rgba(255,184,71,.28);color:#ffc84a;}
+.cday.fail{background:rgba(48,12,12,.62);color:rgba(198,85,85,.45);}
 .cpct{font-size:9px;margin-top:2px;font-weight:700;opacity:.88;}
 
 /* ===== HISTORY ===== */
@@ -675,13 +675,10 @@ html,body{
   display:block;
 }
 /* 비활성 상태 기본 stroke */
-.ctab-easy .ci svg  { stroke: rgba(90,158,72,.42); }
-.ctab-medium .ci svg{ stroke: rgba(200,168,75,.42); }
+.ctab-easy .ci svg  { stroke: rgba(56,150,138,.42); }
+.ctab-medium .ci svg{ stroke: rgba(255,184,71,.42); }
 .ctab-hard .ci svg  { stroke: rgba(220,60,60,.42); }
-/* 활성 상태 stroke */
-.ctab-easy.active .ci svg  { stroke: #8FCF7A; filter:drop-shadow(0 0 5px rgba(90,158,72,.7)); }
-.ctab-medium.active .ci svg{ stroke: #E8C870; filter:drop-shadow(0 0 5px rgba(200,168,75,.7)); }
-.ctab-hard.active .ci svg  { stroke: #ff7878; filter:drop-shadow(0 0 5px rgba(200,50,50,.7)); }
+/* 활성 상태 stroke (위 CSS에서 이미 설정됨) */
 
 /* ===== 작전 카드 아이콘 레이아웃 ===== */
 .qmain {
@@ -718,13 +715,8 @@ html,body{
 
 /* ctab 금액 표시 */
 .ctab-sub{font-size:10px;font-weight:700;font-family:var(--orb);letter-spacing:.5px;color:rgba(255,255,255,.35);margin-top:1px;}
-.ctab.active .ctab-sub{color:rgba(168,232,144,.6);}
-/* 임무별 탭 active 색상 */
-.ctab-easy.active{background:rgba(10,45,14,.9);border-color:rgba(90,158,72,.55);}
-.ctab-medium.active{background:rgba(38,28,5,.9);border-color:rgba(200,168,75,.55);}
-.ctab-hard.active{background:rgba(40,8,8,.9);border-color:rgba(220,60,60,.5);}
-.ctab-medium.active .ctab-lbl,.ctab-medium.active .ctab-sub{color:var(--gold-dim);}
-.ctab-hard.active .ctab-lbl,.ctab-hard.active .ctab-sub{color:#ff8080;}
+.ctab.active .ctab-sub{color:rgba(200,230,200,.6);}
+/* 임무별 탭 active 색상 — 위 섹션에서 정의됨 */
 
 .tcard.easy  .tcard-name{color:#a0e880;}
 .tcard.medium .tcard-name{color:#e8d070;}
@@ -4765,7 +4757,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div class="card-title cat-toggle" id="catToggleBtn" onclick="toggleCatCard()" style="font-size:14px;font-weight:900;letter-spacing:.5px;margin-bottom:0;">
           작전 분류
           <span style="margin-left:auto;display:flex;align-items:center;gap:8px;">
-            <button onclick="event.stopPropagation();copyYesterday()" style="padding:4px 10px;background:rgba(30,22,5,.7);border:1px solid rgba(200,168,75,.3);border-radius:6px;color:rgba(200,168,75,.75);font-family:var(--kr);font-size:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>전일복사</button>
+            <button onclick="event.stopPropagation();copyYesterday()" style="padding:4px 10px;background:rgba(30,22,5,.7);border:1px solid rgba(200,168,75,.3);border-radius:6px;color:#ffffff;font-family:var(--kr);font-size:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>전일복사</button>
             <span class="cat-toggle-arrow" id="catToggleArrow">▶</span>
           </span>
         </div>
@@ -4963,12 +4955,20 @@ document.addEventListener('DOMContentLoaded',()=>{
               <div style="font-family:var(--orb);font-size:20px;font-weight:900;color:var(--gold);">300,000원</div>
             </div>
             <div style="text-align:right;">
-              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">개인 최대 100,000</div>
-              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">팀전 (특수) 100,000</div>
-              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">팀전 (스페셜) 100,000</div>
+              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">개인임무 최대 100,000</div>
+              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,100,100,.45);">특수임무 최대 120,000</div>
+              <div style="font-family:var(--kr);font-size:10px;color:rgba(251,191,36,.45);">스페셜임무 100,000</div>
             </div>
           </div>
           <div style="height:1px;background:rgba(200,168,75,.12);margin-bottom:6px;"></div>
+          <!-- 개인임무 한도 안내 -->
+          <div id="personalCapInfo" style="padding:7px 10px;background:rgba(10,25,12,.5);border:1px solid rgba(90,158,72,.15);border-radius:8px;margin-bottom:7px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.7);">개인임무 한도</span>
+              <span id="personalCapAmt" style="font-family:var(--orb);font-size:12px;font-weight:900;color:rgba(127,191,106,.9);">100,000원</span>
+            </div>
+            <div id="personalCapNote" style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.3);margin-top:2px;">특수임무 합계에 따라 자동 조정</div>
+          </div>
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <span style="font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.5);">현재 달성률</span>
             <span id="statsTotalPct" style="font-family:var(--orb);font-size:13px;font-weight:700;color:rgba(127,191,106,.8);">0%</span>
@@ -5034,10 +5034,10 @@ document.addEventListener('DOMContentLoaded',()=>{
     <!-- ====== 팀작전 패널 ====== -->
     <div class="panel" id="panelTeam">
 
-      <!-- ① 내 프로필 카드 -->
-      <div class="card" style="padding:16px;">
+      <!-- ① 내 프로필 카드 — 스틸블루 테마 -->
+      <div class="card" style="padding:16px;background:linear-gradient(145deg,rgba(14,28,48,.96),rgba(10,20,38,.98));border-color:rgba(74,127,168,.2);box-shadow:0 6px 24px rgba(0,0,0,.6),0 0 12px rgba(74,127,168,.08) inset;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <div class="card-title" style="margin-bottom:0;">⚔ 팀작전</div>
+          <div class="card-title" style="margin-bottom:0;color:var(--steel-dim);">⚔ 팀작전</div>
           <div id="fbStatusDot" style="display:flex;align-items:center;gap:5px;font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.3);">
             <span id="fbDot" style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2);display:inline-block;"></span>
             <span id="fbStatusTxt">연결 중...</span>
@@ -5076,9 +5076,9 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div style="text-align:center;padding:20px 0;color:rgba(255,255,255,.25);font-family:var(--kr);font-size:13px;">Firebase 연결 중...</div>
       </div>
 
-      <!-- ③ VS 현황 (연결 후만 표시) -->
-      <div class="card" id="teamVsCard" style="display:none;padding:16px;">
-        <div class="card-title" style="margin-bottom:12px;">📊 전투 현황</div>
+      <!-- ③ VS 현황 (연결 후만 표시) — 틸 테마 -->
+      <div class="card" id="teamVsCard" style="display:none;padding:16px;background:linear-gradient(145deg,rgba(4,30,32,.96),rgba(2,22,24,.98));border-color:rgba(56,150,138,.22);box-shadow:0 6px 24px rgba(0,0,0,.6),0 0 12px rgba(56,150,138,.08) inset;">
+        <div class="card-title" style="margin-bottom:12px;color:var(--teal-dim);">📊 전투 현황</div>
         <!-- 수정 10: 나(%) --- 프로그레스바 --- 상대(%) 레이아웃 -->
         <div id="vsProgressRow" style="margin-bottom:10px;">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
@@ -5330,10 +5330,6 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/><line x1="7" y1="6" x2="7" y2="6" stroke-width="2.5"/></svg></div>
       <div class="nav-label">작전수첩</div>
     </div>
-    <div class="nav-item" onclick="switchPanel('stats',this)">
-      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-      <div class="nav-label">통계분석</div>
-    </div>
     <div class="nav-item" onclick="switchPanel('history',this)">
       <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
       <div class="nav-label">작전기록</div>
@@ -5341,6 +5337,10 @@ document.addEventListener('DOMContentLoaded',()=>{
     <div class="nav-item" onclick="switchPanel('team',this)">
       <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <div class="nav-label">팀작전</div>
+    </div>
+    <div class="nav-item" onclick="switchPanel('stats',this)">
+      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></div>
+      <div class="nav-label">자금현황</div>
     </div>
     <div class="nav-item" onclick="switchPanel('shop',this)">
       <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
@@ -5660,6 +5660,9 @@ function renderQ(){
     const div=document.createElement('div');
     div.className=`qitem ${q.difficulty}`+(q.completed?' done':'');
 
+    /* dtag: 분류는 상단 카테고리탭에서 이미 선택되므로 카드에는 색상 도트만 표시 */
+    const dtagHtml=`<span class="dtag" style="padding:3px 7px;font-size:9px;letter-spacing:1px;display:flex;align-items:center;gap:4px;"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;"></span>${dlbl}</span>`;
+
     /* 누적형 5칸 버튼 HTML 생성 */
     let cumHtml='';
     const hasCum=!!(q.cumulative&&q.cumulative.steps);
@@ -5739,7 +5742,6 @@ function renderQ(){
           <div class="qtext" style="flex:1;min-width:0;">
             <div class="qcode">${code}<span class="dtag">${dlbl}</span></div>
             <div class="qmain">
-              <div class="qcat"><span class="qcat-icon">${catIc}</span>${catNm}</div>
               <div class="qname">${q.name}</div>
             </div>
           </div>
@@ -5825,7 +5827,7 @@ function renderQ(){
   if(quests.length>0&&comp===quests.length){
     ds.style.display='block';list.style.display='none';
     ds.innerHTML=total===10000
-      ?`<div class="done-title">🎉 작전성공!</div><div class="done-sub">금일 작전을 모두 성공적으로 수행했습니다</div><button class="add-btn" style="max-width:200px;margin:0 auto;" onclick="closeDone();switchPanel('stats',document.querySelectorAll('.nav-item')[1])">누적보기</button>`
+      ?`<div class="done-title">🎉 작전성공!</div><div class="done-sub">금일 작전을 모두 성공적으로 수행했습니다</div><button class="add-btn" style="max-width:200px;margin:0 auto;" onclick="closeDone();switchPanel('stats',document.querySelectorAll('.nav-item')[3])">누적보기</button>`
       :`<div class="done-title">🎯 잔여 ${rem.toLocaleString()}원</div><div class="done-sub">추가 작전을 투입해보세요</div><button class="add-btn" style="max-width:180px;margin:0 auto;" onclick="closeDone();openCatAndScroll()">+ 작전 추가</button>`;
   }else{ds.style.display='none';list.style.display='flex';}
   updateHUD();
@@ -6027,6 +6029,14 @@ function addTemplate(){
   const v=document.getElementById('qInput').value.trim();
   const d=document.getElementById('diffSel').value;
   if(!v) return;
+
+  /* 특수임무 최소 10글자 검증 */
+  if(d==='hard' && v.length < 10){
+    const cumErrEl=document.getElementById('cumErrMsg');
+    cumErrEl.textContent='⚠ 특수임무는 최소 10글자 이상 작성해야 합니다. (현재 '+v.length+'자)';
+    cumErrEl.style.display='block';
+    return;
+  }
 
   /* 위생 필터 */
   if(checkHygiene(v)){
@@ -6936,6 +6946,21 @@ function renderStatsRevenueCard(){
   const teamRew=calcTeamRewardMoney();
   const totalAll=personal+teamRew;
   const MAX_TOTAL=300000;
+
+  /* ── 리워드 한도 계산 ── */
+  const cap = calcRewardCap();
+  const personalCapEl = document.getElementById('personalCapAmt');
+  const personalCapNote = document.getElementById('personalCapNote');
+  if(personalCapEl){
+    personalCapEl.textContent = cap.personalCap.toLocaleString()+'원';
+    if(cap.personalCap < 100000){
+      personalCapEl.style.color='rgba(255,184,71,.9)';
+      if(personalCapNote) personalCapNote.textContent=`특수임무 ${cap.specialTotal.toLocaleString()}원 획득 → 한도 조정됨`;
+    } else {
+      personalCapEl.style.color='rgba(127,191,106,.9)';
+      if(personalCapNote) personalCapNote.textContent='특수임무 합계에 따라 자동 조정';
+    }
+  }
 
   /* ── 개인 누적 확보자금 ── */
   const pEl=document.getElementById('statsTotalMoney');
@@ -9025,6 +9050,7 @@ function tmHQRenderHome(){
           </div>
           ${done ? `<div style="font-family:var(--kr);font-size:11px;color:${cfg.color};">보상 획득 완료</div>` : `
           <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);margin-bottom:6px;">${unlocked?'임무 진행 가능':'해제 조건: '+(cfg.th/10000).toFixed(0)+'만원 달성'}</div>
+          ${unlocked && n===4 ? `<button onclick="event.stopPropagation();openSpecialMissionSelect()" style="padding:5px 12px;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.4);border-radius:7px;color:rgba(251,191,36,.9);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;margin-bottom:5px;">💎 스페셜임무 선택</button>` : ''}
           <div style="height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-bottom:2px;">
             <div style="height:100%;width:${myPct}%;background:linear-gradient(90deg,${cfg.color},${cfg.colorDim});border-radius:2px;transition:width .5s;"></div>
           </div>
@@ -9133,8 +9159,16 @@ async function tmHQRenderRewardPanel(){
     const chestSVG_my  = (myPick!==undefined&&rewards) ? _tmMakeChestSVG(n,'done',cfg) : _tmMakeChestSVG(n,'done',cfg);
     const chestSVG_opp = (oppPick!==undefined&&rewards) ? _tmMakeChestSVG(n,'done',cfg) : _tmMakeChestSVG(n,'done',cfg);
 
+    /* 질문 가져오기 */
+    const missionQuestion = _tmQ(n);
+
     const detailHtml = `
       <div style="padding:10px 12px 12px;border-top:1px solid ${cfg.border.replace('.5)','.15)')};margin-top:0;">
+        <!-- 질문 표시 -->
+        <div style="margin-bottom:10px;padding:9px 11px;background:rgba(255,255,255,.05);border:1px solid ${cfg.border.replace('.5)','.2)')};border-radius:8px;">
+          <div style="font-family:var(--orb);font-size:7px;color:${cfg.color.replace('1)','.55)')};letter-spacing:1.5px;margin-bottom:4px;">◈ 미션 질문</div>
+          <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.8);font-weight:600;line-height:1.55;">${missionQuestion}</div>
+        </div>
         <div style="display:flex;gap:8px;margin-bottom:10px;">
           <!-- 나 -->
           <div style="flex:1;background:rgba(10,30,12,.6);border:1px solid ${cfg.border};border-radius:9px;padding:10px;text-align:center;">
@@ -9216,6 +9250,176 @@ function _tmHQShowView(id){
     const hq=document.getElementById('tmHQWrap');
     if(hq) hq.scrollIntoView({behavior:'smooth',block:'start'});
   }
+}
+
+/* ═══════════════════════════════════════════════════════
+   DAY 완료 테스터 — 5초 딜레이로 Day1→5 순차 완료
+═══════════════════════════════════════════════════════ */
+async function tmHQDayCompleteTester(){
+  const n = 4;
+  const path = _tmPath(n);
+  if(!path){ showToast('Firebase 연결이 필요합니다'); return; }
+
+  const snap = await _fbGet(path).catch(()=>null);
+  const d = snap && snap.exists() ? snap.val() : {};
+  const mkD = MY_UID < _tmPUid() ? 'days_a' : 'days_b';
+  const myDays = d[mkD] || [false,false,false,false,false];
+  const completedDays = d.completedDays || 0;
+  const todayIdx = completedDays;
+
+  if(todayIdx >= 5){ showToast('이미 5일 모두 완료했습니다'); return; }
+
+  /* 현재 Day 완료 처리 */
+  const newDays = [...myDays];
+  newDays[todayIdx] = true;
+  const update = { [mkD]: newDays };
+
+  /* 양쪽 모두 완료됐는지 체크 */
+  const oppMkD = MY_UID < _tmPUid() ? 'days_b' : 'days_a';
+  const oppDays = d[oppMkD] || [false,false,false,false,false];
+  const oppDone = oppDays[todayIdx] === true;
+  const allBothDone = oppDone; /* 상대도 이미 완료했으면 */
+  if(allBothDone){
+    update.completedDays = todayIdx + 1;
+  }
+
+  await _fbUpdate(path, update).catch(()=>{});
+  showToast(`✅ DAY ${todayIdx+1} 완료! ${todayIdx+1 < 5 ? '5초 후 다음 날로 이동합니다...' : '🎉 5일 챌린지 완수!'}`);
+
+  if(todayIdx + 1 >= 5){
+    /* 5일 모두 완료 → 리워드 지급 */
+    window['tmRewardDone4'] = true;
+    window['tmMyReward4'] = 100000;
+    setTimeout(()=>{
+      _tmHQShowView('tmHQResult');
+      _tmHQSetResultCard(4);
+      _tmHQApplyTheme(4);
+      tmHQRenderHome();
+    }, 1500);
+    return;
+  }
+
+  /* 5초 후 다음 Day로 자동 갱신 */
+  setTimeout(()=>{
+    tmHQEnter(4);
+  }, 5000);
+}
+
+/* ═══════════════════════════════════════════════════════
+   리워드 금액 규칙 (spec 10~16)
+   - 특수임무 1,2,3: 각 20000/30000/40000 중 랜덤 (총 최대 12만)
+   - 스페셜임무: 10만원 고정
+   - 개인임무: 특수임무 합계가 10만원 미만이면 10만까지 보충
+   - 월 최대 30만원
+═══════════════════════════════════════════════════════ */
+function calcRewardCap(){
+  /* 특수임무 1~3 합계 */
+  let specialTotal = 0;
+  for(let i=1; i<=3; i++){
+    specialTotal += (window['tmMyReward'+i] || 0);
+  }
+  /* 스페셜임무 */
+  const specialOp = window['tmMyReward4'] || 0;
+  /* 개인임무 한도: 10만 - 특수임무 합계 (최소 0, 최대 10만) */
+  const personalCap = Math.max(0, Math.min(100000, 100000 - specialTotal));
+  return { specialTotal, specialOp, personalCap,
+           total: Math.min(300000, specialTotal + specialOp + personalCap) };
+}
+
+/* ═══════════════════════════════════════════════════════
+   스페셜임무 선택 시스템 (요청 10번)
+   - 서로의 작전수첩 특수임무 목록에서 1개씩 선택
+   - 양쪽 선택 완료 시 랜덤 1개를 실제 미션으로 확정
+═══════════════════════════════════════════════════════ */
+
+/* 스페셜임무 선택 팝업 열기 */
+function openSpecialMissionSelect(){
+  if(!partnerData){ showToast('팀원과 연결 후 이용 가능합니다'); return; }
+
+  /* 내 특수임무(hard) 목록 */
+  const myHards = (tplData['hard'] || []);
+  const pName = _tmPN();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'specialSelectOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.85);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
+  overlay.onclick = e => { if(e.target===overlay) overlay.remove(); };
+
+  overlay.innerHTML = `
+    <div style="background:var(--card);border:1.5px solid rgba(251,191,36,.35);border-radius:18px;padding:20px;max-width:390px;width:100%;margin-top:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-family:var(--title);font-size:15px;font-weight:900;color:rgba(251,191,36,.95);">💎 스페셜임무 선택</div>
+        <button onclick="document.getElementById('specialSelectOverlay').remove()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:20px;cursor:pointer;">✕</button>
+      </div>
+      <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.45);margin-bottom:14px;line-height:1.6;">
+        상대에게 수행시킬 <span style="color:rgba(251,191,36,.8);font-weight:700;">나의 특수임무 1개</span>를 선택하세요.<br>
+        양쪽 선택 완료 시 <span style="color:rgba(255,100,100,.8);">랜덤</span>으로 1개가 스페셜임무로 확정됩니다.
+      </div>
+      ${myHards.length === 0 ? `
+        <div style="text-align:center;padding:24px;color:rgba(255,255,255,.3);font-family:var(--kr);font-size:13px;">
+          📋 등록된 특수임무가 없습니다<br>
+          <span style="font-size:11px;color:rgba(255,255,255,.2);">작전수첩에서 특수임무를 먼저 등록하세요</span>
+        </div>
+      ` : `
+        <div style="display:flex;flex-direction:column;gap:7px;max-height:300px;overflow-y:auto;">
+          ${myHards.map((m,i)=>`
+            <div onclick="confirmSpecialMissionSelect(${i})" style="padding:12px 14px;background:rgba(28,6,6,.85);border:1.5px solid rgba(220,60,60,.25);border-radius:11px;cursor:pointer;transition:.15s;" 
+              onmouseover="this.style.borderColor='rgba(220,60,60,.6)'" onmouseout="this.style.borderColor='rgba(220,60,60,.25)'">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:14px;">⚡</span>
+                <div style="flex:1;">
+                  <div style="font-family:var(--kr);font-size:13px;font-weight:800;color:#fff;">${m.name}</div>
+                  <div style="font-family:var(--orb);font-size:9px;color:rgba(255,120,120,.6);margin-top:2px;">특수임무 · 탭하여 선택</div>
+                </div>
+                <div style="font-family:var(--orb);font-size:10px;color:rgba(255,80,80,.7);">▶</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `}
+    </div>`;
+
+  document.body.appendChild(overlay);
+}
+
+/* 스페셜임무 선택 확정 */
+async function confirmSpecialMissionSelect(idx){
+  const myHards = tplData['hard'] || [];
+  const mission = myHards[idx];
+  if(!mission){ return; }
+
+  const path = _tmPath(4);
+  if(!path){ showToast('Firebase 연결이 필요합니다'); return; }
+
+  const mk = _tmMK();
+  /* Firebase에 내 선택 저장 */
+  await _fbUpdate(path+'/special_select', {
+    [mk]: { name: mission.name, idx, selectedAt: Date.now() }
+  }).catch(()=>{});
+
+  /* 상대방도 선택했는지 확인 */
+  const ok = _tmOK();
+  const snap = await _fbGet(path+'/special_select').catch(()=>null);
+  const d = snap && snap.exists() ? snap.val() : {};
+
+  const overlay = document.getElementById('specialSelectOverlay');
+  if(overlay) overlay.remove();
+
+  if(d[ok]){
+    /* 양쪽 모두 선택 완료 → 랜덤 1개 확정 */
+    const chosen = Math.random() < 0.5 ? d[mk] : d[ok];
+    const pickerKey = 'special_confirmed';
+    await _fbUpdate(path, {
+      [pickerKey]: { name: chosen.name, confirmedAt: Date.now() },
+      question: `[스페셜임무] ${chosen.name}`
+    }).catch(()=>{});
+
+    showToast(`🎲 스페셜임무 확정: "${chosen.name}"`);
+  } else {
+    showToast(`✅ 선택 완료! 상대방의 선택을 기다리는 중...`);
+  }
+
+  tmHQRenderHome();
 }
 
 function tmHQBack(){
@@ -9418,7 +9622,12 @@ function _tmHQShowDetail(n, q, myAns, oppAns){
                 <\/div>`;
               }).join('')}
             <\/div>
-            <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);text-align:center;">완료 시 양쪽 모두 +100,000원 지급<\/div>
+            <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);text-align:center;margin-bottom:10px;">완료 시 양쪽 모두 +100,000원 지급<\/div>
+            <!-- 테스터 DAY 완료 버튼 -->
+            ${todayIdx < 5 ? `<div style="background:rgba(251,191,36,.06);border:1px dashed rgba(251,191,36,.25);border-radius:10px;padding:10px 12px;margin-bottom:4px;">
+              <div style="font-family:var(--orb);font-size:7px;color:rgba(251,191,36,.5);letter-spacing:1.5px;margin-bottom:7px;">▸ TESTER — DAY ${todayIdx+1} 완료 시뮬<\/div>
+              <button onclick="tmHQDayCompleteTester()" style="width:100%;padding:9px;background:linear-gradient(135deg,rgba(120,90,0,.7),rgba(80,60,0,.85));border:1px solid rgba(251,191,36,.45);border-radius:8px;color:rgba(251,191,36,.95);font-family:var(--kr);font-size:13px;font-weight:900;cursor:pointer;">✅ DAY ${todayIdx+1} 완료 (5초 후 다음)<\/button>
+            <\/div>` : `<div style="font-family:var(--kr);font-size:12px;color:rgba(251,191,36,.9);text-align:center;padding:8px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.35);border-radius:8px;">🎉 5일 모두 완료! 리워드를 확인하세요<\/div>`}
           <\/div>`;
       }).catch(()=>{ daySection.style.display='none'; });
     } else {
@@ -9817,8 +10026,14 @@ async function tmHQShowResultDetail(){
 
     const inner = document.getElementById('tmHQResultDetailInner');
     if(!inner) return;
+    const missionQuestion = _tmQ(n);
     inner.innerHTML = `
       <div style="font-family:var(--orb);font-size:8px;letter-spacing:2px;color:${cfg.color.replace('1)','.6)')};margin-bottom:12px;text-align:center;">◈ MISSION RESULT</div>
+      <!-- 미션 질문 -->
+      <div style="margin-bottom:12px;padding:9px 12px;background:rgba(255,255,255,.04);border:1px solid ${cfg.border.replace('.5)','.2)')};border-radius:9px;">
+        <div style="font-family:var(--orb);font-size:7px;color:${cfg.color.replace('1)','.5)')};letter-spacing:1.5px;margin-bottom:4px;">◈ 미션 질문</div>
+        <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.8);font-weight:600;line-height:1.55;">${missionQuestion}</div>
+      </div>
       <!-- 나 -->
       <div style="background:rgba(18,50,16,.6);border:1.5px solid ${cfg.border};border-radius:12px;padding:13px;margin-bottom:10px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
