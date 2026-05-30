@@ -5193,11 +5193,13 @@ document.addEventListener('DOMContentLoaded',()=>{
             </div>
 
             <!-- 보물상자 -->
-            <div style="margin:14px 14px 0;">
+            <div id="tmHQBoxSection" style="margin:14px 14px 0;">
               <div style="font-family:var(--orb);font-size:7px;letter-spacing:1px;color:rgba(255,255,255,.5);margin-bottom:8px;">▎ 보물상자 선택 <span id="tmHQBoxSelectedMark" style="display:none;color:#a8f0c8;">✓ 선택됨</span></div>
               <div id="tmHQBoxRow" style="display:flex;gap:8px;margin-bottom:6px;"></div>
               <div id="tmHQBoxHint" style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);text-align:center;min-height:14px;"></div>
             </div>
+            <!-- 스페셜임무 DAY 진행 표시 -->
+            <div id="tmHQDaySection" style="display:none;"></div>
 
             <!-- 저장 버튼 -->
             <div style="margin:12px 14px 0;">
@@ -5260,11 +5262,19 @@ document.addEventListener('DOMContentLoaded',()=>{
               <div id="tmHQResultBadge" class="tm-hq-badge">임무결과</div>
             </div>
             <div style="height:1px;background:rgba(255,255,255,.07);"></div>
-            <div style="padding:22px 16px;text-align:center;">
-              <div id="tmHQResultStamp" style="margin-bottom:16px;"></div>
+            <!-- 기본 완료 화면 -->
+            <div id="tmHQResultMain" style="padding:22px 16px;text-align:center;">
+              <div id="tmHQResultStamp" style="margin-bottom:14px;cursor:pointer;" onclick="tmHQShowResultDetail()"></div>
               <div style="font-family:var(--kr);font-size:17px;font-weight:900;color:#fff;margin-bottom:5px;">특수임무 완료!</div>
-              <div id="tmHQResultSub" style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.4);margin-bottom:22px;line-height:1.6;"></div>
+              <div id="tmHQResultSub" style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.4);margin-bottom:16px;line-height:1.6;"></div>
+              <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);margin-bottom:16px;">↑ 도장을 탭하면 결과를 확인할 수 있어요</div>
               <button id="tmHQRewardBtn" onclick="tmHQShowReward()" style="width:100%;padding:14px;border-radius:12px;font-family:var(--kr);font-size:15px;font-weight:900;cursor:pointer;letter-spacing:.3px;border:2px solid;transition:box-shadow .2s;">🎁 보상확인</button>
+            </div>
+            <!-- 결과 상세 (도장 탭 후 표시) -->
+            <div id="tmHQResultDetail" style="display:none;padding:16px;">
+              <div id="tmHQResultDetailInner"></div>
+              <button onclick="document.getElementById('tmHQResultDetail').style.display='none';document.getElementById('tmHQResultMain').style.display='block';"
+                style="width:100%;padding:10px;margin-top:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:10px;color:rgba(255,255,255,.55);font-family:var(--kr);font-size:12px;cursor:pointer;">← 돌아가기</button>
             </div>
           </div>
         </div>
@@ -8323,13 +8333,36 @@ async function tmSave(n){
   const question = (qt && qt.textContent) || _tmQ(n);
   const update = { question };
   update[_tmMK()] = ans;
+  update[_tmMK()+'_at'] = Date.now();
 
   if(n===4){
-    /* 스페셜: 오늘 답글 저장 = 내 days 배열 업데이트는 서버 구독에서 처리 */
-    const mk = _tmMK();
-    update[mk] = ans;
-    /* 오늘 인덱스는 서버에서 completedDays 기준으로 관리 */
+    /* 스페셜: Firebase에서 현재 days/completedDays 읽어 업데이트 */
+    try{
+      const snap = await _fbGet(path);
+      const d = snap.exists() ? snap.val() : {};
+      const mk = MY_UID < _tmPUid() ? 'days_a' : 'days_b';
+      const ok = MY_UID < _tmPUid() ? 'days_b' : 'days_a';
+      let myDays = d[mk] ? [...d[mk]] : [false,false,false,false,false];
+      const oppDays = d[ok] || [false,false,false,false,false];
+      const completedDays = d.completedDays || 0;
+      /* 오늘 인덱스 = completedDays (0~4) */
+      const todayIdx = completedDays;
+      if(todayIdx < 5){
+        myDays[todayIdx] = true;
+        update[mk] = myDays;
+        /* 상대도 완료했으면 completedDays 증가 */
+        if(oppDays[todayIdx]===true){
+          update.completedDays = completedDays + 1;
+          /* 다음날 Q/A 초기화 */
+          update[_tmOK()] = d[_tmOK()] || null;
+        }
+      }
+      await _fbUpdate(path, update);
+      showToast('✅ 답글이 저장되었습니다!');
+    } catch(e){ showToast('⚠ 저장 실패. 다시 시도해주세요.'); }
+    return;
   }
+
   try{
     await _fbUpdate(path, update);
     showToast('✅ 답글이 저장되었습니다!');
@@ -8353,7 +8386,7 @@ function tmToggleDetail(n){
 }
 
 /* ──────────────────────────────────────────
-   테스터: 다음 DAY 버튼 (10초 자동)
+   테스터: 다음 DAY 버튼 (5초 자동) — 답글 없어도 강제 진행
 ────────────────────────────────────────── */
 let _tmTesterTimer=null;
 function tmTesterNextDay(){
@@ -8361,7 +8394,7 @@ function tmTesterNextDay(){
   if(!path) return;
   const cd = document.getElementById('tmTesterCountdown');
   if(cd){ cd.style.display='block'; }
-  let sec=10;
+  let sec=5;
   if(cd) cd.textContent='⏱ '+sec+'초 후 다음 DAY...';
   clearInterval(_tmTesterTimer);
   _tmTesterTimer = setInterval(async()=>{
@@ -8370,28 +8403,35 @@ function tmTesterNextDay(){
     if(sec<=0){
       clearInterval(_tmTesterTimer);
       if(cd){ cd.textContent=''; cd.style.display='none'; }
-      /* 양쪽 days 배열 진행 */
       try{
         const snap = await _fbGet(path);
         const d = snap.exists() ? snap.val() : {};
         const mkA = MY_UID < _tmPUid() ? 'days_a' : 'days_b';
         const mkB = MY_UID < _tmPUid() ? 'days_b' : 'days_a';
-        let da = d[mkA] || [false,false,false,false,false];
-        let db = d[mkB] || [false,false,false,false,false];
-        /* 내 답글이 있을 때만 진행 */
-        const myAns = d[_tmMK()];
-        if(!myAns){ showToast('먼저 오늘 답글을 저장해주세요!'); return; }
-        const idx = da.findIndex(v=>!v);
+        let da = d[mkA] ? [...d[mkA]] : [false,false,false,false,false];
+        let db = d[mkB] ? [...d[mkB]] : [false,false,false,false,false];
+        const curCompleted = d.completedDays||0;
+        /* 현재 미완료 인덱스 찾기 */
+        const idx = curCompleted < 5 ? curCompleted : -1;
         if(idx===-1){ showToast('이미 5일 완료!'); return; }
+        /* 강제로 양쪽 true 처리 */
         da[idx]=true; db[idx]=true;
-        const cd2 = (d.completedDays||0)+1;
-        const u = { completedDays: cd2 }; u[mkA]=da; u[mkB]=db;
-        /* 새 날 → Q/A 초기화 */
+        const newCompleted = curCompleted + 1;
+        const u = { completedDays: newCompleted };
+        u[mkA]=da; u[mkB]=db;
+        /* 기존 Q/A 초기화 (다음날 준비) */
         u[_tmMK()] = null; u[_tmOK()] = null;
-        u.question = _tmQ(4);
+        u.question = null;
         await _fbUpdate(path, u);
-        showToast('✅ DAY '+(idx+1)+' 완료! (테스터)');
-      } catch(e){ showToast('⚠ 테스터 오류'); }
+
+        if(newCompleted >= 5){
+          showToast('🎉 DAY 5 완료! 스페셜임무 달성! (+100,000원)');
+        } else {
+          showToast('✅ DAY '+(idx+1)+' 완료! → DAY '+(newCompleted+1)+' 시작');
+        }
+        /* 카드 리렌더 */
+        setTimeout(()=>{ tmRender(null,4); },300);
+      } catch(e){ showToast('⚠ 테스터 오류: '+e.message); }
     }
   },1000);
 }
@@ -8545,17 +8585,20 @@ function _tmRenderRewardBody(n, fbData){
                           isOppPick ? 'rgba(200,168,75,.7)' :
                           canPick   ? 'rgba(200,168,75,.5)' : 'rgba(200,168,75,.2)';
         const boxShadow = canPick   ? '0 0 14px rgba(200,168,75,.25)' : 'none';
-        const icon      = isMyPick ? '✅' : isOppPick ? '🎊' : canPick ? '📦' : '📦';
+        /* 보물상자 상태: 내 선택=done, 상대선택=locked, 선택가능=open */
+        const cfg_n = TM[_tmRewardN]||TM[1];
+        const chState = isMyPick ? 'done' : isOppPick ? 'locked' : canPick ? 'open' : 'locked';
+        const chSVG = _tmMakeChestSVG(_tmRewardN, chState, cfg_n);
         return `<div style="flex:1;text-align:center;cursor:${canPick?'pointer':'default'};"
           onclick="${canPick?'tmPickBox('+i+')':''}"
-          ${canPick?'onmouseover="this.firstElementChild.style.transform=\'scale(1.04)\'" onmouseout="this.firstElementChild.style.transform=\'scale(1)\'"':''}>
-          <div style="padding:16px 6px;background:${boxBg};border:2px solid ${boxBdr};border-radius:13px;transition:all .25s;box-shadow:${boxShadow};">
-            <div style="font-size:${taken?28:30}px;margin-bottom:6px;transition:all .2s;">${icon}</div>
-            <div style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.55);margin-bottom:3px;">BOX ${i+1}</div>
+          ${canPick?'onmouseover="this.firstElementChild.style.transform=\'scale(1.06)\'" onmouseout="this.firstElementChild.style.transform=\'scale(1)\'"':''}>
+          <div style="padding:10px 4px 8px;background:${boxBg};border:2px solid ${boxBdr};border-radius:13px;transition:all .25s;box-shadow:${boxShadow};display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="transition:transform .2s;">${chSVG}</div>
+            <div style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.55);margin-top:2px;">BOX ${i+1}</div>
             ${taken ? `
-              <div style="font-family:var(--kr);font-size:10px;color:${isMyPick?'rgba(127,191,106,.9)':'rgba(200,168,75,.85)'};font-weight:700;margin-bottom:2px;">${isMyPick?myName:pName}</div>
+              <div style="font-family:var(--kr);font-size:10px;color:${isMyPick?'rgba(127,191,106,.9)':'rgba(200,168,75,.85)'};font-weight:700;">${isMyPick?myName:pName}</div>
               <div style="font-family:var(--orb);font-size:13px;font-weight:900;color:${isMyPick?'rgba(127,191,106,.95)':'rgba(200,168,75,.95)'};">+${b.amt.toLocaleString()}</div>
-            ` : `<div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.2);">???</div>`}
+            ` : ''}
           </div>
         </div>`;
       }).join('')}
@@ -8642,18 +8685,34 @@ function tmSubscribe(n){
       }
       /* 스페셜: days 동기화 */
       if(n===4){
-        const mk=MY_UID<_tmPUid()?'days_a':'days_b';
-        const ok=MY_UID<_tmPUid()?'days_b':'days_a';
-        const myDays  = d[mk]||[];
-        const oppDays = d[ok]||[];
+        const mkD = MY_UID<_tmPUid()?'days_a':'days_b';
+        const okD = MY_UID<_tmPUid()?'days_b':'days_a';
+        const myDays  = d[mkD]||[false,false,false,false,false];
+        const oppDays = d[okD]||[false,false,false,false,false];
+        /* 양쪽 모두 completedDays 인덱스까지 true인지 확인해 보정 */
+        const cd = d.completedDays||0;
+        /* 서버 days 보정: oppDays에서 내가 놓친 날 처리 */
+        let needUpdate = false;
+        const fixedMyDays = [...myDays];
+        for(let i=0; i<cd && i<5; i++){
+          if(oppDays[i] && !fixedMyDays[i]){
+            /* 상대가 완료했고 내가 완료 안 된 경우 — 이미 completedDays 증가됐으면 보정 */
+            fixedMyDays[i] = true;
+            needUpdate = true;
+          }
+        }
+        if(needUpdate){
+          const uf={}; uf[mkD]=fixedMyDays;
+          _fbUpdate(_tmPath(4),uf).catch(()=>{});
+        }
         if(d.completedDays>=5 && !window['tmRewardDone4']){
           /* 5일 완료 시 완료 처리 */
           window['tmRewardDone4']=true;
-          window['tmMyReward4']=50000;
+          window['tmMyReward4']=100000;
           if(!window.teamData) window.teamData={};
           if(!window.teamData.completedMissions) window.teamData.completedMissions=[];
           if(!window.teamData.completedMissions.find(m=>m.n===4)){
-            window.teamData.completedMissions.push({n:4,label:'스페셜임무',reward:50000,completedAt:Date.now()});
+            window.teamData.completedMissions.push({n:4,label:'스페셜임무',reward:100000,completedAt:Date.now()});
           }
           renderStatsRevenueCard();
           /* 보상 토스트 없음 */
@@ -8731,6 +8790,152 @@ const TM_BOX_CHARS = {
   4: { lid:'rgba(251,191,36,.8)', body:'rgba(180,130,10,.9)', gem:'🟨', keyColor:'#FFD84A', darkBg:'rgba(45,28,2,.92)' }
 };
 
+/* ─── 고급 보물상자 SVG 생성기 ─── */
+function _tmMakeChestSVG(n, state, cfg){
+  /* 각 임무 테마 색상 적용 */
+  const primary = cfg.color.replace('1)','');       // 'rgba(52,211,153,'
+  const dim     = cfg.colorDim.replace('1)','');
+  const c = (a)=> primary+a+')';
+  const cd= (a)=> dim+a+')';
+  const goldH = 'rgba(255,215,100,';
+  const g=(a)=> goldH+a+')';
+  const uniqueId = 'ch'+n+state;
+
+  if(state==='locked'){
+    return `<svg width="58" height="52" viewBox="0 0 58 52" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lid_l${uniqueId}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="${c('.55')}"/>
+          <stop offset="100%" stop-color="${c('.28')}"/>
+        <\/linearGradient>
+        <linearGradient id="body_l${uniqueId}" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="${c('.42')}"/>
+          <stop offset="100%" stop-color="${c('.18')}"/>
+        <\/linearGradient>
+      <\/defs>
+      <!-- 몸통 -->
+      <rect x="4" y="22" width="50" height="26" rx="4" fill="url(#body_l${uniqueId})" stroke="${c('.35')}" stroke-width="1.2"/>
+      <!-- 세로 금속 밴드 -->
+      <rect x="17" y="22" width="4" height="26" fill="${g('.18')}" stroke="${g('.35')}" stroke-width=".5"/>
+      <rect x="37" y="22" width="4" height="26" fill="${g('.18')}" stroke="${g('.35')}" stroke-width=".5"/>
+      <!-- 가로 금속 밴드 (몸통 중간) -->
+      <rect x="4" y="32" width="50" height="4" rx="1" fill="${g('.15')}" stroke="${g('.3')}" stroke-width=".5"/>
+      <!-- 꺾쇠 장식 4귀퉁이 -->
+      <rect x="3" y="21" width="7" height="7" rx="1.5" fill="${g('.45')}" stroke="${g('.6')}" stroke-width=".8"/>
+      <rect x="48" y="21" width="7" height="7" rx="1.5" fill="${g('.45')}" stroke="${g('.6')}" stroke-width=".8"/>
+      <rect x="3" y="41" width="7" height="7" rx="1.5" fill="${g('.45')}" stroke="${g('.6')}" stroke-width=".8"/>
+      <rect x="48" y="41" width="7" height="7" rx="1.5" fill="${g('.45')}" stroke="${g('.6')}" stroke-width=".8"/>
+      <!-- 뚜껑 (닫힘) -->
+      <rect x="4" y="8" width="50" height="15" rx="4" fill="url(#lid_l${uniqueId})" stroke="${c('.4')}" stroke-width="1.2"/>
+      <!-- 뚜껑 금속 밴드 -->
+      <rect x="4" y="16" width="50" height="3" rx="1" fill="${g('.2')}" stroke="${g('.35')}" stroke-width=".5"/>
+      <rect x="17" y="8" width="4" height="15" fill="${g('.15')}" stroke="${g('.28')}" stroke-width=".5"/>
+      <rect x="37" y="8" width="4" height="15" fill="${g('.15')}" stroke="${g('.28')}" stroke-width=".5"/>
+      <!-- 자물쇠 몸통 -->
+      <rect x="22" y="17" width="14" height="10" rx="2.5" fill="rgba(200,168,75,.75)" stroke="rgba(255,220,80,.9)" stroke-width="1.2"/>
+      <!-- 자물쇠 걸이 -->
+      <path d="M25 17 Q25 11 29 11 Q33 11 33 17" fill="none" stroke="rgba(255,220,80,.9)" stroke-width="2.2" stroke-linecap="round"/>
+      <!-- 자물쇠 키홀 -->
+      <circle cx="29" cy="21" r="2" fill="rgba(100,60,10,.8)"/>
+      <rect x="28" y="22" width="2" height="2.5" rx=".5" fill="rgba(100,60,10,.8)"/>
+    <\/svg>`;
+  }
+
+  if(state==='open'){
+    return `<svg width="58" height="52" viewBox="0 0 58 52" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lid_o${uniqueId}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="${c('.9')}"/>
+          <stop offset="100%" stop-color="${cd('.7')}"/>
+        <\/linearGradient>
+        <linearGradient id="body_o${uniqueId}" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="${c('.75')}"/>
+          <stop offset="100%" stop-color="${c('.4')}"/>
+        <\/linearGradient>
+        <radialGradient id="glow_o${uniqueId}" cx="50%" cy="0%" r="70%">
+          <stop offset="0%" stop-color="${c('.5')}"/>
+          <stop offset="100%" stop-color="${c('.0')}"/>
+        <\/radialGradient>
+      <\/defs>
+      <!-- 빛 오라 -->
+      <ellipse cx="29" cy="22" rx="22" ry="10" fill="url(#glow_o${uniqueId})" opacity=".7"/>
+      <!-- 몸통 -->
+      <rect x="4" y="22" width="50" height="26" rx="4" fill="url(#body_o${uniqueId})" stroke="${c('.6')}" stroke-width="1.2"/>
+      <!-- 세로 밴드 -->
+      <rect x="17" y="22" width="4" height="26" fill="${g('.25')}" stroke="${g('.5')}" stroke-width=".6"/>
+      <rect x="37" y="22" width="4" height="26" fill="${g('.25')}" stroke="${g('.5')}" stroke-width=".6"/>
+      <!-- 가로 밴드 -->
+      <rect x="4" y="32" width="50" height="4" rx="1" fill="${g('.2')}" stroke="${g('.4')}" stroke-width=".6"/>
+      <!-- 꺾쇠 -->
+      <rect x="3" y="21" width="7" height="7" rx="1.5" fill="${g('.6')}" stroke="${g('.8')}" stroke-width=".8"/>
+      <rect x="48" y="21" width="7" height="7" rx="1.5" fill="${g('.6')}" stroke="${g('.8')}" stroke-width=".8"/>
+      <rect x="3" y="41" width="7" height="7" rx="1.5" fill="${g('.6')}" stroke="${g('.8')}" stroke-width=".8"/>
+      <rect x="48" y="41" width="7" height="7" rx="1.5" fill="${g('.6')}" stroke="${g('.8')}" stroke-width=".8"/>
+      <!-- 내부 빛 -->
+      <ellipse cx="29" cy="24" rx="18" ry="5" fill="${c('.3')}" opacity=".8"/>
+      <!-- 뚜껑 (살짝 열림 -12도) -->
+      <g transform="rotate(-12, 4, 22)">
+        <rect x="4" y="8" width="50" height="15" rx="4" fill="url(#lid_o${uniqueId})" stroke="${c('.6')}" stroke-width="1.2"/>
+        <rect x="4" y="16" width="50" height="3" rx="1" fill="${g('.28')}" stroke="${g('.45')}" stroke-width=".6"/>
+        <rect x="17" y="8" width="4" height="15" fill="${g('.2')}" stroke="${g('.38')}" stroke-width=".6"/>
+        <rect x="37" y="8" width="4" height="15" fill="${g('.2')}" stroke="${g('.38')}" stroke-width=".6"/>
+      <\/g>
+      <!-- 열린 자물쇠 -->
+      <rect x="22" y="20" width="14" height="10" rx="2.5" fill="rgba(200,168,75,.5)" stroke="rgba(255,220,80,.7)" stroke-width="1"/>
+      <path d="M25 20 Q22 12 26 11 Q30 10 33 15" fill="none" stroke="rgba(255,220,80,.7)" stroke-width="2" stroke-linecap="round"/>
+    <\/svg>`;
+  }
+
+  /* done state — 활짝 열리며 빛 폭발 */
+  return `<svg width="58" height="52" viewBox="0 0 58 52" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="lid_d${uniqueId}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${c('1')}"/>
+        <stop offset="100%" stop-color="${cd('.85')}"/>
+      <\/linearGradient>
+      <linearGradient id="body_d${uniqueId}" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="${c('.9')}"/>
+        <stop offset="100%" stop-color="${c('.55')}"/>
+      <\/linearGradient>
+      <radialGradient id="burst_d${uniqueId}" cx="50%" cy="50%" r="60%">
+        <stop offset="0%" stop-color="${c('.9')}"/>
+        <stop offset="100%" stop-color="${c('.0')}"/>
+      <\/radialGradient>
+    <\/defs>
+    <!-- 빛 폭발 -->
+    <ellipse cx="29" cy="20" rx="26" ry="14" fill="url(#burst_d${uniqueId})" opacity=".65"/>
+    <!-- 광선 -->
+    <line x1="29" y1="4" x2="27" y2="0" stroke="${c('.6')}" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="36" y1="6" x2="40" y2="2" stroke="${c('.5')}" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="22" y1="6" x2="18" y2="2" stroke="${c('.5')}" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="44" y1="12" x2="50" y2="9" stroke="${c('.4')}" stroke-width="1" stroke-linecap="round"/>
+    <line x1="14" y1="12" x2="8" y2="9" stroke="${c('.4')}" stroke-width="1" stroke-linecap="round"/>
+    <!-- 몸통 -->
+    <rect x="4" y="24" width="50" height="24" rx="4" fill="url(#body_d${uniqueId})" stroke="${c('.7')}" stroke-width="1.4"/>
+    <!-- 밴드 -->
+    <rect x="17" y="24" width="4" height="24" fill="${g('.32')}" stroke="${g('.6')}" stroke-width=".7"/>
+    <rect x="37" y="24" width="4" height="24" fill="${g('.32')}" stroke="${g('.6')}" stroke-width=".7"/>
+    <rect x="4" y="33" width="50" height="4" rx="1" fill="${g('.25')}" stroke="${g('.5')}" stroke-width=".6"/>
+    <!-- 꺾쇠 -->
+    <rect x="3" y="23" width="7" height="7" rx="1.5" fill="${g('.75')}" stroke="${g('.95')}" stroke-width=".9"/>
+    <rect x="48" y="23" width="7" height="7" rx="1.5" fill="${g('.75')}" stroke="${g('.95')}" stroke-width=".9"/>
+    <rect x="3" y="41" width="7" height="7" rx="1.5" fill="${g('.75')}" stroke="${g('.95')}" stroke-width=".9"/>
+    <rect x="48" y="41" width="7" height="7" rx="1.5" fill="${g('.75')}" stroke="${g('.95')}" stroke-width=".9"/>
+    <!-- 내부 밝은 빛 -->
+    <ellipse cx="29" cy="25" rx="20" ry="7" fill="${c('.45')}" opacity=".9"/>
+    <!-- 뚜껑 (활짝 열림 -38도) -->
+    <g transform="rotate(-38, 4, 24)">
+      <rect x="4" y="10" width="50" height="15" rx="4" fill="url(#lid_d${uniqueId})" stroke="${c('.8')}" stroke-width="1.4"/>
+      <rect x="4" y="18" width="50" height="3" rx="1" fill="${g('.35')}" stroke="${g('.55')}" stroke-width=".7"/>
+      <rect x="17" y="10" width="4" height="15" fill="${g('.28')}" stroke="${g('.5')}" stroke-width=".7"/>
+      <rect x="37" y="10" width="4" height="15" fill="${g('.28')}" stroke="${g('.5')}" stroke-width=".7"/>
+    <\/g>
+    <!-- DONE 도장 도트 -->
+    <circle cx="29" cy="38" r="7" fill="rgba(0,0,0,.3)" stroke="${c('.9')}" stroke-width="1.5" stroke-dasharray="3 2"/>
+    <text x="29" y="41" text-anchor="middle" font-family="Courier Prime,monospace" font-size="6" font-weight="900" fill="${c('1')}" letter-spacing="1">DONE<\/text>
+  <\/svg>`;
+}
+
 function tmHQRenderHome(){
   const list = document.getElementById('tmHQMissionList');
   const badge = document.getElementById('tmHQStatusBadge');
@@ -8762,38 +8967,9 @@ function tmHQRenderHome(){
     else if(unlocked) badgeHtml=`<span class="tm-hq-badge" style="background:${cfg.glow};border:1px solid ${cfg.border};color:${cfg.color};">⚡ 진행가능</span>`;
     else badgeHtml=`<span class="tm-hq-badge" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3);">🔒 잠금</span>`;
 
-    /* 보석함 SVG */
-    const svgBox = `<svg width="54" height="48" viewBox="0 0 54 48" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="lid${n}" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="${cfg.color.replace('1)','0.9)')}" />
-          <stop offset="100%" stop-color="${cfg.colorDim.replace('1)','0.7)')}" />
-        </linearGradient>
-        <linearGradient id="body${n}" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="${cfg.color.replace('1)','0.55)')}" />
-          <stop offset="100%" stop-color="${cfg.color.replace('1)','0.25)')}" />
-        </linearGradient>
-      </defs>
-      ${boxState==='locked' ? `
-        <!-- 잠금 상자 닫힘 -->
-        <rect x="4" y="6" width="46" height="12" rx="3" fill="url(#lid${n})" opacity=".45"/>
-        <rect x="3" y="18" width="48" height="26" rx="4" fill="url(#body${n})" opacity=".35"/>
-        <rect x="22" y="12" width="10" height="8" rx="2" fill="rgba(200,168,75,.4)" stroke="rgba(200,168,75,.3)" stroke-width="1"/>
-        <text x="27" y="19" text-anchor="middle" font-size="7" fill="rgba(200,168,75,.7)">🔒</text>
-      ` : boxState==='done' ? `
-        <!-- 완료 상자 열림 + 빛 -->
-        <rect x="4" y="0" width="46" height="10" rx="3" fill="url(#lid${n})" transform="rotate(-18 27 5)" opacity=".9"/>
-        <rect x="3" y="18" width="48" height="26" rx="4" fill="url(#body${n})" opacity=".85"/>
-        <ellipse cx="27" cy="18" rx="16" ry="7" fill="${cfg.color.replace('1)','0.3)')}" style="filter:blur(3px)"/>
-        <text x="27" y="38" text-anchor="middle" font-size="17">✅</text>
-      ` : `
-        <!-- 해제 상자 (살짝 열린) -->
-        <rect x="4" y="1" width="46" height="11" rx="3" fill="url(#lid${n})" transform="rotate(-10 27 6)" opacity=".92"/>
-        <rect x="3" y="18" width="48" height="26" rx="4" fill="url(#body${n})" opacity=".8"/>
-        <ellipse cx="27" cy="18" rx="12" ry="5" fill="${cfg.color.replace('1)','0.22)')}" style="filter:blur(2px)"/>
-        <text x="27" y="38" text-anchor="middle" font-size="16">📦</text>
-      `}
-    </svg>`;
+    /* 고급 보물상자 SVG */
+    const c1=cfg.color.replace('1)',''); // color prefix like rgba(52,211,153,
+    const svgBox = _tmMakeChestSVG(n, boxState, cfg);
 
     return `<div class="card tm-mrow${(!done&&unlocked)?'':' locked'}"
       ${onclick}
@@ -8842,6 +9018,13 @@ function _tmHQShowView(id){
     const el=document.getElementById(v);
     if(el) el.style.display=(v===id)?'block':'none';
   });
+  /* 결과 카드 상세/메인 초기화 */
+  if(id==='tmHQResult'){
+    const main=document.getElementById('tmHQResultMain');
+    const det=document.getElementById('tmHQResultDetail');
+    if(main) main.style.display='block';
+    if(det) det.style.display='none';
+  }
   /* HQ 홈 이외에는 스크롤 위로 */
   if(id!=='tmHQHome'){
     const hq=document.getElementById('tmHQWrap');
@@ -8932,14 +9115,20 @@ function _tmHQApplyTheme(n){
   /* 도장 SVG */
   const stamp=document.getElementById('tmHQResultStamp');
   if(stamp){
-    stamp.innerHTML=`<svg width="72" height="72" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="46" fill="none" stroke="${cfg.color.replace('1)','0.7)')}" stroke-width="3" stroke-dasharray="6 3"/>
-      <circle cx="50" cy="50" r="37" fill="${cfg.bgCard}" stroke="${cfg.color.replace('1)','0.4)')}" stroke-width="1.5"/>
-      <text x="50" y="42" text-anchor="middle" font-size="22" fill="${cfg.color.replace('1)','0.95)')}">★</text>
-      <text x="50" y="57" text-anchor="middle" font-family="Courier Prime,monospace" font-size="9" font-weight="900" fill="${cfg.color.replace('1)','0.9)')}" letter-spacing="2">COMPLETE</text>
-      <line x1="22" y1="63" x2="78" y2="63" stroke="${cfg.color.replace('1)','0.3)')}" stroke-width="1"/>
-      <text x="50" y="73" text-anchor="middle" font-family="Courier Prime,monospace" font-size="6" fill="${cfg.color.replace('1)','0.5)')}" letter-spacing="2">MISSION</text>
-    </svg>`;
+    const chestSvg = _tmMakeChestSVG(_tmHQN||1, 'done', cfg);
+    stamp.innerHTML=`<div style="display:inline-flex;flex-direction:column;align-items:center;gap:8px;">
+      <div style="position:relative;display:inline-block;">
+        ${chestSvg}
+        <svg width="72" height="72" viewBox="0 0 100 100" style="position:absolute;top:-10px;right:-14px;">
+          <circle cx="50" cy="50" r="46" fill="none" stroke="${cfg.color.replace('1)','0.75)')}" stroke-width="3" stroke-dasharray="6 3"/>
+          <circle cx="50" cy="50" r="37" fill="${cfg.bgCard}" stroke="${cfg.color.replace('1)','0.35)')}" stroke-width="1.5"/>
+          <text x="50" y="42" text-anchor="middle" font-size="22" fill="${cfg.color.replace('1)','0.95)')}">★<\/text>
+          <text x="50" y="57" text-anchor="middle" font-family="Courier Prime,monospace" font-size="8.5" font-weight="900" fill="${cfg.color.replace('1)','0.92)')}" letter-spacing="2">DONE<\/text>
+          <line x1="22" y1="63" x2="78" y2="63" stroke="${cfg.color.replace('1)','0.3)')}" stroke-width="1"/>
+          <text x="50" y="73" text-anchor="middle" font-family="Courier Prime,monospace" font-size="6" fill="${cfg.color.replace('1)','0.5)')}" letter-spacing="2">MISSION<\/text>
+        <\/svg>
+      <\/div>
+    <\/div>`;
   }
   /* 대기 카드 상단 라인 */
   const wtl=document.getElementById('tmHQWaitTopLine');
@@ -8962,6 +9151,13 @@ function tmHQEnter(n){
     const q=d.question||_tmQ(n);
     if(!d.question) _fbUpdate(_tmPath(n),{question:q}).catch(()=>{});
 
+    /* 상대방 박스 선택 현황 미리 로드 */
+    const rpath = _tmPath(n)+'/reward_pick';
+    _fbGet(rpath).then(rsnap=>{
+      const rd = rsnap.exists() ? rsnap.val() : {};
+      window['_tmHQOppPick'+n] = rd[ok+'_pick'] !== undefined ? rd[ok+'_pick'] : null;
+    }).catch(()=>{ window['_tmHQOppPick'+n]=null; });
+
     if(window['tmRewardDone'+n]){
       _tmHQShowView('tmHQResult');
       _tmHQSetResultCard(n);
@@ -8983,6 +9179,8 @@ function tmHQEnter(n){
     }
     _tmHQShowDetail(n, q, myAns, oppAns);
     _tmHQSubForOpp(n);
+    /* 실시간 박스 구독 시작 */
+    _tmHQSubForOppBox(n);
   }).catch(()=>{
     _tmHQShowDetail(n, _tmQ(n), null, null);
   });
@@ -9003,8 +9201,47 @@ function _tmHQShowDetail(n, q, myAns, oppAns){
   /* 답글 초기화 */
   _tmHQSetMyAns(null);
 
+  /* 보물상자 섹션 — 스페셜(n=4)은 숨김 */
+  const boxSection=document.getElementById('tmHQBoxSection');
+  if(boxSection) boxSection.style.display=(n===4)?'none':'block';
+
+  /* 스페셜 DAY 진행 표시 */
+  const daySection=document.getElementById('tmHQDaySection');
+  if(daySection){
+    if(n===4){
+      _fbGet(_tmPath(4)).then(snap=>{
+        const d=snap.exists()?snap.val():{};
+        const mkD=MY_UID<_tmPUid()?'days_a':'days_b';
+        const myDays=d[mkD]||[false,false,false,false,false];
+        const completedDays=d.completedDays||0;
+        const todayIdx=completedDays;
+        daySection.style.display='block';
+        daySection.innerHTML=`
+          <div style="margin:14px 14px 0;">
+            <div style="font-family:var(--orb);font-size:7px;letter-spacing:1px;color:rgba(251,191,36,.65);margin-bottom:8px;">▎ 스페셜임무 5일 진행<\/div>
+            <div style="display:flex;gap:6px;margin-bottom:6px;">
+              ${[0,1,2,3,4].map(i=>{
+                const done = myDays[i]===true;
+                const isToday = i===todayIdx;
+                return `<div style="flex:1;padding:6px 2px;text-align:center;border-radius:8px;
+                  background:${done?'rgba(251,191,36,.2)':isToday?'rgba(251,191,36,.1)':'rgba(255,255,255,.05)'};
+                  border:1px solid ${done?'rgba(251,191,36,.6)':isToday?'rgba(251,191,36,.35)':'rgba(255,255,255,.1)'};
+                  ">
+                  <div style="font-family:var(--orb);font-size:8px;color:${done?'rgba(251,191,36,.9)':isToday?'rgba(255,255,255,.7)':'rgba(255,255,255,.25)'};">${done?'✓':isToday?'●':'—'}<\/div>
+                  <div style="font-family:var(--orb);font-size:7px;color:${done?'rgba(251,191,36,.7)':'rgba(255,255,255,.25)'};margin-top:2px;">D${i+1}<\/div>
+                <\/div>`;
+              }).join('')}
+            <\/div>
+            <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);text-align:center;">완료 시 양쪽 모두 +100,000원 지급<\/div>
+          <\/div>`;
+      }).catch(()=>{ daySection.style.display='none'; });
+    } else {
+      daySection.style.display='none';
+    }
+  }
+
   /* 보물상자 */
-  _tmHQRenderBoxes(null);
+  if(n!==4) _tmHQRenderBoxes(null);
 
   /* 상대 답글 */
   _tmHQSetOppAns(oppAns, n);
@@ -9068,31 +9305,53 @@ function _tmHQRenderBoxes(fbData){
 
   const saved=!!window['tmHQMySaved'+n];
   const myPickIdx = fbData ? fbData[_tmMK()+'_pick'] : (saved ? window['tmHQMyPickIdx'+n] : undefined);
+  /* 상대방 선택 현황 로드 */
+  const oppPickIdx = fbData ? fbData[_tmOK()+'_pick'] : window['_tmHQOppPick'+n];
 
   row.innerHTML=[0,1,2].map(i=>{
     const isMyPick=myPickIdx===i;
+    const isOppPick=oppPickIdx===i;
     const isSel=_tmHQBoxSel===i;
+    const isOppTaken = !saved && isOppPick; /* 상대방이 이미 선택한 상자 */
 
-    let cls='tm-box-btn', extra='';
-    let bg='rgba(255,255,255,.06)', bdr=cfg.border.replace('.5)','.2)');
-    let icon='📦', iconSize='26px';
+    let cls='tm-box-btn';
+    let extra='';
+    let bg='rgba(255,255,255,.06)';
+    let bdr=cfg.border.replace('.5)','.2)');
 
     if(saved){
       cls+=' disabled';
-      if(isMyPick){ bg=`${cfg.glow}`; bdr=cfg.border; icon='✅'; extra='box-shadow:0 0 14px '+cfg.glow+';'; }
+      if(isMyPick){ bg=`${cfg.glow}`; bdr=cfg.border; extra='box-shadow:0 0 14px '+cfg.glow+';'; }
+    } else if(isOppTaken){
+      cls+=' disabled';
+      bg='rgba(255,100,100,.06)';
+      bdr='rgba(255,100,100,.3)';
+      extra='cursor:not-allowed;opacity:.5;';
     } else {
       if(isSel){
-        cls+=' sel'; bg=`${cfg.glow}`; bdr=cfg.border; icon='✅';
+        cls+=' sel'; bg=`${cfg.glow}`; bdr=cfg.border;
         extra='box-shadow:0 0 14px '+cfg.glow+';';
-        iconSize='22px';
       }
     }
 
-    return `<div class="${cls}" style="background:${bg};border-color:${bdr};${extra}"
-      onclick="${saved?'':('tmHQSelectBox('+i+')')}">
-      <div style="font-size:${iconSize};line-height:1;transition:all .18s;">${icon}</div>
+    /* 보물상자 상태 결정 */
+    const chestState = saved && isMyPick ? 'done' : isSel ? 'open' : 'locked';
+    const chestSVG = _tmMakeChestSVG(n, chestState, cfg);
+
+    /* 오버레이 표시 */
+    let overlay = '';
+    if(isOppTaken){
+      overlay = `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.45);border-radius:10px;z-index:2;">
+        <div style="font-size:14px;">🔒</div>
+        <div style="font-family:var(--kr);font-size:8px;color:rgba(255,150,150,.85);font-weight:700;margin-top:2px;">선택완료</div>
+      </div>`;
+    }
+
+    return `<div class="${cls}" style="background:${bg};border-color:${bdr};${extra}position:relative;"
+      onclick="${(saved||isOppTaken)?'':('tmHQSelectBox('+i+')')}">
+      ${overlay}
+      <div style="width:100%;display:flex;align-items:center;justify-content:center;padding:4px 0 2px;">${chestSVG}</div>
       <div style="font-family:var(--orb);font-size:8px;color:${isSel||isMyPick?cfg.color:'rgba(255,255,255,.35)'};letter-spacing:1px;font-weight:700;">BOX ${i+1}</div>
-      <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.25);">???</div>
     </div>`;
   }).join('');
 
@@ -9119,7 +9378,8 @@ function tmHQCheckReady(){
   const ta=document.getElementById('tmHQTA');
   const myDispVisible=document.getElementById('tmHQMyDisplay')?.style.display!=='none';
   const hasAns=myDispVisible||(ta&&ta.value.trim().length>0);
-  const hasSel=_tmHQBoxSel!==null;
+  const isSpecial=(n===4);
+  const hasSel=isSpecial?true:(_tmHQBoxSel!==null); /* 스페셜은 상자선택 불필요 */
   const saved=!!window['tmHQMySaved'+n];
   if(saved){
     btn.disabled=true; btn.style.cursor='not-allowed';
@@ -9133,12 +9393,12 @@ function tmHQCheckReady(){
   btn.disabled=!ready;
   btn.style.cursor=ready?'pointer':'not-allowed';
   if(ready){
-    btn.textContent='✅ 답글 + 상자 저장';
+    btn.textContent=isSpecial?'✅ 오늘 답글 저장':'✅ 답글 + 상자 저장';
     btn.style.background=`linear-gradient(135deg,${cfg.color.replace('1)','0.9)')},${cfg.colorDim.replace('1)','0.8)')})`;
     btn.style.color='rgba(0,0,0,.9)';
     btn.style.borderColor=cfg.border;
   } else {
-    btn.textContent='답글 + 상자를 선택 후 저장';
+    btn.textContent=isSpecial?'답글 입력 후 저장':'답글 + 상자를 선택 후 저장';
     btn.style.background='rgba(255,255,255,.07)';
     btn.style.color='rgba(255,255,255,.3)';
     btn.style.borderColor='rgba(255,255,255,.15)';
@@ -9152,31 +9412,61 @@ async function tmHQSave(){
   const myDispTxt=document.getElementById('tmHQMyText');
   const myDispVisible=document.getElementById('tmHQMyDisplay')?.style.display!=='none';
   const val=myDispVisible?(myDispTxt?.textContent||''):(ta?ta.value.trim():'');
+  const isSpecial=(n===4);
 
   if(!val){ showToast('답글을 입력해주세요'); return; }
-  if(_tmHQBoxSel===null){ showToast('보물상자를 선택해주세요'); return; }
+  if(!isSpecial && _tmHQBoxSel===null){ showToast('보물상자를 선택해주세요'); return; }
 
   const path=_tmPath(n);
-  const rpath=path+'/reward_pick';
   if(!path){ showToast('⚠ 연결 필요'); return; }
 
   const mk=_tmMK();
   const q=document.getElementById('tmHQQText')?.textContent||_tmQ(n);
   const uAns={}; uAns[mk]=val; uAns[mk+'_at']=Date.now(); uAns.question=q;
-  const uBox={}; uBox[mk+'_pick']=_tmHQBoxSel;
 
   try{
-    await _fbUpdate(path, uAns);
-    await _fbUpdate(rpath, uBox);
-    window['tmHQMySaved'+n]=true;
-    window['tmHQMyPickIdx'+n]=_tmHQBoxSel;
-    window['tmHQMyAnsText'+n]=val;
-    _tmHQShowView('tmHQWaiting');
-    _tmHQSetWaitCard(n, val, {});
-    _tmHQApplyTheme(n);
-    _tmHQSubForComplete(n);
-    tmHQRenderHome();
-    showToast('✅ 제출 완료! 상대방 수행을 기다립니다');
+    if(isSpecial){
+      /* 스페셜: days 배열 업데이트 + Q/A 저장 */
+      const snap = await _fbGet(path);
+      const d = snap.exists() ? snap.val() : {};
+      const mkD = MY_UID < _tmPUid() ? 'days_a' : 'days_b';
+      const okD = MY_UID < _tmPUid() ? 'days_b' : 'days_a';
+      let myDays = d[mkD] ? [...d[mkD]] : [false,false,false,false,false];
+      const oppDays = d[okD] || [false,false,false,false,false];
+      const completedDays = d.completedDays || 0;
+      const todayIdx = completedDays;
+      if(todayIdx < 5){
+        myDays[todayIdx] = true;
+        uAns[mkD] = myDays;
+        if(oppDays[todayIdx]===true){
+          uAns.completedDays = completedDays + 1;
+        }
+      }
+      await _fbUpdate(path, uAns);
+      window['tmHQMySaved'+n]=true;
+      window['tmHQMyAnsText'+n]=val;
+      _tmHQShowView('tmHQWaiting');
+      _tmHQSetWaitCard(n, val, {});
+      _tmHQApplyTheme(n);
+      _tmHQSubForComplete(n);
+      tmHQRenderHome();
+      const dayNum = Math.min(todayIdx+1, 5);
+      showToast('✅ DAY '+dayNum+' 답글 저장! 상대방 수행 대기중');
+    } else {
+      const rpath=path+'/reward_pick';
+      const uBox={}; uBox[mk+'_pick']=_tmHQBoxSel;
+      await _fbUpdate(path, uAns);
+      await _fbUpdate(rpath, uBox);
+      window['tmHQMySaved'+n]=true;
+      window['tmHQMyPickIdx'+n]=_tmHQBoxSel;
+      window['tmHQMyAnsText'+n]=val;
+      _tmHQShowView('tmHQWaiting');
+      _tmHQSetWaitCard(n, val, {});
+      _tmHQApplyTheme(n);
+      _tmHQSubForComplete(n);
+      tmHQRenderHome();
+      showToast('✅ 제출 완료! 상대방 수행을 기다립니다');
+    }
   } catch(e){ showToast('⚠ 저장 실패'); }
 }
 
@@ -9217,8 +9507,48 @@ function _tmHQSubForOpp(n){
 
 function _tmHQSubForComplete(n){
   _tmHQBoxSubClean();
-  const rpath=_tmPath(n)+'/reward_pick';
-  if(!rpath||!FB_READY||!_fbDb) return;
+  const path=_tmPath(n);
+  if(!path||!FB_READY||!_fbDb) return;
+
+  if(n===4){
+    /* 스페셜: completedDays >= 5 감시 */
+    _fbOn(path, snap=>{
+      const d=snap.exists()?snap.val():{};
+      const completedDays=d.completedDays||0;
+      /* 상대방 오늘 답글 확인 — 대기 화면 업데이트 */
+      const oppAns=d[_tmOK()]||null;
+      if(oppAns){
+        const mkD=MY_UID<_tmPUid()?'days_a':'days_b';
+        const myDays=d[mkD]||[false,false,false,false,false];
+        const todayIdx=completedDays<5?completedDays:4;
+        /* 상대가 오늘 완료 → 나도 완료했으면 DAY 진행 */
+        if(completedDays>=5 && !window['tmRewardDone4']){
+          window['tmRewardDone4']=true;
+          window['tmMyReward4']=100000;
+          if(!window.teamData) window.teamData={};
+          if(!window.teamData.completedMissions) window.teamData.completedMissions=[];
+          if(!window.teamData.completedMissions.find(m=>m.n===4)){
+            window.teamData.completedMissions.push({n:4,label:'스페셜임무',reward:100000,completedAt:Date.now()});
+          }
+          renderStatsRevenueCard();
+          const waiting=document.getElementById('tmHQWaiting');
+          const detail=document.getElementById('tmHQDetail');
+          if((waiting&&waiting.style.display!=='none')||(detail&&detail.style.display!=='none')){
+            _tmHQShowView('tmHQResult');
+            _tmHQSetResultCard(4);
+            _tmHQApplyTheme(4);
+            tmHQRenderHome();
+          }
+          _tmHQBoxSubClean();
+        }
+      }
+    });
+    _tmHQBoxSubFn=()=>{};
+    return;
+  }
+
+  /* 일반 임무: reward_pick 양쪽 완료 감시 */
+  const rpath=path+'/reward_pick';
   _fbOn(rpath, snap=>{
     const d=snap.exists()?snap.val():null;
     const mk=_tmMK(), ok=_tmOK();
@@ -9252,6 +9582,84 @@ function _tmHQBoxSubClean(){
   if(_tmHQBoxSubFn){ try{_tmHQBoxSubFn();}catch(e){} _tmHQBoxSubFn=null; }
 }
 
+/* 상대방 박스 선택 실시간 구독 */
+let _tmHQOppBoxSubFn = null;
+function _tmHQSubForOppBox(n){
+  if(_tmHQOppBoxSubFn){ try{_tmHQOppBoxSubFn();}catch(e){} _tmHQOppBoxSubFn=null; }
+  const rpath = _tmPath(n)+'/reward_pick';
+  if(!rpath||!FB_READY||!_fbDb) return;
+  _fbOn(rpath, snap=>{
+    const d = snap.exists() ? snap.val() : {};
+    const ok = _tmOK();
+    const oppIdx = d[ok+'_pick'];
+    window['_tmHQOppPick'+n] = oppIdx !== undefined ? oppIdx : null;
+    /* 상세 화면이 열려있으면 즉시 반영 */
+    const det = document.getElementById('tmHQDetail');
+    if(det && det.style.display !== 'none'){
+      _tmHQRenderBoxes(d);
+    }
+  });
+  _tmHQOppBoxSubFn = ()=>{};
+}
+
+/* 결과 상세 보기 (도장 탭) */
+async function tmHQShowResultDetail(){
+  const n=_tmHQN;
+  const cfg=TM[n];
+  const path=_tmPath(n);
+  const rpath=path+'/reward_pick';
+  if(!path) return;
+
+  try{
+    const [snap, rsnap] = await Promise.all([_fbGet(path), _fbGet(rpath)]);
+    const d = snap.exists() ? snap.val() : {};
+    const rd= rsnap.exists() ? rsnap.val() : {};
+    const mk=_tmMK(), ok=_tmOK();
+
+    const myAns  = d[mk] || window['tmHQMyAnsText'+n] || '(없음)';
+    const oppAns = d[ok] || '(없음)';
+    const myAmt  = window['tmMyReward'+n] || rd['reward_'+mk] || 0;
+    const myPick = rd[mk+'_pick'];
+    const oppPick= rd[ok+'_pick'];
+
+    /* 상대방 보상 금액 계산 */
+    const rewards = TM[n].rewards;
+    const oppAmt  = (oppPick !== undefined && rewards) ? (rewards[oppPick]||0) : 0;
+
+    const myName  = (myNickname&&myNickname!=='')?myNickname:'나';
+    const pName   = _tmPN();
+
+    const inner = document.getElementById('tmHQResultDetailInner');
+    if(!inner) return;
+    inner.innerHTML = `
+      <div style="font-family:var(--orb);font-size:8px;letter-spacing:2px;color:${cfg.color.replace('1)','.6)')};margin-bottom:12px;text-align:center;">◈ MISSION RESULT</div>
+      <!-- 나 -->
+      <div style="background:rgba(18,50,16,.6);border:1.5px solid ${cfg.border};border-radius:12px;padding:13px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:${cfg.color};">👤 ${myName}</div>
+          <div style="font-family:var(--orb);font-size:14px;font-weight:900;color:${cfg.color};text-shadow:0 0 8px ${cfg.glow};">+${myAmt.toLocaleString()}원</div>
+        </div>
+        <div style="font-family:var(--orb);font-size:7px;color:rgba(255,255,255,.35);letter-spacing:1px;margin-bottom:4px;">▎ 나의 답글</div>
+        <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.85);font-weight:600;line-height:1.55;word-break:break-word;">${myAns}</div>
+        ${myPick!==undefined?`<div style="margin-top:6px;font-family:var(--orb);font-size:8px;color:${cfg.color.replace('1)','.55)')};letter-spacing:1px;">BOX ${myPick+1} 선택</div>`:''}
+      </div>
+      <!-- 상대 -->
+      <div style="background:rgba(20,15,40,.55);border:1.5px solid rgba(180,150,220,.3);border-radius:12px;padding:13px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:rgba(180,150,220,.9);">👤 ${pName}</div>
+          <div style="font-family:var(--orb);font-size:14px;font-weight:900;color:rgba(200,168,75,.9);">+${oppAmt.toLocaleString()}원</div>
+        </div>
+        <div style="font-family:var(--orb);font-size:7px;color:rgba(255,255,255,.35);letter-spacing:1px;margin-bottom:4px;">▎ 상대방 답글</div>
+        <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.75);font-weight:600;line-height:1.55;word-break:break-word;">${oppAns}</div>
+        ${oppPick!==undefined?`<div style="margin-top:6px;font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.5);letter-spacing:1px;">BOX ${oppPick+1} 선택</div>`:''}
+      </div>`;
+
+    document.getElementById('tmHQResultMain').style.display='none';
+    document.getElementById('tmHQResultDetail').style.display='block';
+  } catch(e){ showToast('결과를 불러오는 중 오류가 발생했습니다'); }
+}
+
+
 /* 보상확인 → 전체화면 팡 */
 function tmHQShowReward(){
   const n=_tmHQN;
@@ -9262,7 +9670,6 @@ function tmHQShowReward(){
   const amt=document.getElementById('tmFlashAmount');
   const lbl=document.getElementById('tmFlashLabel');
   if(!flash) return;
-  /* 색상 맞춤 */
   if(amt){ amt.textContent='+'+myAmt.toLocaleString()+'원'; amt.style.color=cfg.color; amt.style.textShadow=`0 0 28px ${cfg.glow},0 0 56px ${cfg.glow}`; }
   if(lbl){ lbl.textContent=cfg.label+' 보상 획득!'; lbl.style.color=cfg.color.replace('1)','.7)'); }
   flash.style.display='flex';
