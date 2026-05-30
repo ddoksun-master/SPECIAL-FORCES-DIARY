@@ -4713,6 +4713,22 @@ document.addEventListener('DOMContentLoaded',()=>{
     <!-- ====== 작전수첩 패널 ====== -->
     <div class="panel active" id="panelDiary">
 
+      <!-- ★ 개인임무 한도 초과 안내 배너 (한도 달성 시 표시) -->
+      <div id="capReachedBanner" style="display:none;margin:10px 14px 0;padding:12px 14px;background:linear-gradient(135deg,rgba(20,10,40,.92),rgba(30,15,55,.95));border:1.5px solid rgba(160,100,220,.45);border-radius:14px;box-shadow:0 0 18px rgba(120,80,200,.18);position:relative;overflow:hidden;">
+        <div style="position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(135deg,rgba(160,100,220,.03) 0,rgba(160,100,220,.03) 1px,transparent 1px,transparent 14px);border-radius:14px;"></div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px;position:relative;z-index:1;">
+          <div style="font-size:18px;flex-shrink:0;">🎖</div>
+          <div id="capBannerTitle" style="font-family:var(--title);font-size:13px;font-weight:900;color:rgba(200,168,75,.95);letter-spacing:.3px;">개인임무 · 특수임무 잔여금액을 모두 채웠습니다</div>
+        </div>
+        <div id="capBannerBody" style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.6);line-height:1.7;margin-bottom:8px;position:relative;z-index:1;">
+          미션을 완수하여도 <span style="color:rgba(255,120,120,.9);font-weight:700;">개인임무 확보자금으로 누적되지 않습니다.</span>
+        </div>
+        <div style="background:rgba(200,168,75,.09);border:1px dashed rgba(200,168,75,.3);border-radius:9px;padding:9px 11px;position:relative;z-index:1;">
+          <div style="font-family:var(--orb);font-size:7px;color:rgba(200,168,75,.5);letter-spacing:2px;margin-bottom:4px;">▸ SPECIAL SUPPLY NOTICE</div>
+          <div style="font-family:var(--kr);font-size:11px;color:rgba(255,220,100,.88);font-weight:600;line-height:1.65;">🏆 한 달 동안의 <span style="color:#fff;font-weight:900;">미션 성공률</span>에 따라<br>전술본부 <span style="color:rgba(200,168,75,.95);font-weight:900;">특별보급상품</span>이 지급됩니다.</div>
+        </div>
+      </div>
+
       <!-- 날짜/자금/수행률 카드 -->
       <div class="card" id="catCard">
         <!-- 날짜 + 확보자금 + 수행률 -->
@@ -5567,6 +5583,7 @@ function switchPanel(name,el){
     updateGemBoxes();
   }
   if(name==='shop') renderShopActivity();
+  if(name==='diary') _updateCapBanner();
 }
 
 /* ── 요일 탭 ── */
@@ -5809,17 +5826,8 @@ function renderQ(){
         const done=quests[oi].cumDone||[];
         if(!done.every(Boolean)) return;
       }
-      /* 개인임무 한도 체크 */
-      if(!quests[oi].completed){
-        const rawPersonal = Object.values(allData).reduce((sum,items)=>
-          sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
-        );
-        const cap = calcRewardCap();
-        if(rawPersonal >= cap.personalCap){
-          _showCapReachedNotice();
-          return;
-        }
-      }
+      /* 개인임무 한도 체크 — 버튼은 항상 작동, 한도 초과 시 배너만 표시 */
+      /* (한도 초과 안내는 showCat() 내 배너로 처리) */
       quests[oi].completed=!quests[oi].completed;
       saveQ();renderQ();updateHUD();
       document.getElementById('hiddenSec').style.display='none';
@@ -5861,11 +5869,12 @@ function renderQ(){
     bar.textContent=`+ 작전 추가  (${rem.toLocaleString()}원 남음)`;
     bar.onclick=openCatAndScroll;
   } else if(capReached){
+    /* 한도 달성 시에도 미션 추가 가능 — + 작전 추가 버튼 유지 */
     bar.classList.remove('hidden');
-    bar.style.color='rgba(255,184,71,.85)';
-    bar.style.borderColor='rgba(255,184,71,.28)';
-    bar.textContent='🎖 한도 달성! 꾸준히 하면 보급상점 특별지급 기회가 있어요';
-    bar.onclick=()=>{ const e=CAP_ENCOURAGE_MSGS[Math.floor(Math.random()*CAP_ENCOURAGE_MSGS.length)]; showToast(e); };
+    bar.style.color='rgba(200,200,200,.7)';
+    bar.style.borderColor='rgba(160,100,220,.3)';
+    bar.textContent='+ 작전 추가  (미션 성공률 기록 중)';
+    bar.onclick=openCatAndScroll;
   } else {
     bar.classList.add('hidden');
   }
@@ -5990,6 +5999,43 @@ function updateHUD(){
   document.getElementById('diaryMoney').textContent=m.toLocaleString();
   document.getElementById('diaryPct').textContent=p;
   document.getElementById('diaryProgBar').style.width=p+'%';
+  /* ★ 개인임무 한도 초과 배너 갱신 */
+  _updateCapBanner();
+}
+
+/* ── 개인임무 한도 배너 업데이트 ── */
+function _updateCapBanner(){
+  const banner = document.getElementById('capReachedBanner');
+  if(!banner) return;
+  const cap = calcRewardCap();
+  const rawPersonal = Object.values(allData).reduce((sum,items)=>
+    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
+  );
+  const capReached = rawPersonal >= cap.personalCap;
+  if(!capReached){
+    banner.style.display = 'none';
+    return;
+  }
+  /* 배너 표시 */
+  banner.style.display = 'block';
+  const titleEl = document.getElementById('capBannerTitle');
+  const bodyEl  = document.getElementById('capBannerBody');
+  if(!cap.allSpecialDone){
+    /* 특수임무 미완료 상태에서 10만원 달성 */
+    if(titleEl) titleEl.textContent = '개인임무 기본 한도(100,000원)에 도달했습니다';
+    if(bodyEl)  bodyEl.innerHTML = '미션을 완수하여도 <span style="color:rgba(255,120,120,.9);font-weight:700;">개인임무 확보자금으로 누적되지 않습니다.</span><br>'
+      + '<span style="font-size:10px;color:rgba(255,255,255,.35);">특수임무 1~3 완료 후 실제 한도가 조정됩니다.</span>';
+  } else if(cap.personalCap <= 0){
+    /* 특수임무 합계 ≥ 10만 → 개인임무 0원 */
+    if(titleEl) titleEl.textContent = '개인임무 · 특수임무 잔여금액을 모두 채웠습니다';
+    if(bodyEl)  bodyEl.innerHTML = '미션을 완수하여도 <span style="color:rgba(255,120,120,.9);font-weight:700;">개인임무 확보자금으로 누적되지 않습니다.</span><br>'
+      + `<span style="font-size:10px;color:rgba(255,255,255,.35);">특수임무 합계 ${cap.specialTotal.toLocaleString()}원 ≥ 10만원 — 개인임무 추가 없음</span>`;
+  } else {
+    /* 특수임무 완료 후 개인임무 가용한도까지 도달 */
+    if(titleEl) titleEl.textContent = '개인임무 · 특수임무 잔여금액을 모두 채웠습니다';
+    if(bodyEl)  bodyEl.innerHTML = '미션을 완수하여도 <span style="color:rgba(255,120,120,.9);font-weight:700;">개인임무 확보자금으로 누적되지 않습니다.</span><br>'
+      + `<span style="font-size:10px;color:rgba(255,255,255,.35);">가용 한도 ${cap.personalCap.toLocaleString()}원을 모두 달성했습니다.</span>`;
+  }
 }
 
 /* ── 카테고리 ── */
