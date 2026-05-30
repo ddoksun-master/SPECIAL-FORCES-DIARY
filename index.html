@@ -8407,12 +8407,49 @@ function tmRender(qaData, n){
   }
 
   if(isSpecial){
-    /* 스페셜: 5일 DAY 렌더 */
-    const days = qaData ? (qaData['days_'+(MY_UID<_tmPUid()?'a':'b')]||[]) : [];
-    const oppDays = qaData ? (qaData['days_'+(MY_UID<_tmPUid()?'b':'a')]||[]) : [];
-    tmRenderDays(days, oppDays, qaData);
-    /* Q&A도 스페셜 아래에 표시 */
-    tmRenderSpQA(qaData, n, myAns, oppAns, bothDone);
+    /* 스페셜: 홈 카드에서는 진행 현황만 간단히 표시, 진입은 tmHQEnter(4) */
+    const confirmed = qaData ? (qaData.special_confirmed||null) : null;
+    const completedDays = qaData ? (qaData.completedDays||0) : 0;
+    const mk = _tmMK(), ok = _tmOK();
+    const myChoice  = qaData&&qaData.special_select ? (qaData.special_select[mk]||null) : null;
+    const oppChoice = qaData&&qaData.special_select ? (qaData.special_select[ok]||null) : null;
+
+    const spBody = document.getElementById('tmSpQAWrap');
+    if(spBody){
+      if(completedDays >= 5){
+        spBody.innerHTML = `<div style="text-align:center;padding:14px;"><div style="font-size:32px;margin-bottom:6px;">🏆</div><div style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(251,191,36,.9);">5일 챌린지 완료!</div></div>`;
+      } else if(confirmed){
+        const curDay = completedDays;
+        spBody.innerHTML = `
+          <div style="padding:10px 12px;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);border-radius:10px;margin-bottom:8px;">
+            <div style="font-family:var(--orb);font-size:7px;color:rgba(251,191,36,.5);letter-spacing:1.5px;margin-bottom:4px;">▸ 수행 중인 미션</div>
+            <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:#fff;">"${confirmed.name}"</div>
+          </div>
+          <div style="display:flex;gap:5px;margin-bottom:6px;">
+            ${[0,1,2,3,4].map(i=>{
+              const done = i < curDay;
+              const isActive = i === curDay;
+              return `<div style="flex:1;padding:5px 2px;text-align:center;border-radius:7px;background:${done?'rgba(251,191,36,.18)':isActive?'rgba(251,191,36,.08)':'rgba(255,255,255,.04)'};border:1px solid ${done?'rgba(251,191,36,.5)':isActive?'rgba(251,191,36,.3)':'rgba(255,255,255,.1)'};">
+                <div style="font-family:var(--orb);font-size:8px;color:${done?'rgba(251,191,36,.9)':isActive?'rgba(255,255,255,.6)':'rgba(255,255,255,.2)'};">${done?'✓':isActive?'●':'—'}</div>
+                <div style="font-family:var(--orb);font-size:7px;color:${done?'rgba(251,191,36,.6)':'rgba(255,255,255,.2)'};margin-top:1px;">D${i+1}</div>
+              </div>`;
+            }).join('')}
+          </div>
+          <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);text-align:center;">탭하여 DAY ${curDay+1} 수행완료 등록</div>`;
+      } else {
+        const step = myChoice&&oppChoice ? '양쪽 선택완료 — 임무수행 시작 가능' : myChoice ? `${_tmPN()}의 선택 대기중` : '미션을 선택해주세요';
+        spBody.innerHTML = `
+          <div style="padding:10px 12px;background:rgba(255,255,255,.04);border:1px dashed rgba(251,191,36,.2);border-radius:10px;text-align:center;">
+            <div style="font-size:20px;margin-bottom:5px;">💎</div>
+            <div style="font-family:var(--kr);font-size:11px;color:rgba(255,220,100,.7);font-weight:700;">${step}</div>
+          </div>`;
+      }
+    }
+    tmRenderDays(
+      qaData ? (qaData['sp_days_'+(MY_UID<_tmPUid()?'a':'b')]||[]) : [],
+      qaData ? (qaData['sp_days_'+(MY_UID<_tmPUid()?'b':'a')]||[]) : [],
+      qaData
+    );
   } else {
     /* 일반: Q&A */
     const qt = document.getElementById('tmQText'+n);
@@ -9447,7 +9484,7 @@ function tmHQToggleMissionDetail(n){
    HQ 화면 전환
 ═══════════════════════════════════════════════════════ */
 function _tmHQShowView(id){
-  ['tmHQHome','tmHQDetail','tmHQWaiting','tmHQResult'].forEach(v=>{
+  ['tmHQHome','tmHQDetail','tmHQWaiting','tmHQResult','tmHQSpecialSelect','tmHQSpecialDay'].forEach(v=>{
     const el=document.getElementById(v);
     if(el) el.style.display=(v===id)?'block':'none';
   });
@@ -9709,18 +9746,26 @@ async function _cancelSpecialMissionSelect(){
   tmHQRenderHome();
 }
 
-/* 스페셜 선택 실시간 감시 — 상대방 선택 시 팝업 자동 갱신 */
+/* 스페셜 선택 실시간 감시 — 상대방 선택 시 화면 자동 갱신 */
 let _specialSelectSubFn = null;
 function _startSpecialSelectWatch(){
   if(_specialSelectSubFn){ try{_specialSelectSubFn();}catch(e){} }
   const path = _tmPath(4);
   if(!path||!FB_READY||!_fbDb) return;
   const mk = _tmMK(), ok = _tmOK();
-  _fbOn(path+'/special_select', snap=>{
+  _fbOn(path, snap=>{
     const d = snap && snap.exists() ? snap.val() : {};
-    const overlay = document.getElementById('specialSelectOverlay');
-    if(overlay){
-      _renderSpecialSelectUI(tplData['hard']||[], d[mk]||null, d[ok]||null, _tmPN(), mk, ok);
+    /* 미션 확정됐으면 DAY 수행 화면으로 전환 */
+    if(d.special_confirmed){
+      const selEl = document.getElementById('tmHQSpecialSelect');
+      if(selEl && selEl.style.display !== 'none'){
+        _spShowDayScreen(d);
+      }
+      return;
+    }
+    const selEl = document.getElementById('tmHQSpecialSelect');
+    if(selEl && selEl.style.display !== 'none'){
+      _spShowSelectScreen(d);
     }
     tmHQRenderHome();
   });
@@ -9746,14 +9791,13 @@ async function startSpecialMissionRandom(){
 
   await _fbUpdate(path, {
     'special_confirmed': { name: confirmedMission, confirmedAt: Date.now() },
-    'question': `[스페셜임무] ${confirmedMission}`
+    'completedDays': 0
   }).catch(()=>{});
 
-  /* 선택 overlay 닫기 */
-  const overlay = document.getElementById('specialSelectOverlay');
-  if(overlay) overlay.remove();
+  /* 선택 화면 닫기 */
+  _tmHQShowView('tmHQSpecialDay');
 
-  /* 결과 팝업 */
+  /* 확정 팝업 */
   const flash = document.createElement('div');
   flash.style.cssText='position:fixed;inset:0;z-index:9800;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:20px;';
   flash.innerHTML = `
@@ -9762,10 +9806,10 @@ async function startSpecialMissionRandom(){
       <div style="font-family:var(--orb);font-size:9px;letter-spacing:3px;color:rgba(251,191,36,.6);margin-bottom:8px;">MISSION CONFIRMED</div>
       <div style="font-family:var(--title);font-size:18px;font-weight:900;color:#fff;margin-bottom:6px;">스페셜임무 확정!</div>
       <div style="font-family:var(--kr);font-size:14px;color:rgba(251,191,36,.95);font-weight:700;padding:12px 16px;background:rgba(251,191,36,.1);border:1.5px solid rgba(251,191,36,.4);border-radius:12px;margin-bottom:20px;line-height:1.5;">"${confirmedMission}"</div>
-      <button onclick="this.closest('[style*=fixed]').remove();tmHQRenderHome();" style="padding:13px 32px;background:linear-gradient(135deg,rgba(120,90,0,.9),rgba(80,60,0,.95));border:2px solid rgba(251,191,36,.55);border-radius:12px;color:#fff;font-family:var(--title);font-size:15px;font-weight:900;cursor:pointer;">✅ 임무 시작!</button>
+      <button onclick="this.closest('[style*=fixed]').remove();_spEnter();" style="padding:13px 32px;background:linear-gradient(135deg,rgba(120,90,0,.9),rgba(80,60,0,.95));border:2px solid rgba(251,191,36,.55);border-radius:12px;color:#fff;font-family:var(--title);font-size:15px;font-weight:900;cursor:pointer;">✅ DAY 1 시작!</button>
     </div>`;
   document.body.appendChild(flash);
-  setTimeout(()=>{ if(flash.parentNode) flash.remove(); tmHQRenderHome(); }, 5000);
+  setTimeout(()=>{ if(flash.parentNode) flash.remove(); _spEnter(); }, 5000);
 }
 
 function tmHQBack(){
@@ -9879,6 +9923,12 @@ function tmHQEnter(n){
   _tmHQBoxSel=null;
   const cfg=TM[n];
 
+  /* ★ 스페셜임무(n=4) — 전용 흐름 */
+  if(n===4){
+    _spEnter();
+    return;
+  }
+
   _fbGet(_tmPath(n)).then(snap=>{
     const d=snap.exists()?snap.val():{};
     const mk=_tmMK(), ok=_tmOK();
@@ -9921,6 +9971,332 @@ function tmHQEnter(n){
     _tmHQShowDetail(n, _tmQ(n), null, null);
   });
 }
+
+/* ═══════════════════════════════════════════════════════
+   ★ 스페셜임무 전용 흐름
+   화면1: 미션선택 (서로 자신의 특수임무 제출)
+   화면2: DAY 수행 (랜덤 확정된 미션 카드 + 수행완료 버튼)
+═══════════════════════════════════════════════════════ */
+
+/* 스페셜 진입 — Firebase 상태 보고 화면 결정 */
+async function _spEnter(){
+  const n=4;
+  _tmHQApplyTheme(n);
+
+  /* 완료 상태 */
+  if(window['tmRewardDone4']){
+    _tmHQShowView('tmHQResult');
+    _tmHQSetResultCard(4);
+    return;
+  }
+
+  const path = _tmPath(4);
+  if(!path){ showToast('팀원과 연결 후 이용 가능합니다'); return; }
+
+  let d = {};
+  try{ const snap=await _fbGet(path); d=snap.exists()?snap.val():{};} catch(e){}
+
+  const confirmed = d.special_confirmed||null;
+
+  if(!confirmed){
+    /* 화면1: 미션 선택 */
+    _spShowSelectScreen(d);
+    _startSpecialSelectWatch();
+  } else {
+    /* 화면2: DAY 수행 */
+    _spShowDayScreen(d);
+  }
+}
+
+/* ─── 화면1: 미션선택 화면 (인라인 렌더) ─── */
+function _spShowSelectScreen(d){
+  const mk=_tmMK(), ok=_tmOK();
+  const myChoice  = d.special_select ? (d.special_select[mk]||null) : null;
+  const oppChoice = d.special_select ? (d.special_select[ok]||null) : null;
+  const pName = _tmPN();
+  const bothReady = !!(myChoice && oppChoice);
+  const myHards = tplData['hard']||[];
+
+  const wrap = document.getElementById('tmHQWrap');
+  if(!wrap) return;
+  /* 기존 화면들 숨기고 스페셜 전용 div 사용 */
+  _tmHQShowView('tmHQSpecialSelect');
+
+  let selEl = document.getElementById('tmHQSpecialSelect');
+  if(!selEl){
+    selEl = document.createElement('div');
+    selEl.id = 'tmHQSpecialSelect';
+    selEl.className = 'tm-hq-anim';
+    wrap.appendChild(selEl);
+  }
+  selEl.style.display = 'block';
+
+  selEl.innerHTML = `
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:10px;background:linear-gradient(160deg,rgba(40,28,4,.98),rgba(20,14,2,.99));border-color:rgba(251,191,36,.35);">
+      <!-- 상단 골드라인 -->
+      <div style="height:2px;background:linear-gradient(90deg,transparent,rgba(251,191,36,.7),transparent);"></div>
+      <div style="padding:14px 16px;display:flex;align-items:center;gap:10px;">
+        <button onclick="tmHQBack()" style="width:30px;height:30px;border-radius:8px;border:1.5px solid rgba(251,191,36,.4);background:rgba(0,0,0,.25);color:rgba(251,191,36,.9);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">‹</button>
+        <div style="flex:1;">
+          <div style="font-family:var(--orb);font-size:7px;letter-spacing:3px;color:rgba(251,191,36,.5);margin-bottom:2px;">SPECIAL MISSION · STEP 1</div>
+          <div style="font-family:var(--kr);font-size:16px;font-weight:900;color:#fff;">미션 선택</div>
+        </div>
+        <div class="tm-hq-badge" style="background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.45);color:rgba(251,191,36,.9);">💎 선택단계</div>
+      </div>
+    </div>
+
+    <!-- 안내 -->
+    <div style="padding:11px 14px;background:rgba(251,191,36,.06);border:1px dashed rgba(251,191,36,.22);border-radius:11px;margin-bottom:12px;font-family:var(--kr);font-size:11px;color:rgba(255,220,100,.75);line-height:1.7;">
+      📋 상대방에게 수행시킬 <strong>나의 특수임무</strong>를 1개 선택하세요.<br>
+      내 선택 내용은 상대방에게 보이지 않고, <strong>선택완료</strong>로만 표시됩니다.<br>
+      양쪽 모두 선택 완료 시 <strong>랜덤으로 1개의 미션</strong>이 확정됩니다.
+    </div>
+
+    <!-- 상태 카드 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div style="padding:12px;background:${myChoice?'rgba(251,191,36,.1)':'rgba(255,255,255,.04)'};border:1.5px solid ${myChoice?'rgba(251,191,36,.55)':'rgba(255,255,255,.1)'};border-radius:12px;text-align:center;">
+        <div style="font-size:22px;margin-bottom:5px;">${myChoice?'✅':'📋'}</div>
+        <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:${myChoice?'rgba(251,191,36,.9)':'rgba(255,255,255,.4)'};">나</div>
+        <div style="font-family:var(--kr);font-size:10px;color:${myChoice?'rgba(255,220,100,.8)':'rgba(255,255,255,.3)'};margin-top:3px;line-height:1.4;">${myChoice?'선택완료':'대기중'}</div>
+      </div>
+      <div style="padding:12px;background:${oppChoice?'rgba(180,150,220,.1)':'rgba(255,255,255,.04)'};border:1.5px solid ${oppChoice?'rgba(180,150,220,.45)':'rgba(255,255,255,.1)'};border-radius:12px;text-align:center;">
+        <div style="font-size:22px;margin-bottom:5px;">${oppChoice?'✅':'⏳'}</div>
+        <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:${oppChoice?'rgba(180,150,220,.9)':'rgba(255,255,255,.4)'};">${pName}</div>
+        <div style="font-family:var(--kr);font-size:10px;color:${oppChoice?'rgba(200,170,255,.8)':'rgba(255,255,255,.3)'};margin-top:3px;">${oppChoice?'선택완료':'미확정'}</div>
+      </div>
+    </div>
+
+    <!-- 양쪽 선택완료 → 임무수행 시작 버튼 -->
+    ${bothReady ? `
+      <div style="margin-bottom:14px;padding:14px;background:rgba(251,191,36,.1);border:2px solid rgba(251,191,36,.5);border-radius:14px;text-align:center;">
+        <div style="font-family:var(--orb);font-size:8px;color:rgba(251,191,36,.7);letter-spacing:2px;margin-bottom:8px;">◈ 양쪽 선택 완료!</div>
+        <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.6);margin-bottom:12px;">버튼을 눌러 랜덤으로 미션을 확정하세요</div>
+        <button onclick="startSpecialMissionRandom()" style="width:100%;padding:14px;background:linear-gradient(135deg,rgba(180,130,0,.9),rgba(120,85,0,.95));border:2px solid rgba(251,191,36,.65);border-radius:12px;color:#fff;font-family:var(--title);font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 0 18px rgba(251,191,36,.2);">
+          🎲 임무수행 시작 (랜덤 확정)
+        </button>
+      </div>
+    ` : `
+      <div style="margin-bottom:12px;padding:9px 12px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.12);border-radius:10px;font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.4);text-align:center;">
+        ⏳ ${myChoice?pName+'의 선택을 기다리는 중...':'내 특수임무를 선택해주세요'}
+      </div>
+    `}
+
+    <!-- 내 특수임무 목록 (미선택 시) -->
+    ${!myChoice ? `
+      <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px;">📋 상대에게 수행시킬 <strong>나의 특수임무</strong> 선택:</div>
+      ${myHards.length===0 ? `
+        <div style="text-align:center;padding:20px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.1);border-radius:10px;color:rgba(255,255,255,.3);font-family:var(--kr);font-size:12px;line-height:1.7;">
+          특수임무가 없습니다.<br>작전수첩에서 먼저 등록하세요.
+        </div>
+      ` : `
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          ${myHards.map((m,i)=>`
+            <div onclick="pickMySpecialMission(${i})"
+              style="padding:12px 14px;background:rgba(28,6,6,.85);border:1.5px solid rgba(220,60,60,.22);border-radius:11px;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:10px;"
+              onmouseover="this.style.borderColor='rgba(251,191,36,.55)';this.style.background='rgba(40,20,2,.9)'"
+              onmouseout="this.style.borderColor='rgba(220,60,60,.22)';this.style.background='rgba(28,6,6,.85)'">
+              <span style="font-size:14px;flex-shrink:0;">⚡</span>
+              <div style="flex:1;">
+                <div style="font-family:var(--kr);font-size:13px;font-weight:800;color:#fff;">${m.name}</div>
+                <div style="font-family:var(--orb);font-size:9px;color:rgba(255,120,120,.5);margin-top:2px;">특수임무 · 탭하여 선택</div>
+              </div>
+              <div style="color:rgba(251,191,36,.6);font-size:18px;">›</div>
+            </div>
+          `).join('')}
+        </div>
+      `}
+    ` : `
+      <div style="text-align:center;padding:10px;">
+        <button onclick="_cancelSpecialMissionSelect()" style="padding:8px 20px;background:rgba(60,10,10,.6);border:1px solid rgba(200,50,50,.3);border-radius:8px;color:rgba(255,80,80,.7);font-family:var(--kr);font-size:12px;cursor:pointer;">선택 취소</button>
+      </div>
+    `}
+  `;
+}
+
+/* ─── 화면2: DAY 수행 화면 ─── */
+function _spShowDayScreen(d){
+  _tmHQShowView('tmHQSpecialDay');
+
+  let dayEl = document.getElementById('tmHQSpecialDay');
+  if(!dayEl){
+    dayEl = document.createElement('div');
+    dayEl.id = 'tmHQSpecialDay';
+    dayEl.className = 'tm-hq-anim';
+    document.getElementById('tmHQWrap').appendChild(dayEl);
+  }
+  dayEl.style.display = 'block';
+
+  const cfg = TM[4];
+  const pName = _tmPN();
+  const mk = _tmMK(), ok = _tmOK();
+  const confirmedMission = d.special_confirmed ? d.special_confirmed.name : '(미션명 없음)';
+  const completedDays = d.completedDays || 0;
+
+  /* 내/상대 DAY별 완료 배열 */
+  const myDaysKey  = MY_UID < _tmPUid() ? 'sp_days_a' : 'sp_days_b';
+  const oppDaysKey = MY_UID < _tmPUid() ? 'sp_days_b' : 'sp_days_a';
+  const myDays  = d[myDaysKey]  || [false,false,false,false,false];
+  const oppDays = d[oppDaysKey] || [false,false,false,false,false];
+
+  const curDay = completedDays; /* 현재 수행 중인 DAY 인덱스 (0~4) */
+  const allDone = completedDays >= 5;
+
+  const myTodayDone  = myDays[curDay]  === true;
+  const oppTodayDone = oppDays[curDay] === true;
+
+  dayEl.innerHTML = `
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:10px;background:${cfg.bgHeader};border-color:${cfg.border};">
+      <div style="height:2px;background:${cfg.topLine};"></div>
+      <div style="padding:14px 16px;display:flex;align-items:center;gap:10px;">
+        <button onclick="tmHQBack()" style="width:30px;height:30px;border-radius:8px;border:1.5px solid ${cfg.border};background:rgba(0,0,0,.25);color:${cfg.color};font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">‹</button>
+        <div style="flex:1;">
+          <div style="font-family:var(--orb);font-size:7px;letter-spacing:3px;color:${cfg.color.replace('1)','.5)')};margin-bottom:2px;">SPECIAL MISSION · STEP 2</div>
+          <div style="font-family:var(--kr);font-size:16px;font-weight:900;color:#fff;">미션 수행</div>
+        </div>
+        <div class="tm-hq-badge" style="background:${cfg.glow};border:1px solid ${cfg.border};color:${cfg.color};">
+          ${allDone ? '🏆 완료' : `DAY ${curDay+1}/5`}
+        </div>
+      </div>
+    </div>
+
+    <!-- 확정된 미션 카드 -->
+    <div style="padding:14px;background:rgba(40,28,2,.8);border:2px solid ${cfg.border};border-radius:14px;margin-bottom:12px;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${cfg.topLine};"></div>
+      <div style="font-family:var(--orb);font-size:7px;letter-spacing:2.5px;color:${cfg.color.replace('1)','.55)')};margin-bottom:8px;">◈ CONFIRMED MISSION</div>
+      <div style="font-family:var(--kr);font-size:16px;font-weight:900;color:#fff;line-height:1.55;margin-bottom:6px;">"${confirmedMission}"</div>
+      <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);">5일간 이 미션을 함께 수행하세요</div>
+    </div>
+
+    <!-- DAY 진행 표시 -->
+    <div style="display:flex;gap:6px;margin-bottom:14px;">
+      ${[0,1,2,3,4].map(i=>{
+        const myD  = myDays[i]===true;
+        const oppD = oppDays[i]===true;
+        const both = myD && oppD;
+        const isActive = i === curDay && !allDone;
+        const bg    = both ? 'rgba(251,191,36,.22)' : myD ? 'rgba(127,191,106,.12)' : isActive ? 'rgba(251,191,36,.08)' : 'rgba(255,255,255,.04)';
+        const bdr   = both ? 'rgba(251,191,36,.7)'  : myD ? 'rgba(127,191,106,.4)'  : isActive ? 'rgba(251,191,36,.3)'  : 'rgba(255,255,255,.1)';
+        const clr   = both ? 'rgba(251,191,36,1)'   : myD ? 'rgba(127,191,106,.8)'  : isActive ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.2)';
+        const icon  = both ? '✓' : myD ? '½' : isActive ? '●' : '—';
+        return `<div style="flex:1;padding:7px 3px;text-align:center;border-radius:9px;background:${bg};border:1px solid ${bdr};">
+          <div style="font-family:var(--orb);font-size:9px;color:${clr};font-weight:900;">${icon}</div>
+          <div style="font-family:var(--orb);font-size:7px;color:${clr};margin-top:2px;">D${i+1}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    ${allDone ? `
+      <!-- 5일 완료! -->
+      <div style="text-align:center;padding:20px;background:rgba(251,191,36,.1);border:2px solid rgba(251,191,36,.5);border-radius:14px;">
+        <div style="font-size:44px;margin-bottom:10px;">🏆</div>
+        <div style="font-family:var(--kr);font-size:17px;font-weight:900;color:rgba(251,191,36,.95);margin-bottom:6px;">스페셜임무 완료!</div>
+        <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.5);margin-bottom:16px;">5일 모두 완수하였습니다</div>
+        <button onclick="_spClaimReward()" style="width:100%;padding:14px;background:linear-gradient(135deg,rgba(180,130,0,.9),rgba(120,85,0,.95));border:2px solid rgba(251,191,36,.65);border-radius:12px;color:#fff;font-family:var(--title);font-size:15px;font-weight:900;cursor:pointer;">🎁 보상 확인</button>
+      </div>
+    ` : `
+      <!-- DAY 수행완료 버튼 -->
+      <div style="background:rgba(251,191,36,.06);border:1.5px solid rgba(251,191,36,.25);border-radius:14px;padding:14px;">
+        <div style="font-family:var(--orb);font-size:7px;color:rgba(251,191,36,.5);letter-spacing:2px;margin-bottom:10px;">▸ DAY ${curDay+1} 수행</div>
+
+        <!-- 나 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:10px 12px;background:${myTodayDone?'rgba(127,191,106,.1)':'rgba(255,255,255,.04)'};border:1px solid ${myTodayDone?'rgba(127,191,106,.4)':'rgba(255,255,255,.1)'};border-radius:10px;">
+          <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:${myTodayDone?'rgba(200,240,180,.9)':'rgba(255,255,255,.55)'};">
+            ${myTodayDone?'✅ 나 — 수행완료':'👤 나'}
+          </div>
+          ${!myTodayDone ? `<button onclick="_spDayComplete()" style="padding:8px 18px;background:linear-gradient(135deg,rgba(90,158,72,.85),rgba(50,110,35,.9));border:1.5px solid rgba(90,158,72,.6);border-radius:9px;color:#fff;font-family:var(--kr);font-size:13px;font-weight:900;cursor:pointer;">✅ 수행완료</button>` : ''}
+        </div>
+
+        <!-- 상대 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:${oppTodayDone?'rgba(180,150,220,.1)':'rgba(255,255,255,.04)'};border:1px solid ${oppTodayDone?'rgba(180,150,220,.4)':'rgba(255,255,255,.1)'};border-radius:10px;">
+          <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:${oppTodayDone?'rgba(200,170,255,.9)':'rgba(255,255,255,.4)'};">
+            ${oppTodayDone?`✅ ${pName} — 수행완료`:`⏳ ${pName} — 수행 대기중`}
+          </div>
+        </div>
+
+        ${myTodayDone && !oppTodayDone ? `
+          <div style="margin-top:10px;text-align:center;font-family:var(--kr);font-size:11px;color:rgba(255,184,71,.6);">
+            ${pName}의 수행완료를 기다리는 중...
+          </div>
+        ` : ''}
+      </div>
+    `}
+  `;
+
+  /* 실시간 구독 — 상대방이 수행완료 누를 시 자동 갱신 */
+  _spSubForDayUpdate();
+}
+
+/* 수행완료 버튼 클릭 */
+async function _spDayComplete(){
+  const path = _tmPath(4);
+  if(!path){ showToast('Firebase 연결이 필요합니다'); return; }
+
+  const snap = await _fbGet(path).catch(()=>null);
+  const d = snap && snap.exists() ? snap.val() : {};
+  const completedDays = d.completedDays || 0;
+  const curDay = completedDays;
+
+  if(curDay >= 5){ showToast('이미 5일 모두 완료했습니다'); return; }
+
+  const myDaysKey  = MY_UID < _tmPUid() ? 'sp_days_a' : 'sp_days_b';
+  const oppDaysKey = MY_UID < _tmPUid() ? 'sp_days_b' : 'sp_days_a';
+  let myDays  = d[myDaysKey]  ? [...d[myDaysKey]]  : [false,false,false,false,false];
+  const oppDays = d[oppDaysKey] || [false,false,false,false,false];
+
+  if(myDays[curDay]===true){ showToast('이미 오늘 수행완료했습니다'); return; }
+
+  myDays[curDay] = true;
+  const update = { [myDaysKey]: myDays };
+
+  /* 상대도 이미 완료 → DAY 진행 */
+  const oppDone = oppDays[curDay] === true;
+  if(oppDone){
+    const newCompleted = curDay + 1;
+    update.completedDays = newCompleted;
+    await _fbUpdate(path, update).catch(()=>{});
+    if(newCompleted >= 5){
+      showToast('🎉 DAY 5 완료! 스페셜임무 달성!');
+      window['tmRewardDone4'] = true;
+      window['tmMyReward4']   = 100000;
+      setTimeout(()=>{ _spEnter(); tmHQRenderHome(); }, 1500);
+    } else {
+      showToast(`✅ DAY ${curDay+1} 양쪽 완료! 5초 후 DAY ${newCompleted+1} 시작`);
+      setTimeout(()=>{ _spEnter(); }, 5000);
+    }
+  } else {
+    await _fbUpdate(path, update).catch(()=>{});
+    showToast(`✅ DAY ${curDay+1} 수행완료! ${_tmPN()}의 완료를 기다리는 중...`);
+    _spEnter(); /* 화면 즉시 갱신 */
+  }
+}
+
+/* 보상 청구 */
+function _spClaimReward(){
+  window['tmRewardDone4'] = true;
+  window['tmMyReward4']   = 100000;
+  _tmHQShowView('tmHQResult');
+  _tmHQSetResultCard(4);
+  _tmHQApplyTheme(4);
+  tmHQRenderHome();
+}
+
+/* DAY 수행화면 실시간 구독 */
+let _spDaySubFn = null;
+function _spSubForDayUpdate(){
+  if(_spDaySubFn){ try{_spDaySubFn();}catch(e){} _spDaySubFn=null; }
+  const path = _tmPath(4);
+  if(!path||!FB_READY||!_fbDb) return;
+  _fbOn(path, snap=>{
+    const d = snap && snap.exists() ? snap.val() : {};
+    const dayEl = document.getElementById('tmHQSpecialDay');
+    if(dayEl && dayEl.style.display !== 'none'){
+      _spShowDayScreen(d);
+    }
+  });
+  _spDaySubFn = ()=>{};
+}
+
+/* ─── 기존 코드 호환 stub ─── */
 
 function _tmHQShowDetail(n, q, myAns, oppAns){
   _tmHQShowView('tmHQDetail');
