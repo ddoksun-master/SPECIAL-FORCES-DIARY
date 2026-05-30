@@ -5146,7 +5146,14 @@ document.addEventListener('DOMContentLoaded',()=>{
                 <div style="font-family:var(--orb);font-size:8px;letter-spacing:3px;color:rgba(200,168,75,.5);margin-bottom:2px;">SPECIAL OPERATION HQ</div>
                 <div style="font-family:var(--kr);font-size:16px;font-weight:900;color:#fff;">특수임무 사령부</div>
               </div>
-              <div id="tmHQStatusBadge" class="tm-hq-badge" style="background:rgba(200,168,75,.1);border:1px solid rgba(200,168,75,.3);color:rgba(200,168,75,.8);">대기중</div>
+              <button id="tmHQStatusBadge" onclick="tmHQToggleRewardPanel()" class="tm-hq-badge"
+                style="background:linear-gradient(135deg,rgba(200,168,75,.25),rgba(160,128,45,.2));border:1.5px solid rgba(200,168,75,.55);color:rgba(255,215,100,.95);cursor:pointer;padding:5px 12px;font-size:9px;letter-spacing:.5px;font-weight:900;border-radius:20px;display:flex;align-items:center;gap:5px;">
+                🎁 보상확인 <span id="tmHQRewardArrow" style="font-size:10px;transition:transform .2s;">▼</span>
+              </button>
+            </div>
+            <!-- 보상확인 패널 (접기/펼치기) -->
+            <div id="tmHQRewardPanel" style="display:none;border-top:1px solid rgba(200,168,75,.15);">
+              <div id="tmHQRewardPanelInner" style="padding:12px 14px 14px;"></div>
             </div>
           </div>
           <!-- 임무 목록 (JS 동적 렌더) -->
@@ -8017,7 +8024,8 @@ function tmBuildCard(n){
       <!-- 테스터: 다음날 버튼 -->
       <div style="margin-top:8px;padding:8px;background:rgba(255,80,80,.08);border:1px dashed rgba(255,80,80,.2);border-radius:8px;">
         <div style="font-family:var(--orb);font-size:7px;letter-spacing:1px;color:rgba(255,80,80,.5);margin-bottom:5px;">⚠ TESTER MODE</div>
-        <button onclick="tmTesterNextDay()" style="width:100%;padding:7px;background:rgba(255,80,80,.15);border:1px solid rgba(255,80,80,.3);border-radius:7px;color:rgba(255,120,120,.8);font-family:var(--kr);font-size:11px;cursor:pointer;">⏭ 다음 DAY 진행 (10초 후 자동)</button>
+        <div style="font-family:var(--kr);font-size:10px;color:rgba(255,180,180,.55);margin-bottom:5px;">양쪽 답글이 모두 저장되면 DAY가 자동 완료됩니다.<br>강제 진행이 필요하면 아래 버튼을 누르세요.</div>
+        <button onclick="tmTesterNextDay()" style="width:100%;padding:7px;background:rgba(255,80,80,.15);border:1px solid rgba(255,80,80,.3);border-radius:7px;color:rgba(255,120,120,.8);font-family:var(--kr);font-size:11px;cursor:pointer;">⏭ 다음 DAY 강제 진행 (5초 후)</button>
         <div id="tmTesterCountdown" style="font-family:var(--orb);font-size:10px;color:rgba(255,80,80,.4);text-align:center;margin-top:4px;display:none;"></div>
       </div>
     </div>
@@ -8345,20 +8353,30 @@ async function tmSave(n){
       let myDays = d[mk] ? [...d[mk]] : [false,false,false,false,false];
       const oppDays = d[ok] || [false,false,false,false,false];
       const completedDays = d.completedDays || 0;
-      /* 오늘 인덱스 = completedDays (0~4) */
-      const todayIdx = completedDays;
+      const todayIdx = completedDays; /* 0~4 */
       if(todayIdx < 5){
         myDays[todayIdx] = true;
         update[mk] = myDays;
-        /* 상대도 완료했으면 completedDays 증가 */
+        /* 상대도 이미 완료했으면 → DAY 진행 + Q/A 초기화 */
         if(oppDays[todayIdx]===true){
-          update.completedDays = completedDays + 1;
-          /* 다음날 Q/A 초기화 */
-          update[_tmOK()] = d[_tmOK()] || null;
+          const newCompleted = completedDays + 1;
+          update.completedDays = newCompleted;
+          update[_tmMK()] = null;
+          update[_tmOK()] = null;
+          update.question = null;
+          await _fbUpdate(path, update);
+          if(newCompleted >= 5){
+            showToast('🎉 DAY 5 완료! 스페셜임무 달성! (+100,000원)');
+          } else {
+            showToast('✅ DAY '+(todayIdx+1)+' 완료! 양쪽 모두 달성!');
+          }
+        } else {
+          await _fbUpdate(path, update);
+          showToast('✅ DAY '+(todayIdx+1)+' 답글 저장! 상대방 대기중...');
         }
+      } else {
+        showToast('이미 5일 모두 완료했습니다!');
       }
-      await _fbUpdate(path, update);
-      showToast('✅ 답글이 저장되었습니다!');
     } catch(e){ showToast('⚠ 저장 실패. 다시 시도해주세요.'); }
     return;
   }
@@ -8683,30 +8701,47 @@ function tmSubscribe(n){
         }
         if(window.renderStatsRevenueCard) renderStatsRevenueCard();
       }
-      /* 스페셜: days 동기화 */
+      /* 스페셜: days 동기화 + 양쪽 답글 완료 시 DAY 자동 진행 */
       if(n===4){
         const mkD = MY_UID<_tmPUid()?'days_a':'days_b';
         const okD = MY_UID<_tmPUid()?'days_b':'days_a';
-        const myDays  = d[mkD]||[false,false,false,false,false];
-        const oppDays = d[okD]||[false,false,false,false,false];
-        /* 양쪽 모두 completedDays 인덱스까지 true인지 확인해 보정 */
+        const myDays  = d[mkD] ? [...d[mkD]] : [false,false,false,false,false];
+        const oppDays = d[okD] || [false,false,false,false,false];
         const cd = d.completedDays||0;
-        /* 서버 days 보정: oppDays에서 내가 놓친 날 처리 */
-        let needUpdate = false;
-        const fixedMyDays = [...myDays];
-        for(let i=0; i<cd && i<5; i++){
-          if(oppDays[i] && !fixedMyDays[i]){
-            /* 상대가 완료했고 내가 완료 안 된 경우 — 이미 completedDays 증가됐으면 보정 */
-            fixedMyDays[i] = true;
-            needUpdate = true;
+        const myAns  = d[_tmMK()]||null;
+        const oppAns = d[_tmOK()]||null;
+
+        /* 양쪽 모두 오늘 답글 → 아직 completedDays 증가 안 됐으면 자동 진행 */
+        if(myAns && oppAns && cd < 5){
+          const todayIdx = cd;
+          if(!myDays[todayIdx] || !oppDays[todayIdx]){
+            /* 서버에서 completedDays 올리기 */
+            const newMy = [...myDays];
+            const newOpp= [...oppDays];
+            newMy[todayIdx] = true; newOpp[todayIdx] = true;
+            const newCd = cd + 1;
+            const upd = { completedDays: newCd };
+            upd[mkD] = newMy; upd[okD] = newOpp;
+            upd[_tmMK()] = null; upd[_tmOK()] = null; upd.question = null;
+            _fbUpdate(_tmPath(4), upd).then(()=>{
+              if(newCd>=5){
+                showToast('🎉 5일 챌린지 완료! +100,000원');
+              } else {
+                showToast('✅ DAY '+(todayIdx+1)+' 양쪽 완료! DAY '+(newCd+1)+' 시작');
+              }
+            }).catch(()=>{});
           }
         }
-        if(needUpdate){
-          const uf={}; uf[mkD]=fixedMyDays;
-          _fbUpdate(_tmPath(4),uf).catch(()=>{});
+
+        /* 서버 days 보정 */
+        const fixedMyDays = [...myDays];
+        let needUpdate = false;
+        for(let i=0; i<cd && i<5; i++){
+          if(oppDays[i] && !fixedMyDays[i]){ fixedMyDays[i]=true; needUpdate=true; }
         }
-        if(d.completedDays>=5 && !window['tmRewardDone4']){
-          /* 5일 완료 시 완료 처리 */
+        if(needUpdate){ const uf={}; uf[mkD]=fixedMyDays; _fbUpdate(_tmPath(4),uf).catch(()=>{}); }
+
+        if(cd>=5 && !window['tmRewardDone4']){
           window['tmRewardDone4']=true;
           window['tmMyReward4']=100000;
           if(!window.teamData) window.teamData={};
@@ -8715,7 +8750,6 @@ function tmSubscribe(n){
             window.teamData.completedMissions.push({n:4,label:'스페셜임무',reward:100000,completedAt:Date.now()});
           }
           renderStatsRevenueCard();
-          /* 보상 토스트 없음 */
         }
       }
     }
@@ -9004,10 +9038,162 @@ function tmHQRenderHome(){
   }).join('');
 
   if(badge){
-    if(doneCnt===4) badge.textContent='전부 완료!';
-    else if(unlockedCnt>0) badge.textContent=unlockedCnt+'개 해제';
-    else badge.textContent='대기중';
+    /* badge는 이제 버튼 — 텍스트 변경 불필요 */
   }
+  /* 보상 패널이 열려있으면 내용 갱신 */
+  const rewardPanel = document.getElementById('tmHQRewardPanel');
+  if(rewardPanel && rewardPanel.style.display !== 'none'){
+    tmHQRenderRewardPanel();
+  }
+}
+
+/* ─── 보상확인 패널 토글 ─── */
+function tmHQToggleRewardPanel(){
+  const panel = document.getElementById('tmHQRewardPanel');
+  const arrow = document.getElementById('tmHQRewardArrow');
+  if(!panel) return;
+  const open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : 'block';
+  if(arrow) arrow.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+  if(!open) tmHQRenderRewardPanel();
+}
+
+/* ─── 보상 패널 내용 렌더 ─── */
+async function tmHQRenderRewardPanel(){
+  const inner = document.getElementById('tmHQRewardPanelInner');
+  if(!inner) return;
+  inner.innerHTML = `<div style="text-align:center;padding:8px 0;font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.3);">불러오는 중...</div>`;
+
+  const myName = (myNickname&&myNickname!=='')?myNickname:'나';
+  const pName  = _tmPN();
+  const labels = {1:'특수임무1',2:'특수임무2',3:'특수임무3',4:'스페셜임무'};
+
+  /* 각 임무 결과 로드 */
+  const items = await Promise.all([1,2,3,4].map(async n=>{
+    const cfg = TM[n];
+    const done = !!window['tmRewardDone'+n];
+    const unlocked = _tmUnlocked(n);
+    const path = _tmPath(n);
+
+    if(!done && !unlocked){
+      return { n, cfg, done:false, unlocked:false, myAns:null, oppAns:null, myAmt:0, oppAmt:0, myPick:undefined, oppPick:undefined };
+    }
+    if(!done && unlocked){
+      return { n, cfg, done:false, unlocked:true, myAns:null, oppAns:null, myAmt:0, oppAmt:0, myPick:undefined, oppPick:undefined };
+    }
+    /* done — Firebase에서 상세 로드 */
+    try{
+      const [snap, rsnap] = await Promise.all([
+        _fbGet(path),
+        n!==4 ? _fbGet(path+'/reward_pick') : Promise.resolve(null)
+      ]);
+      const d  = snap.exists()  ? snap.val()  : {};
+      const rd = rsnap&&rsnap.exists() ? rsnap.val() : {};
+      const mk = _tmMK(), ok = _tmOK();
+      const myAns  = d[mk]||'';
+      const oppAns = d[ok]||'';
+      const myAmt  = window['tmMyReward'+n] || d['reward_'+mk] || 0;
+      const myPick = rd[mk+'_pick'];
+      const oppPick= rd[ok+'_pick'];
+      const rewards= cfg.rewards;
+      const oppAmt = (oppPick!==undefined&&rewards) ? (rewards[oppPick]||0) : (n===4?100000:0);
+      return { n, cfg, done:true, unlocked:true, myAns, oppAns, myAmt, oppAmt, myPick, oppPick, rewards };
+    } catch(e){
+      return { n, cfg, done:true, unlocked:true, myAns:'', oppAns:'', myAmt:window['tmMyReward'+n]||0, oppAmt:0 };
+    }
+  }));
+
+  inner.innerHTML = items.map(item=>{
+    const {n, cfg, done, unlocked, myAns, oppAns, myAmt, oppAmt, myPick, oppPick, rewards} = item;
+    const isOpen = window['_tmRewardPanelOpen'+n];
+
+    if(!unlocked && !done){
+      /* 잠금 */
+      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(10,10,10,.4);border:1px dashed rgba(255,255,255,.08);border-radius:10px;margin-bottom:7px;opacity:.5;">
+        <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🔒</div>
+        <div style="flex:1;">
+          <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.3);">${cfg.label}</div>
+          <div style="font-family:var(--orb);font-size:9px;color:rgba(255,255,255,.18);margin-top:2px;">${(cfg.th/10000).toFixed(0)}만원 달성 시 해제</div>
+        </div>
+      </div>`;
+    }
+
+    if(!done){
+      /* 해제됐지만 미완료 */
+      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:${cfg.bgCard};border:1px solid ${cfg.border};border-radius:10px;margin-bottom:7px;">
+        <div style="width:28px;height:28px;border-radius:8px;background:${cfg.glow};border:1px solid ${cfg.border};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">⏳</div>
+        <div style="flex:1;">
+          <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:#fff;">${cfg.label}</div>
+          <div style="font-family:var(--kr);font-size:10px;color:${cfg.color.replace('1)','.6)')};margin-top:2px;">진행중 — 아직 완료되지 않았습니다</div>
+        </div>
+      </div>`;
+    }
+
+    /* 완료된 임무 — 펼치기 가능 */
+    const chestSVG_my  = (myPick!==undefined&&rewards) ? _tmMakeChestSVG(n,'done',cfg) : _tmMakeChestSVG(n,'done',cfg);
+    const chestSVG_opp = (oppPick!==undefined&&rewards) ? _tmMakeChestSVG(n,'done',cfg) : _tmMakeChestSVG(n,'done',cfg);
+
+    const detailHtml = `
+      <div style="padding:10px 12px 12px;border-top:1px solid ${cfg.border.replace('.5)','.15)')};margin-top:0;">
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <!-- 나 -->
+          <div style="flex:1;background:rgba(10,30,12,.6);border:1px solid ${cfg.border};border-radius:9px;padding:10px;text-align:center;">
+            <div style="font-family:var(--kr);font-size:10px;color:${cfg.color};font-weight:900;margin-bottom:6px;">${myName}</div>
+            ${rewards&&myPick!==undefined ? `
+              <div style="display:flex;justify-content:center;margin-bottom:4px;">${_tmMakeChestSVG(n,'done',cfg)}</div>
+              <div style="font-family:var(--orb);font-size:11px;font-weight:900;color:${cfg.color};margin-bottom:4px;">+${myAmt.toLocaleString()}원</div>
+              <div style="font-family:var(--orb);font-size:8px;color:rgba(255,255,255,.35);">BOX ${myPick+1}</div>
+            ` : `
+              <div style="display:flex;justify-content:center;margin-bottom:4px;">${_tmMakeChestSVG(n,'done',cfg)}</div>
+              <div style="font-family:var(--orb);font-size:11px;font-weight:900;color:${cfg.color};margin-bottom:4px;">+${myAmt.toLocaleString()}원</div>
+            `}
+            <div style="margin-top:6px;padding:6px 8px;background:rgba(255,255,255,.06);border-radius:6px;text-align:left;">
+              <div style="font-family:var(--orb);font-size:7px;color:rgba(255,255,255,.3);margin-bottom:3px;">▎ 답글</div>
+              <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.8);line-height:1.5;word-break:break-word;">${myAns||'—'}</div>
+            </div>
+          </div>
+          <!-- 상대 -->
+          <div style="flex:1;background:rgba(20,12,40,.6);border:1px solid rgba(180,150,220,.3);border-radius:9px;padding:10px;text-align:center;">
+            <div style="font-family:var(--kr);font-size:10px;color:rgba(180,150,220,.9);font-weight:900;margin-bottom:6px;">${pName}</div>
+            ${rewards&&oppPick!==undefined ? `
+              <div style="display:flex;justify-content:center;margin-bottom:4px;">${_tmMakeChestSVG(n,'done',cfg)}</div>
+              <div style="font-family:var(--orb);font-size:11px;font-weight:900;color:rgba(200,168,75,.95);margin-bottom:4px;">+${oppAmt.toLocaleString()}원</div>
+              <div style="font-family:var(--orb);font-size:8px;color:rgba(255,255,255,.35);">BOX ${oppPick+1}</div>
+            ` : `
+              <div style="display:flex;justify-content:center;margin-bottom:4px;">${_tmMakeChestSVG(n,'done',cfg)}</div>
+              <div style="font-family:var(--orb);font-size:11px;font-weight:900;color:rgba(200,168,75,.95);margin-bottom:4px;">+${oppAmt.toLocaleString()}원</div>
+            `}
+            <div style="margin-top:6px;padding:6px 8px;background:rgba(255,255,255,.06);border-radius:6px;text-align:left;">
+              <div style="font-family:var(--orb);font-size:7px;color:rgba(255,255,255,.3);margin-bottom:3px;">▎ 답글</div>
+              <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.8);line-height:1.5;word-break:break-word;">${oppAns||'—'}</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    return `<div style="background:${cfg.bgCard};border:1.5px solid ${cfg.border};border-radius:10px;margin-bottom:7px;overflow:hidden;">
+      <div onclick="tmHQToggleMissionDetail(${n})" style="display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;">
+        <div style="width:28px;height:28px;border-radius:8px;background:${cfg.glow};border:1px solid ${cfg.border};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">✅</div>
+        <div style="flex:1;">
+          <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:#fff;">${cfg.label}</div>
+          <div style="font-family:var(--orb);font-size:10px;font-weight:900;color:${cfg.color};margin-top:1px;">+${myAmt.toLocaleString()}원 획득</div>
+        </div>
+        <div id="tmRPArrow${n}" style="color:${cfg.color.replace('1)','.6)')};font-size:14px;transition:transform .2s;">${isOpen?'▲':'▶'}</div>
+      </div>
+      <div id="tmRPDetail${n}" style="display:${isOpen?'block':'none'};">${detailHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ─── 개별 임무 결과 펼치기 토글 ─── */
+function tmHQToggleMissionDetail(n){
+  const det = document.getElementById('tmRPDetail'+n);
+  const arr = document.getElementById('tmRPArrow'+n);
+  if(!det) return;
+  const open = det.style.display !== 'none';
+  det.style.display = open ? 'none' : 'block';
+  window['_tmRewardPanelOpen'+n] = !open;
+  if(arr) arr.textContent = open ? '▶' : '▲';
 }
 
 /* ═══════════════════════════════════════════════════════
