@@ -8000,7 +8000,7 @@ function tmBuildCard(n){
       <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(200,168,75,.6);margin-bottom:10px;">◈ SPECIAL 5-DAY CHALLENGE</div>
       <div id="tmDayBars" style="display:flex;gap:4px;margin-bottom:10px;">
         ${[1,2,3,4,5].map(d=>`<div style="flex:1;text-align:center;">
-          <div id="tmDay${d}" style="height:44px;background:rgba(20,16,3,.6);border:1px solid rgba(200,168,75,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;font-family:var(--orb);font-size:10px;color:rgba(200,168,75,.28);transition:all .4s;">D${d}</div>
+          <div id="tmDay${d}" style="height:36px;background:rgba(30,22,3,.8);border:1px solid rgba(200,168,75,.25);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.4);transition:all .4s;">D${d}</div>
         </div>`).join('')}
       </div>
       <div id="tmDayStatus" style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.45);text-align:center;">오늘 답글을 등록하면 DAY 카운트됩니다</div>
@@ -8243,95 +8243,36 @@ function tmUpdateStatus(myAns, oppAns, n){
    스페셜임무 5일 DAY 렌더
 ────────────────────────────────────────── */
 function tmRenderDays(myDays, oppDays, qaData){
-  const completedDays = qaData ? (qaData.completedDays||0) : 0;
   for(let d=1;d<=5;d++){
     const el = document.getElementById('tmDay'+d);
     if(!el) continue;
     const myDone  = myDays[d-1]===true||myDays[d-1]==='true';
     const oppDone = oppDays[d-1]===true||oppDays[d-1]==='true';
     const both    = myDone && oppDone;
-    const isPast  = (d-1) < completedDays; /* 이미 완료된 과거 DAY */
-
-    if(both || isPast){
-      /* 둘 다 완료 — 금색 점등 */
-      el.style.cssText=`
-        height:44px;
-        background:linear-gradient(160deg,rgba(55,42,5,.98),rgba(80,60,6,.92));
-        border:2px solid rgba(220,185,65,.85);
-        border-radius:8px;
-        display:flex;align-items:center;justify-content:center;
-        flex-direction:column;gap:1px;
-        box-shadow:0 0 12px rgba(200,168,75,.45),inset 0 1px 0 rgba(255,220,80,.15);
-        transition:all .4s;
-        cursor:default;
-      `;
-      el.innerHTML=`
-        <div style="font-family:var(--orb);font-size:10px;font-weight:900;color:rgba(255,215,60,1);letter-spacing:.5px;line-height:1;">D${d}</div>
-        <div style="font-size:11px;line-height:1;margin-top:1px;">⭐</div>
-      `;
+    if(both){
+      el.style.background='linear-gradient(135deg,rgba(40,30,3,.9),rgba(60,45,5,.9))';
+      el.style.border='1.5px solid rgba(200,168,75,.8)';
+      el.style.color='rgba(200,168,75,1)';
+      el.style.boxShadow='0 0 8px rgba(200,168,75,.3)';
+      el.textContent='D'+d+' ✓';
     } else if(myDone){
-      /* 나만 완료 — 초록 */
-      el.style.cssText=`
-        height:44px;
-        background:rgba(15,45,18,.9);
-        border:1.5px solid rgba(90,158,72,.6);
-        border-radius:8px;
-        display:flex;align-items:center;justify-content:center;
-        flex-direction:column;gap:1px;
-        box-shadow:0 0 6px rgba(90,158,72,.2);
-        transition:all .4s;
-        cursor:default;
-      `;
-      el.innerHTML=`
-        <div style="font-family:var(--orb);font-size:10px;font-weight:700;color:rgba(127,191,106,.9);letter-spacing:.5px;line-height:1;">D${d}</div>
-        <div style="font-size:10px;line-height:1;margin-top:1px;color:rgba(127,191,106,.7);">✓</div>
-      `;
-    } else if(oppDone){
-      /* 상대만 완료 — 앰버 */
-      el.style.cssText=`
-        height:44px;
-        background:rgba(38,28,4,.85);
-        border:1.5px solid rgba(200,168,75,.4);
-        border-radius:8px;
-        display:flex;align-items:center;justify-content:center;
-        flex-direction:column;gap:1px;
-        transition:all .4s;
-        cursor:default;
-      `;
-      el.innerHTML=`
-        <div style="font-family:var(--orb);font-size:10px;font-weight:700;color:rgba(200,168,75,.7);letter-spacing:.5px;line-height:1;">D${d}</div>
-        <div style="font-size:10px;line-height:1;margin-top:1px;color:rgba(200,168,75,.5);">½</div>
-      `;
+      el.style.background='rgba(18,50,16,.8)';
+      el.style.border='1px solid rgba(90,158,72,.5)';
+      el.style.color='rgba(127,191,106,.8)';
+      el.textContent='D'+d+' ½';
     } else {
-      /* 미완료 */
-      el.style.cssText=`
-        height:44px;
-        background:rgba(20,16,3,.6);
-        border:1px solid rgba(200,168,75,.15);
-        border-radius:8px;
-        display:flex;align-items:center;justify-content:center;
-        flex-direction:column;gap:1px;
-        transition:all .4s;
-        cursor:default;
-      `;
-      el.innerHTML=`
-        <div style="font-family:var(--orb);font-size:10px;color:rgba(200,168,75,.28);letter-spacing:.5px;line-height:1;">D${d}</div>
-        <div style="font-size:9px;line-height:1;margin-top:1px;color:rgba(200,168,75,.2);">—</div>
-      `;
+      el.style.background='rgba(30,22,3,.8)';
+      el.style.border='1px solid rgba(200,168,75,.2)';
+      el.style.color='rgba(200,168,75,.35)';
+      el.textContent='D'+d;
     }
   }
+  const completedDays = qaData ? (qaData.completedDays||0) : 0;
   const ds = document.getElementById('tmDayStatus');
   if(ds){
-    if(completedDays>=5){
-      ds.innerHTML='<span style="color:rgba(255,215,60,1);font-weight:900;">🏆 5일 챌린지 완료!</span>';
-    } else if(completedDays>0){
-      const pips = Array.from({length:5},(_,i)=>
-        `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${i<completedDays?'rgba(200,168,75,.9)':'rgba(200,168,75,.18)'};box-shadow:${i<completedDays?'0 0 5px rgba(200,168,75,.5)':'none'};"></span>`
-      ).join('');
-      ds.innerHTML=`<span style="color:rgba(255,184,71,.8);font-weight:700;">진행중 ${completedDays}/5일</span> <span style="display:inline-flex;gap:3px;vertical-align:middle;margin-left:4px;">${pips}</span>`;
-    } else {
-      ds.innerHTML='<span style="color:rgba(255,255,255,.35);">오늘 답글을 등록하면 DAY 카운트됩니다</span>';
-    }
+    if(completedDays>=5) ds.textContent='🏆 5일 챌린지 완료!';
+    else if(completedDays>0) ds.textContent='진행중: '+completedDays+'/5일 완료';
+    else ds.textContent='오늘 답글을 등록하면 DAY 카운트됩니다';
   }
 }
 
@@ -8384,33 +8325,10 @@ async function tmSave(n){
   update[_tmMK()] = ans;
 
   if(n===4){
-    /* 스페셜: 오늘 답글 저장 + 내 days 배열 업데이트 */
-    try{
-      const snap = await _fbGet(path);
-      const d = snap.exists() ? snap.val() : {};
-      const mk = _tmMK();
-      const dayKey = MY_UID < _tmPUid() ? 'days_a' : 'days_b';
-      let myDays = d[dayKey] || [false,false,false,false,false];
-      /* 현재 completedDays 기준으로 오늘 인덱스 결정 */
-      const completedDays = d.completedDays || 0;
-      const todayIdx = completedDays; /* 0~4 */
-      if(todayIdx < 5 && !myDays[todayIdx]){
-        myDays[todayIdx] = true;
-        update[dayKey] = myDays;
-      }
-      update[mk] = ans;
-      await _fbUpdate(path, update);
-      /* 상대방도 오늘 days 완료 상태면 completedDays 증가 */
-      const oppDayKey = MY_UID < _tmPUid() ? 'days_b' : 'days_a';
-      const snap2 = await _fbGet(path);
-      const d2 = snap2.exists() ? snap2.val() : {};
-      const oppDays = d2[oppDayKey] || [];
-      if(d2[dayKey]?.[todayIdx] && oppDays[todayIdx]){
-        await _fbUpdate(path, { completedDays: completedDays + 1 });
-      }
-      showToast('✅ 답글이 저장되었습니다!');
-    } catch(e){ showToast('⚠ 저장 실패. 다시 시도해주세요.'); }
-    return;
+    /* 스페셜: 오늘 답글 저장 = 내 days 배열 업데이트는 서버 구독에서 처리 */
+    const mk = _tmMK();
+    update[mk] = ans;
+    /* 오늘 인덱스는 서버에서 completedDays 기준으로 관리 */
   }
   try{
     await _fbUpdate(path, update);
@@ -8724,16 +8642,10 @@ function tmSubscribe(n){
       }
       /* 스페셜: days 동기화 */
       if(n===4){
-        const mkD=MY_UID<_tmPUid()?'days_a':'days_b';
-        const okD=MY_UID<_tmPUid()?'days_b':'days_a';
-        const myDays  = d[mkD]||[];
-        const oppDays = d[okD]||[];
-        const completedDays = d.completedDays||0;
-        /* 양쪽 오늘 days 완료됐는데 completedDays가 아직 안 올라간 경우 서버 보정 */
-        if(completedDays < 5 && myDays[completedDays]===true && oppDays[completedDays]===true){
-          const path4 = _tmPath(4);
-          if(path4) _fbUpdate(path4, { completedDays: completedDays+1 }).catch(()=>{});
-        }
+        const mk=MY_UID<_tmPUid()?'days_a':'days_b';
+        const ok=MY_UID<_tmPUid()?'days_b':'days_a';
+        const myDays  = d[mk]||[];
+        const oppDays = d[ok]||[];
         if(d.completedDays>=5 && !window['tmRewardDone4']){
           /* 5일 완료 시 완료 처리 */
           window['tmRewardDone4']=true;
@@ -8850,97 +8762,36 @@ function tmHQRenderHome(){
     else if(unlocked) badgeHtml=`<span class="tm-hq-badge" style="background:${cfg.glow};border:1px solid ${cfg.border};color:${cfg.color};">⚡ 진행가능</span>`;
     else badgeHtml=`<span class="tm-hq-badge" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3);">🔒 잠금</span>`;
 
-    /* 보석함 SVG — 고급 보물상자 */
-    const c0 = cfg.color.replace('1)','C0=0.9)').replace('C0=','');
-    const c1 = cfg.color.replace('1)','.7)');
-    const c2 = cfg.color.replace('1)','.35)');
-    const c3 = cfg.color.replace('1)','.15)');
-    const cGlow = cfg.color.replace('1)','.55)');
-    const svgBox = `<svg width="64" height="58" viewBox="0 0 64 58" xmlns="http://www.w3.org/2000/svg">
+    /* 보석함 SVG */
+    const svgBox = `<svg width="54" height="48" viewBox="0 0 54 48" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="chestLid${n}" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="${cfg.color.replace('1)','0.92)')}" />
-          <stop offset="50%" stop-color="${cfg.colorDim.replace('1)','0.78)')}" />
-          <stop offset="100%" stop-color="${cfg.color.replace('1)','0.6)')}" />
+        <linearGradient id="lid${n}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="${cfg.color.replace('1)','0.9)')}" />
+          <stop offset="100%" stop-color="${cfg.colorDim.replace('1)','0.7)')}" />
         </linearGradient>
-        <linearGradient id="chestBody${n}" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="${cfg.color.replace('1)','0.62)')}" />
-          <stop offset="40%" stop-color="${cfg.color.replace('1)','0.45)')}" />
-          <stop offset="100%" stop-color="${cfg.color.replace('1)','0.22)')}" />
+        <linearGradient id="body${n}" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="${cfg.color.replace('1)','0.55)')}" />
+          <stop offset="100%" stop-color="${cfg.color.replace('1)','0.25)')}" />
         </linearGradient>
-        <linearGradient id="chestShine${n}" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="rgba(255,255,255,0.28)" />
-          <stop offset="100%" stop-color="rgba(255,255,255,0)" />
-        </linearGradient>
-        <linearGradient id="bandGrad${n}" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="rgba(200,168,75,0.3)" />
-          <stop offset="50%" stop-color="rgba(255,220,100,0.7)" />
-          <stop offset="100%" stop-color="rgba(200,168,75,0.3)" />
-        </linearGradient>
-        <filter id="glow${n}"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
       </defs>
       ${boxState==='locked' ? `
-        <!-- 잠금: 닫힌 보물상자 -->
-        <!-- 뚜껑 -->
-        <rect x="5" y="10" width="54" height="16" rx="5" fill="url(#chestLid${n})" opacity=".42"/>
-        <rect x="5" y="10" width="54" height="8" rx="5" fill="url(#chestShine${n})" opacity=".5"/>
-        <!-- 몸통 -->
-        <rect x="4" y="24" width="56" height="29" rx="5" fill="url(#chestBody${n})" opacity=".32"/>
-        <!-- 테두리 -->
-        <rect x="4" y="24" width="56" height="29" rx="5" fill="none" stroke="${c2}" stroke-width="1.5"/>
-        <rect x="5" y="10" width="54" height="16" rx="5" fill="none" stroke="${c2}" stroke-width="1.5"/>
-        <!-- 금속 밴드 가로 -->
-        <rect x="4" y="24" width="56" height="4" fill="url(#bandGrad${n})" opacity=".55"/>
-        <!-- 금속 띠 세로 -->
-        <rect x="28" y="10" width="8" height="43" rx="2" fill="url(#bandGrad${n})" opacity=".45"/>
-        <!-- 자물쇠 -->
-        <rect x="25" y="22" width="14" height="11" rx="3" fill="rgba(180,140,20,.55)" stroke="rgba(220,185,70,.55)" stroke-width="1.5"/>
-        <path d="M29 22 Q29 16 35 16 Q41 16 41 22" fill="none" stroke="rgba(220,185,70,.5)" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="32" cy="27" r="2.5" fill="rgba(255,220,80,.6)"/>
-        <!-- 꺾쇠 장식 -->
-        <rect x="5" y="10" width="8" height="6" rx="2" fill="rgba(200,168,75,.35)" stroke="rgba(200,168,75,.4)" stroke-width="1"/>
-        <rect x="51" y="10" width="8" height="6" rx="2" fill="rgba(200,168,75,.35)" stroke="rgba(200,168,75,.4)" stroke-width="1"/>
-        <rect x="5" y="40" width="8" height="6" rx="2" fill="rgba(200,168,75,.3)" stroke="rgba(200,168,75,.35)" stroke-width="1"/>
-        <rect x="51" y="40" width="8" height="6" rx="2" fill="rgba(200,168,75,.3)" stroke="rgba(200,168,75,.35)" stroke-width="1"/>
+        <!-- 잠금 상자 닫힘 -->
+        <rect x="4" y="6" width="46" height="12" rx="3" fill="url(#lid${n})" opacity=".45"/>
+        <rect x="3" y="18" width="48" height="26" rx="4" fill="url(#body${n})" opacity=".35"/>
+        <rect x="22" y="12" width="10" height="8" rx="2" fill="rgba(200,168,75,.4)" stroke="rgba(200,168,75,.3)" stroke-width="1"/>
+        <text x="27" y="19" text-anchor="middle" font-size="7" fill="rgba(200,168,75,.7)">🔒</text>
       ` : boxState==='done' ? `
-        <!-- 완료: COMPLETE 도장 -->
-        <!-- 몸통 (어두운 배경) -->
-        <rect x="4" y="20" width="56" height="34" rx="5" fill="url(#chestBody${n})" opacity=".55"/>
-        <rect x="4" y="20" width="56" height="34" rx="5" fill="none" stroke="${c1}" stroke-width="1.2"/>
-        <!-- 금속 밴드 -->
-        <rect x="4" y="20" width="56" height="3.5" fill="url(#bandGrad${n})" opacity=".6"/>
-        <rect x="28" y="20" width="8" height="34" rx="2" fill="url(#bandGrad${n})" opacity=".4"/>
-        <!-- 뚜껑 (젖혀짐) -->
-        <rect x="6" y="3" width="52" height="13" rx="4" fill="url(#chestLid${n})" transform="rotate(-25 32 12)" opacity=".75"/>
-        <!-- 빛 오라 -->
-        <ellipse cx="32" cy="20" rx="20" ry="7" fill="${cGlow}" opacity=".5" filter="url(#glow${n})"/>
-        <!-- COMPLETE 도장 원 -->
-        <circle cx="32" cy="37" r="13" fill="rgba(0,0,0,.45)" stroke="${c1}" stroke-width="1.8" stroke-dasharray="4 2.5"/>
-        <circle cx="32" cy="37" r="9.5" fill="${c3}" stroke="${c1}" stroke-width="1"/>
-        <!-- 별 -->
-        <text x="32" y="34" text-anchor="middle" font-size="8" fill="${c0}" font-weight="900">★</text>
-        <!-- DONE 텍스트 -->
-        <text x="32" y="42" text-anchor="middle" font-family="Courier Prime,monospace" font-size="5.5" font-weight="900" fill="${c1}" letter-spacing="1.5">DONE</text>
+        <!-- 완료 상자 열림 + 빛 -->
+        <rect x="4" y="0" width="46" height="10" rx="3" fill="url(#lid${n})" transform="rotate(-18 27 5)" opacity=".9"/>
+        <rect x="3" y="18" width="48" height="26" rx="4" fill="url(#body${n})" opacity=".85"/>
+        <ellipse cx="27" cy="18" rx="16" ry="7" fill="${cfg.color.replace('1)','0.3)')}" style="filter:blur(3px)"/>
+        <text x="27" y="38" text-anchor="middle" font-size="17">✅</text>
       ` : `
-        <!-- 해제: 반쯤 열린 보물상자 -->
-        <!-- 빛 흘러나옴 -->
-        <ellipse cx="32" cy="22" rx="18" ry="7" fill="${cGlow}" opacity=".4" filter="url(#glow${n})"/>
-        <!-- 뚜껑 (살짝 들림) -->
-        <rect x="5" y="5" width="54" height="15" rx="5" fill="url(#chestLid${n})" transform="rotate(-14 32 18)" opacity=".9"/>
-        <rect x="5" y="5" width="54" height="7" rx="5" fill="url(#chestShine${n})" transform="rotate(-14 32 18)" opacity=".55"/>
-        <!-- 몸통 -->
-        <rect x="4" y="26" width="56" height="27" rx="5" fill="url(#chestBody${n})" opacity=".82"/>
-        <rect x="4" y="26" width="56" height="27" rx="5" fill="none" stroke="${c1}" stroke-width="1.5"/>
-        <!-- 금속 밴드 -->
-        <rect x="4" y="26" width="56" height="4" fill="url(#bandGrad${n})" opacity=".65"/>
-        <rect x="28" y="26" width="8" height="27" rx="2" fill="url(#bandGrad${n})" opacity=".5"/>
-        <!-- 꺾쇠 장식 -->
-        <rect x="5" y="41" width="8" height="6" rx="2" fill="rgba(200,168,75,.45)" stroke="rgba(200,168,75,.55)" stroke-width="1"/>
-        <rect x="51" y="41" width="8" height="6" rx="2" fill="rgba(200,168,75,.45)" stroke="rgba(200,168,75,.55)" stroke-width="1"/>
-        <!-- 틈새 빛 -->
-        <rect x="10" y="24" width="44" height="3" rx="1" fill="${c1}" opacity=".35" filter="url(#glow${n})"/>
-        <!-- 느낌표 -->
-        <text x="32" y="46" text-anchor="middle" font-family="Courier Prime,monospace" font-size="14" font-weight="900" fill="${c1}" opacity=".9">!</text>
+        <!-- 해제 상자 (살짝 열린) -->
+        <rect x="4" y="1" width="46" height="11" rx="3" fill="url(#lid${n})" transform="rotate(-10 27 6)" opacity=".92"/>
+        <rect x="3" y="18" width="48" height="26" rx="4" fill="url(#body${n})" opacity=".8"/>
+        <ellipse cx="27" cy="18" rx="12" ry="5" fill="${cfg.color.replace('1)','0.22)')}" style="filter:blur(2px)"/>
+        <text x="27" y="38" text-anchor="middle" font-size="16">📦</text>
       `}
     </svg>`;
 
@@ -8951,7 +8802,7 @@ function tmHQRenderHome(){
       ${(unlocked||done)?`<div style="height:2px;background:${cfg.topLine};"></div>`:''}
       <div style="display:flex;align-items:center;gap:0;">
         <!-- 보석함 영역 -->
-        <div style="width:88px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:8px 0;background:${(unlocked||done)?bc.darkBg:'rgba(15,15,15,.3)'};">
+        <div style="width:80px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:10px 0;background:${(unlocked||done)?bc.darkBg:'rgba(15,15,15,.3)'};">
           ${svgBox}
         </div>
         <!-- 구분선 -->
@@ -9101,7 +8952,6 @@ function _tmHQApplyTheme(n){
 function tmHQEnter(n){
   _tmHQN=n;
   _tmHQBoxSel=null;
-  window['tmHQOppPickIdx'+n]=undefined;
   const cfg=TM[n];
 
   _fbGet(_tmPath(n)).then(snap=>{
@@ -9111,13 +8961,6 @@ function tmHQEnter(n){
     const oppAns=d[ok]||null;
     const q=d.question||_tmQ(n);
     if(!d.question) _fbUpdate(_tmPath(n),{question:q}).catch(()=>{});
-
-    /* 상대방 박스 선택 현황 미리 로드 */
-    const rpath=_tmPath(n)+'/reward_pick';
-    _fbGet(rpath).then(rsnap=>{
-      const rd=rsnap.exists()?rsnap.val():{};
-      window['tmHQOppPickIdx'+n]=rd[ok+'_pick']!==undefined?rd[ok+'_pick']:undefined;
-    }).catch(()=>{});
 
     if(window['tmRewardDone'+n]){
       _tmHQShowView('tmHQResult');
@@ -9224,54 +9067,39 @@ function _tmHQRenderBoxes(fbData){
   if(!row) return;
 
   const saved=!!window['tmHQMySaved'+n];
-  const myPickIdx  = fbData ? fbData[_tmMK()+'_pick']  : (saved ? window['tmHQMyPickIdx'+n] : undefined);
-  const oppPickIdx = fbData ? fbData[_tmOK()+'_pick']  : window['tmHQOppPickIdx'+n];
+  const myPickIdx = fbData ? fbData[_tmMK()+'_pick'] : (saved ? window['tmHQMyPickIdx'+n] : undefined);
 
   row.innerHTML=[0,1,2].map(i=>{
-    const isMyPick  = myPickIdx  === i;
-    const isOppPick = oppPickIdx === i;
-    const isSel     = _tmHQBoxSel === i;
-    const isTaken   = isOppPick && !isMyPick; /* 상대가 이미 선택한 박스 */
+    const isMyPick=myPickIdx===i;
+    const isSel=_tmHQBoxSel===i;
 
-    let bg='rgba(255,255,255,.06)', bdr=cfg.border.replace('.5)','.2)'), extra='', icon='📦', iconSize='26px';
-    let cursor='pointer', onclick=`tmHQSelectBox(${i})`;
-    let labelColor='rgba(255,255,255,.35)';
+    let cls='tm-box-btn', extra='';
+    let bg='rgba(255,255,255,.06)', bdr=cfg.border.replace('.5)','.2)');
+    let icon='📦', iconSize='26px';
 
     if(saved){
-      cursor='default'; onclick='';
-      if(isMyPick){ bg=`${cfg.glow}`; bdr=cfg.border; icon='✅'; extra='box-shadow:0 0 14px '+cfg.glow+';'; labelColor=cfg.color; }
-      else if(isOppPick){ bg='rgba(200,168,75,.08)'; bdr='rgba(200,168,75,.35)'; icon='🔒'; labelColor='rgba(200,168,75,.6)'; }
-    } else if(isTaken){
-      /* 상대방 선택됨 — 내가 고를 수 없음 */
-      cursor='not-allowed'; onclick='';
-      bg='rgba(200,168,75,.06)'; bdr='rgba(200,168,75,.25)'; icon='🔒';
-      extra='opacity:.55;';
-      labelColor='rgba(200,168,75,.45)';
+      cls+=' disabled';
+      if(isMyPick){ bg=`${cfg.glow}`; bdr=cfg.border; icon='✅'; extra='box-shadow:0 0 14px '+cfg.glow+';'; }
     } else {
       if(isSel){
-        bg=`${cfg.glow}`; bdr=cfg.border; icon='✅';
+        cls+=' sel'; bg=`${cfg.glow}`; bdr=cfg.border; icon='✅';
         extra='box-shadow:0 0 14px '+cfg.glow+';';
-        iconSize='22px'; labelColor=cfg.color;
+        iconSize='22px';
       }
     }
 
-    const takenLabel = isTaken ? `<div style="font-family:var(--kr);font-size:8px;color:rgba(200,168,75,.6);margin-top:1px;">선택완료</div>` : '';
-
-    return `<div class="tm-box-btn" style="background:${bg};border-color:${bdr};${extra}cursor:${cursor};"
-      onclick="${onclick}">
+    return `<div class="${cls}" style="background:${bg};border-color:${bdr};${extra}"
+      onclick="${saved?'':('tmHQSelectBox('+i+')')}">
       <div style="font-size:${iconSize};line-height:1;transition:all .18s;">${icon}</div>
-      <div style="font-family:var(--orb);font-size:8px;color:${labelColor};letter-spacing:1px;font-weight:700;">BOX ${i+1}</div>
-      ${takenLabel}
-      <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.25);">${(isMyPick||isSel)?'내 선택':'???'}</div>
+      <div style="font-family:var(--orb);font-size:8px;color:${isSel||isMyPick?cfg.color:'rgba(255,255,255,.35)'};letter-spacing:1px;font-weight:700;">BOX ${i+1}</div>
+      <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.25);">???</div>
     </div>`;
   }).join('');
 
   if(mark) mark.style.display=(_tmHQBoxSel!==null&&!saved)?'inline':'none';
   if(hint){
-    const oppTakenIdx = oppPickIdx !== undefined ? oppPickIdx : -1;
     if(saved) hint.textContent='✓ 상자 선택 완료';
     else if(_tmHQBoxSel!==null) hint.textContent=`BOX ${_tmHQBoxSel+1} 선택됨 — 저장 후 확정`;
-    else if(oppTakenIdx>=0) hint.textContent=`BOX ${oppTakenIdx+1}은 상대가 선택 — 나머지 중 하나를 고르세요`;
     else hint.textContent='보물상자를 하나 선택하세요 (보상은 완료 후 공개)';
   }
 }
@@ -9394,13 +9222,6 @@ function _tmHQSubForComplete(n){
   _fbOn(rpath, snap=>{
     const d=snap.exists()?snap.val():null;
     const mk=_tmMK(), ok=_tmOK();
-    /* 상대방 박스 선택 현황 실시간 업데이트 */
-    if(d && d[ok+'_pick']!==undefined){
-      window['tmHQOppPickIdx'+n]=d[ok+'_pick'];
-      /* 상세 화면 열려있으면 박스 UI 갱신 */
-      const det=document.getElementById('tmHQDetail');
-      if(det&&det.style.display!=='none') _tmHQRenderBoxes(d);
-    }
     if(d && d[mk+'_pick']!==undefined && d[ok+'_pick']!==undefined){
       const myIdx=d[mk+'_pick'], oppIdx=d[ok+'_pick'];
       if(!window['tmRewardDone'+n]){
