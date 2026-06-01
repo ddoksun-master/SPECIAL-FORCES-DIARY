@@ -292,46 +292,46 @@ html,body{
 .nav-label{font-size:10px;font-weight:700;white-space:nowrap;color:rgba(140,180,140,.35);}
 .nav-item.active .nav-label{color:var(--gold-dim);}
 
-/* ===== 요일 탭 (민트-틸 테마) ===== */
+/* ===== 요일 탭 (그레이-밀리터리 테마) ===== */
 .day-tabs{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
 .dtab{
   display:flex;flex-direction:column;align-items:center;gap:3px;
   padding:8px 2px 7px;
-  background:rgba(2,20,22,.6);
-  border:1.5px solid rgba(42,144,128,.13);
+  background:rgba(45,50,47,.65);
+  border:1.5px solid rgba(150,165,155,.12);
   border-radius:10px;
   cursor:pointer;
   transition:all .15s;
   min-width:0;
 }
-/* 요일·날짜 기본 색상 — 민트 계열 */
-.dtab-nm{font-size:9px;font-weight:700;color:rgba(82,212,164,.45);line-height:1;}
-.dtab-dt{font-size:14px;font-weight:600;color:rgba(82,212,164,.50);line-height:1.2;}
-.dtab-pct{font-size:9px;font-weight:700;color:rgba(82,212,164,.40);line-height:1;}
+/* 요일·날짜 기본 색상 — 그레이 계열 */
+.dtab-nm{font-size:9px;font-weight:700;color:rgba(175,190,180,.48);line-height:1;}
+.dtab-dt{font-size:14px;font-weight:600;color:rgba(195,210,200,.52);line-height:1.2;}
+.dtab-pct{font-size:9px;font-weight:700;color:rgba(175,190,180,.42);line-height:1;}
 
 /* ── 오늘 ── */
-.dtab.today .dtab-nm{color:rgba(82,212,164,.88);}
-.dtab.today .dtab-dt{color:rgba(82,212,164,1);font-weight:700;}
-.dtab.today .dtab-pct{color:rgba(82,212,164,.75);}
+.dtab.today .dtab-nm{color:rgba(195,215,205,.88);}
+.dtab.today .dtab-dt{color:rgba(220,235,225,1);font-weight:700;}
+.dtab.today .dtab-pct{color:rgba(195,215,205,.75);}
 
 /* ── 선택됨 ── */
 .dtab.sel{
-  background:rgba(2,40,38,.92);
-  border-color:rgba(61,189,170,.65);
-  box-shadow:0 0 10px rgba(42,144,128,.22);
+  background:rgba(60,68,64,.88);
+  border-color:rgba(180,200,190,.55);
+  box-shadow:0 0 10px rgba(120,140,130,.18);
 }
-.dtab.sel .dtab-nm{color:rgba(82,222,200,.88);}
+.dtab.sel .dtab-nm{color:rgba(210,228,218,.88);}
 .dtab.sel .dtab-dt{color:#fff;font-weight:800;}
-.dtab.sel .dtab-pct{color:rgba(82,222,200,.72);}
+.dtab.sel .dtab-pct{color:rgba(200,220,210,.72);}
 
 /* ── 오늘이면서 선택됨 ── */
 .dtab.today.sel{
-  background:rgba(2,48,44,.95);
-  border-color:rgba(61,189,170,.78);
-  box-shadow:0 0 14px rgba(42,144,128,.28);
+  background:rgba(68,78,72,.92);
+  border-color:rgba(200,220,210,.72);
+  box-shadow:0 0 14px rgba(140,160,150,.22);
 }
-.dtab.today.sel .dtab-nm{color:rgba(120,238,210,.95);}
-.dtab.today.sel .dtab-dt{color:#a8fff0;font-weight:800;}
+.dtab.today.sel .dtab-nm{color:rgba(225,240,232,.95);}
+.dtab.today.sel .dtab-dt{color:#e8f4ee;font-weight:800;}
 
 /* ── 일요일 ── */
 .dtab.sun .dtab-nm,.dtab.sun .dtab-dt{color:rgba(240,80,80,.48);}
@@ -488,15 +488,14 @@ html,body{
 .add-op-bar{
   display:flex;align-items:center;justify-content:center;gap:9px;
   padding:14px;margin-bottom:10px;
-  background:linear-gradient(135deg,rgba(30,80,20,.75),rgba(55,45,8,.8));
-  border:1.5px solid rgba(100,210,80,.55);border-radius:12px;
+  background:rgba(72,80,76,.72);
+  border:1.5px solid rgba(200,215,205,.32);border-radius:12px;
   cursor:pointer;transition:.2s;
-  color:#c8f0a0;
+  color:rgba(230,240,234,.92);
   font-family:var(--orb);font-size:13px;font-weight:700;letter-spacing:2px;
-  text-shadow:0 0 10px rgba(100,200,70,.5);
-  box-shadow:0 2px 14px rgba(60,160,40,.18),0 0 0 1px rgba(100,200,70,.08) inset;
+  box-shadow:0 2px 10px rgba(0,0,0,.18);
 }
-.add-op-bar:active{background:linear-gradient(135deg,rgba(40,100,25,.85),rgba(70,58,10,.9));filter:brightness(1.12);}
+.add-op-bar:active{background:rgba(85,95,90,.82);filter:brightness(1.08);}
 .add-op-bar.hidden{display:none;}
 
 /* ===== OPS 헤더 ===== */
@@ -589,7 +588,7 @@ html,body{
   width:100%;text-align:center;
 }
 .qbtn:active{filter:brightness(1.2);}
-.qbtn.done{background:rgba(40,130,35,.25);border-color:rgba(90,158,72,.45);color:#9de880;}
+.qbtn.done{background:rgba(40,130,35,.25);border-color:rgba(90,158,72,.45);color:#ffffff;}
 
 .q-active-tag{
   font-family:var(--orb);font-size:8px;font-weight:900;
@@ -1309,14 +1308,31 @@ function renderConnectCard(){
     }
     card.innerHTML=`
       <div style="font-family:var(--kr);font-size:12px;color:rgba(200,168,75,.7);font-weight:700;margin-bottom:12px;">▎ 팀원 초대</div>
-      <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.38);margin-bottom:8px;">친구의 공유코드를 입력해 팀을 구성하세요</div>
+
+      <!-- 달성률 기준일 설정 -->
+      <div style="margin-bottom:14px;padding:12px;background:rgba(4,20,36,.7);border:1px solid rgba(46,127,168,.25);border-radius:11px;">
+        <div style="font-family:var(--kr);font-size:11px;color:rgba(78,176,216,.8);font-weight:700;margin-bottom:8px;">📅 달성률 기준일 설정 <span style="font-size:9px;color:rgba(255,255,255,.3);font-weight:400;">(팀원과 동일하게 설정하세요)</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;">
+          ${[1,10,25].map(d=>`<button onclick="setCycleDay(${d});renderConnectCard();" style="padding:10px 4px;border-radius:9px;border:1.5px solid ${missionCycleDay===d?'rgba(78,176,216,.8)':'rgba(46,127,168,.2)'};background:${missionCycleDay===d?'rgba(6,30,58,.9)':'rgba(4,16,30,.7)'};cursor:pointer;transition:.15s;box-shadow:${missionCycleDay===d?'0 0 10px rgba(46,127,168,.25)':'none'};">
+            <div style="font-family:var(--orb);font-size:16px;font-weight:900;color:${missionCycleDay===d?'rgba(78,176,216,1)':'rgba(78,176,216,.5)'};">${d}일</div>
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.3);margin-top:3px;">${d===1?'1일→말일':d===10?'10일→9일':'25일→24일'}</div>
+          </button>`).join('')}
+        </div>
+        <div style="font-family:var(--kr);font-size:9px;color:rgba(78,176,216,.55);text-align:center;" id="connectCycleLabel"></div>
+      </div>
+
+      <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.38);margin-bottom:8px;">기준일 설정 후 친구의 공유코드를 입력하세요</div>
       <div style="display:flex;gap:6px;margin-bottom:6px;">
         <input id="connectCodeInput" maxlength="7" placeholder="TK-XXXX"
           style="flex:1;font-family:var(--orb);font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:10px 12px;margin:0;text-align:center;"/>
         <button onclick="sendConnectRequest()"
-          style="padding:10px 14px;background:linear-gradient(135deg,rgba(50,120,35,.8),rgba(30,80,20,.9));border:1px solid rgba(90,158,72,.35);border-radius:8px;color:#fff;font-family:var(--kr);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">연결</button>
+          style="padding:10px 14px;background:linear-gradient(135deg,rgba(30,100,60,.8),rgba(15,65,35,.9));border:1px solid rgba(61,189,164,.35);border-radius:8px;color:#fff;font-family:var(--kr);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">연결</button>
       </div>
       <div id="connectMsg" style="font-family:var(--kr);font-size:11px;color:rgba(255,100,100,.7);min-height:16px;"></div>`;
+    /* 기준일 레이블 업데이트 */
+    const {start,end}=getCycleRange();
+    const cl=document.getElementById('connectCycleLabel');
+    if(cl) cl.textContent='현재 주기: '+start.slice(5).replace('-','/')+'~'+end.slice(5).replace('-','/');
 
   } else if(connectionStatus==='pending_out'){
     if(vsCard)vsCard.style.display='none';
@@ -1337,10 +1353,15 @@ function renderConnectCard(){
       <div style="font-size:24px;margin-bottom:8px;">🔔</div>
       <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(255,200,80,.9);margin-bottom:4px;">팀 연결 요청</div>
       <div style="font-family:var(--orb);font-size:17px;font-weight:700;color:var(--gold);letter-spacing:3px;margin-bottom:4px;">${window._pendingFromCode}</div>
-      <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.55);margin-bottom:16px;"><b style="color:#fff;">${window._pendingFromNick}</b> 님이 팀 연결을 요청했습니다</div>
+      <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.55);margin-bottom:14px;"><b style="color:#fff;">${window._pendingFromNick}</b> 님이 팀 연결을 요청했습니다</div>
+      <div style="margin-bottom:14px;padding:12px;background:rgba(4,20,36,.7);border:1px solid rgba(46,127,168,.25);border-radius:11px;text-align:left;">
+        <div style="font-family:var(--kr);font-size:11px;color:rgba(78,176,216,.8);font-weight:700;margin-bottom:6px;">📅 달성률 기준일 확인</div>
+        <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.7);font-weight:700;margin-bottom:4px;">내 기준일: 매월 <span style="color:rgba(78,176,216,.9);font-size:15px;">${missionCycleDay}</span>일로 설정되어 있습니다</div>
+        <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.4);line-height:1.6;">팀원과 동일한 기준일이어야 합니다.<br>다르다면 아래 수락 전에 팀작전 하단의 기준일 변경을 이용하세요.</div>
+      </div>
       <div style="display:flex;gap:8px;">
         <button onclick="acceptConnectRequest()"
-          style="flex:1;padding:10px;background:linear-gradient(135deg,rgba(50,120,35,.8),rgba(30,80,20,.9));border:1px solid rgba(90,158,72,.35);border-radius:8px;color:#fff;font-family:var(--kr);font-size:13px;font-weight:700;cursor:pointer;">✅ 수락</button>
+          style="flex:1;padding:10px;background:linear-gradient(135deg,rgba(30,100,60,.8),rgba(15,65,35,.9));border:1px solid rgba(61,189,164,.35);border-radius:8px;color:#fff;font-family:var(--kr);font-size:13px;font-weight:700;cursor:pointer;">✅ 수락</button>
         <button onclick="rejectConnectRequest()"
           style="flex:1;padding:10px;background:rgba(60,20,20,.7);border:1px solid rgba(200,80,80,.3);border-radius:8px;color:rgba(255,100,100,.8);font-family:var(--kr);font-size:13px;font-weight:700;cursor:pointer;">❌ 거절</button>
       </div>
@@ -1387,6 +1408,22 @@ function renderConnectCard(){
       } else {
         da.innerHTML=`<button onclick="requestDisconnect()" style="width:100%;padding:8px;background:transparent;border:1px solid rgba(200,80,80,.25);border-radius:8px;color:rgba(255,100,100,.55);font-family:var(--kr);font-size:11px;cursor:pointer;">공유 해지 요청</button>`;
       }
+    }
+
+    /* ── 달성일 변경 요청 영역 ── */
+    const cycleArea = document.getElementById('cycleChangeArea');
+    if(cycleArea){
+      cycleArea.innerHTML=`
+        <div style="margin-top:10px;padding:12px;background:rgba(4,20,36,.6);border:1px solid rgba(46,127,168,.20);border-radius:11px;">
+          <div style="font-family:var(--kr);font-size:11px;color:rgba(78,176,216,.75);font-weight:700;margin-bottom:8px;">📅 달성일 변경 요청 <span style="font-size:9px;color:rgba(255,255,255,.3);font-weight:400;">(팀원과 동일 기준일로)</span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px;">
+            ${[1,10,25].map(d=>`<button onclick="setCycleDay(${d});renderConnectCard();" style="padding:9px 4px;border-radius:8px;border:1.5px solid ${missionCycleDay===d?'rgba(78,176,216,.75)':'rgba(46,127,168,.18)'};background:${missionCycleDay===d?'rgba(6,28,52,.88)':'rgba(3,12,24,.65)'};cursor:pointer;transition:.15s;">
+              <div style="font-family:var(--orb);font-size:15px;font-weight:900;color:${missionCycleDay===d?'rgba(78,176,216,1)':'rgba(78,176,216,.45)'};">${d}일</div>
+              <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.28);margin-top:2px;">${d===1?'1→말':d===10?'10→9':'25→24'}</div>
+            </button>`).join('')}
+          </div>
+          <div style="font-family:var(--kr);font-size:9px;color:rgba(78,176,216,.5);text-align:center;">현재: 매월 ${missionCycleDay}일 기준</div>
+        </div>`; 
     }
 
     /* ── 특수작전 연결 요청 영역 ── */
@@ -4743,53 +4780,53 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
 
       <!-- 날짜/자금/수행률 카드 -->
-      <div class="card" id="catCard">
+      <div class="card" id="catCard" style="background:linear-gradient(145deg,rgba(38,42,40,.97),rgba(30,34,32,.98));border-color:rgba(160,180,160,.14);box-shadow:0 6px 28px rgba(0,0,0,.6),0 1px 0 rgba(180,200,180,.05) inset;">
         <!-- 날짜 + 확보자금 + 수행률 -->
-        <div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:0;margin-bottom:12px;border:1px solid rgba(200,168,75,.15);border-radius:10px;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:0;margin-bottom:12px;border:1px solid rgba(82,212,164,.22);border-radius:10px;overflow:hidden;">
           <!-- 날짜 -->
-          <div style="padding:12px 12px;background:rgba(10,25,12,.6);border-right:1px solid rgba(200,168,75,.12);">
-            <div id="todayDateLbl" style="font-family:var(--orb);font-size:11px;letter-spacing:1.5px;color:rgba(127,191,106,.75);margin-bottom:4px;line-height:1.3;"></div>
-            <div id="todayDayLbl" style="font-family:var(--kr);font-size:20px;font-weight:900;color:rgba(127,191,106,.98);letter-spacing:.2px;line-height:1.1;"></div>
+          <div style="padding:12px 12px;background:rgba(4,35,22,.65);border-right:1px solid rgba(82,212,164,.15);">
+            <div id="todayDateLbl" style="font-family:var(--orb);font-size:11px;letter-spacing:1.5px;color:rgba(255,255,255,.75);margin-bottom:4px;line-height:1.3;"></div>
+            <div id="todayDayLbl" style="font-family:var(--kr);font-size:20px;font-weight:900;color:#ffffff;letter-spacing:.2px;line-height:1.1;"></div>
             <div id="todayDayNumLbl" style="display:none;"></div>
           </div>
           <!-- 확보자금 -->
-          <div style="padding:12px 10px;background:rgba(10,20,8,.55);border-right:1px solid rgba(200,168,75,.12);display:flex;flex-direction:column;justify-content:center;">
-            <div style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:.3px;margin-bottom:4px;">확보자금</div>
+          <div style="padding:12px 10px;background:rgba(28,22,4,.65);border-right:1px solid rgba(200,168,75,.15);display:flex;flex-direction:column;justify-content:center;">
+            <div style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(255,255,255,.75);letter-spacing:.3px;margin-bottom:4px;">확보자금</div>
             <div style="display:flex;align-items:baseline;gap:4px;">
-              <div id="diaryMoney" style="font-family:var(--orb);font-size:18px;font-weight:700;color:var(--gold);text-shadow:0 0 12px rgba(200,168,75,.5);line-height:1;">0</div>
-              <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(200,168,75,.7);">원</div>
+              <div id="diaryMoney" style="font-family:var(--orb);font-size:18px;font-weight:700;color:#ffffff;line-height:1;">0</div>
+              <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(255,255,255,.8);">원</div>
             </div>
-            <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.35);margin-top:3px;letter-spacing:.5px;">누적 확보 금액</div>
+            <div style="font-family:var(--orb);font-size:8px;color:rgba(255,255,255,.45);margin-top:3px;letter-spacing:.5px;">누적 확보 금액</div>
           </div>
           <!-- 수행률 -->
-          <div style="padding:12px 10px;background:rgba(10,20,8,.55);display:flex;flex-direction:column;justify-content:center;">
-            <div style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:.3px;margin-bottom:4px;">수행률</div>
+          <div style="padding:12px 10px;background:rgba(4,22,28,.65);display:flex;flex-direction:column;justify-content:center;">
+            <div style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(255,255,255,.75);letter-spacing:.3px;margin-bottom:4px;">수행률</div>
             <div style="display:flex;align-items:baseline;gap:2px;">
               <div id="diaryPct" style="font-family:var(--orb);font-size:18px;font-weight:700;color:#ffffff;line-height:1;">0</div>
-              <div style="font-family:var(--orb);font-size:13px;font-weight:700;color:rgba(255,255,255,.6);">%</div>
+              <div style="font-family:var(--orb);font-size:13px;font-weight:700;color:rgba(255,255,255,.75);">%</div>
             </div>
-            <div style="font-family:var(--orb);font-size:8px;color:rgba(255,255,255,.25);margin-top:3px;letter-spacing:.5px;">전체 작전 대비</div>
+            <div style="font-family:var(--orb);font-size:8px;color:rgba(255,255,255,.4);margin-top:3px;letter-spacing:.5px;">전체 작전 대비</div>
           </div>
         </div>
         <!-- 진행바 -->
-        <div style="height:3px;background:rgba(70,55,12,.5);border-radius:2px;margin-bottom:14px;overflow:hidden;">
-          <div id="diaryProgBar" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-dim));transition:width .5s;width:0%;"></div>
+        <div style="height:3px;background:rgba(60,65,62,.55);border-radius:2px;margin-bottom:14px;overflow:hidden;">
+          <div id="diaryProgBar" style="height:100%;background:linear-gradient(90deg,rgba(140,160,145,.7),rgba(200,215,205,.85));transition:width .5s;width:0%;"></div>
         </div>
 
-        <!-- 날짜 이동 컨트롤 — 이미지 레이아웃 -->
+        <!-- 날짜 이동 컨트롤 -->
         <div id="dateNavRow" style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
-          <button onclick="navDate(-1)" style="width:36px;height:36px;flex-shrink:0;background:rgba(30,22,5,.8);border:1.5px solid rgba(200,168,75,.3);border-radius:8px;color:rgba(200,168,75,.9);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;">〈</button>
-          <div id="dateNavLabel" style="flex:1;text-align:center;font-family:var(--kr);font-size:14px;font-weight:900;color:rgba(200,168,75,.9);letter-spacing:.3px;"></div>
-          <button onclick="navDate(1)" style="width:36px;height:36px;flex-shrink:0;background:rgba(30,22,5,.8);border:1.5px solid rgba(200,168,75,.3);border-radius:8px;color:rgba(200,168,75,.9);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;">〉</button>
-          <button onclick="navToToday()" style="padding:7px 14px;flex-shrink:0;background:rgba(90,68,15,.8);border:1.5px solid rgba(210,165,50,.5);border-radius:8px;color:rgba(240,192,96,.95);font-family:var(--kr);font-size:12px;font-weight:700;cursor:pointer;transition:.15s;">오늘</button>
+          <button onclick="navDate(-1)" style="width:36px;height:36px;flex-shrink:0;background:rgba(50,55,52,.7);border:1.5px solid rgba(160,175,165,.28);border-radius:8px;color:rgba(200,215,205,.85);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;">〈</button>
+          <div id="dateNavLabel" style="flex:1;text-align:center;font-family:var(--kr);font-size:14px;font-weight:900;color:rgba(215,225,218,.92);letter-spacing:.3px;"></div>
+          <button onclick="navDate(1)" style="width:36px;height:36px;flex-shrink:0;background:rgba(50,55,52,.7);border:1.5px solid rgba(160,175,165,.28);border-radius:8px;color:rgba(200,215,205,.85);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;">〉</button>
+          <button onclick="navToToday()" style="padding:7px 14px;flex-shrink:0;background:rgba(65,72,68,.82);border:1.5px solid rgba(180,200,185,.38);border-radius:8px;color:rgba(220,235,225,.95);font-family:var(--kr);font-size:12px;font-weight:700;cursor:pointer;transition:.15s;">오늘</button>
         </div>
-        <!-- 날짜 탭 (요일 없이 날짜만) -->
+        <!-- 날짜 탭 -->
         <div id="dayTabs" class="day-tabs" style="margin-bottom:10px;"></div>
 
-        <div class="card-title cat-toggle" id="catToggleBtn" onclick="toggleCatCard()" style="font-size:14px;font-weight:900;letter-spacing:.5px;margin-bottom:0;">
+        <div class="card-title cat-toggle" id="catToggleBtn" onclick="toggleCatCard()" style="font-size:14px;font-weight:900;letter-spacing:.5px;margin-bottom:0;color:rgba(195,210,200,.85);">
           작전 분류
           <span style="margin-left:auto;display:flex;align-items:center;gap:8px;">
-            <span class="cat-toggle-arrow" id="catToggleArrow">▶</span>
+            <span class="cat-toggle-arrow" id="catToggleArrow" style="color:rgba(180,195,185,.6);">▶</span>
           </span>
         </div>
 
@@ -4819,36 +4856,35 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div id="tplGrid" class="tpl-grid"></div>
 
         <!-- 수동투입 팝업 모달 -->
-        <div id="cbox" style="display:none;position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.78);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeCbox();">
-          <div style="background:var(--card);border:1px solid rgba(90,158,72,.35);border-radius:16px;padding:20px;max-width:360px;width:100%;max-height:85vh;overflow-y:auto;">
+        <div id="cbox" style="display:none;position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.65);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeCbox();">
+          <div style="background:linear-gradient(160deg,#2E3830,#252C27);border:1px solid rgba(160,200,160,.25);border-radius:16px;padding:20px;max-width:360px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.6);">
 
-            <!-- 헤더 (rulePopup과 동일 구조) -->
+            <!-- 헤더 -->
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-              <div id="cboxTitle" style="font-family:var(--title);font-size:14px;font-weight:900;color:var(--green-dim);letter-spacing:.5px;">✍ 수동 투입</div>
+              <div id="cboxTitle" style="font-family:var(--title);font-size:14px;font-weight:900;color:#A8E8C0;letter-spacing:.5px;">✍ 수동 투입</div>
               <div style="display:flex;gap:8px;align-items:center;">
-                <button onclick="closeCbox()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:18px;cursor:pointer;line-height:1;">✕</button>
+                <button onclick="closeCbox()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.7);font-size:16px;cursor:pointer;line-height:1;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;">✕</button>
               </div>
             </div>
 
             <!-- 임무명 입력 -->
-            <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.45);margin-bottom:5px;letter-spacing:.3px;">임무명</div>
-            <input id="qInput" placeholder="예: 완전군장 3km" style="margin-bottom:12px;"/>
+            <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.55);margin-bottom:5px;letter-spacing:.3px;">임무명</div>
+            <input id="qInput" placeholder="예: 완전군장 3km" style="margin-bottom:12px;background:rgba(255,255,255,.10);border:1.5px solid rgba(160,220,160,.28);border-radius:9px;color:#fff;"/>
 
             <!-- 난이도 선택 -->
-            <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.45);margin-bottom:5px;letter-spacing:.3px;">난이도</div>
-            <select id="diffSel" onchange="onDiffChange()" style="margin-bottom:12px;">
+            <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.55);margin-bottom:5px;letter-spacing:.3px;">난이도</div>
+            <select id="diffSel" onchange="onDiffChange()" style="margin-bottom:12px;background:rgba(255,255,255,.08);border:1.5px solid rgba(160,220,160,.22);border-radius:9px;color:#fff;">
               <option value="easy">🟢 일반 임무 (+1,000)</option>
               <option value="medium">🟡 위험 임무 (+3,000)</option>
               <option value="hard">🔴 특수 임무 (+5,000)</option>
             </select>
 
-            <!-- 누적형 옵션 (특수임무 선택 시) -->
-            <div id="cumBox" style="display:none;margin-bottom:12px;padding:12px;background:rgba(20,40,20,.55);border:1px solid rgba(90,158,72,.25);border-radius:10px;">
-              <div style="font-family:var(--kr);font-size:11px;color:rgba(127,191,106,.7);letter-spacing:.3px;margin-bottom:10px;">📊 누적형 옵션 <span style="color:rgba(255,255,255,.3);font-size:10px;">(5칸 · 칸당 1,000원)</span></div>
-              <!-- STEP 1: 단위 먼저 -->
+            <!-- 누적형 옵션 -->
+            <div id="cumBox" style="display:none;margin-bottom:12px;padding:12px;background:rgba(40,70,45,.55);border:1px solid rgba(82,212,164,.22);border-radius:10px;">
+              <div style="font-family:var(--kr);font-size:11px;color:rgba(82,212,164,.8);letter-spacing:.3px;margin-bottom:10px;">📊 누적형 옵션 <span style="color:rgba(255,255,255,.35);font-size:10px;">(5칸 · 칸당 1,000원)</span></div>
               <div style="margin-bottom:8px;">
-                <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);margin-bottom:4px;">① 단위 선택</div>
-                <select id="cumUnit" onchange="onCumUnitChange()" style="margin:0;font-size:14px;padding:10px 12px;width:100%;">
+                <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.45);margin-bottom:4px;">① 단위 선택</div>
+                <select id="cumUnit" onchange="onCumUnitChange()" style="margin:0;font-size:14px;padding:10px 12px;width:100%;background:rgba(255,255,255,.08);border:1.5px solid rgba(82,212,164,.22);border-radius:8px;color:#fff;">
                   <option value="">— 단위를 먼저 선택하세요 —</option>
                   <option value="L">L (리터)</option>
                   <option value="개">개</option>
@@ -4858,22 +4894,19 @@ document.addEventListener('DOMContentLoaded',()=>{
                   <option value="장">장 (페이지)</option>
                 </select>
               </div>
-              <!-- STEP 2: 목표 숫자 (단위 선택 후 활성화) -->
               <div id="cumTargetWrap" style="display:none;margin-bottom:8px;">
                 <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
-                  <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);">② 목표 숫자 입력</div>
-                  <div id="cumHint" style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.55);"></div>
+                  <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.45);">② 목표 숫자 입력</div>
+                  <div id="cumHint" style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.65);"></div>
                 </div>
-                <input id="cumTarget" type="number" placeholder="" style="margin:0;font-size:18px;font-weight:700;padding:11px 12px;text-align:center;letter-spacing:1px;"
+                <input id="cumTarget" type="number" placeholder="" style="margin:0;font-size:18px;font-weight:700;padding:11px 12px;text-align:center;letter-spacing:1px;background:rgba(255,255,255,.10);border:1.5px solid rgba(82,212,164,.22);border-radius:8px;color:#fff;"
                   oninput="updateCumPreview()" onchange="updateCumPreview()"/>
               </div>
-              <!-- 5칸 프리뷰 -->
               <div id="cumPreview" style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:4px;"></div>
             </div>
 
             <!-- 저장 버튼 -->
-            <button class="add-btn" onclick="addTemplate()" style="margin-top:4px;">💾 저장</button>
-            <!-- 에러 메시지 -->
+            <button class="add-btn" onclick="addTemplate()" style="margin-top:4px;background:linear-gradient(135deg,rgba(40,130,80,.9),rgba(20,80,50,.92));border:1.5px solid rgba(82,212,164,.4);color:#A8F0C8;">💾 저장</button>
             <div id="cumErrMsg" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(80,15,15,.6);border:1px solid rgba(200,50,50,.3);border-radius:8px;font-family:var(--kr);font-size:12px;color:rgba(255,120,120,.9);text-align:center;"></div>
 
           </div>
@@ -4908,7 +4941,10 @@ document.addEventListener('DOMContentLoaded',()=>{
       <!-- + 작전 추가 바 + 전일복사 -->
       <div style="display:flex;gap:8px;margin-bottom:10px;" id="addBarRow">
         <div class="add-op-bar hidden" id="addOpBar" onclick="openCatAndScroll()" style="flex:1;margin-bottom:0;">+ &nbsp;작전 추가</div>
-        <button onclick="copyYesterday()" style="flex-shrink:0;padding:0 16px;background:rgba(30,22,5,.75);border:1.5px solid rgba(200,168,75,.38);border-radius:12px;color:rgba(240,195,90,.9);font-family:var(--kr);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:.18s;box-shadow:0 2px 8px rgba(0,0,0,.2);" onmouseenter="this.style.borderColor='rgba(200,168,75,.7)'" onmouseleave="this.style.borderColor='rgba(200,168,75,.38)'"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>전일복사</button>
+        <button onclick="copyYesterday()" id="copyYesterdayBtn" style="display:none;flex-shrink:0;padding:0 18px;height:48px;background:rgba(88,98,92,.78);border:1.5px solid rgba(210,225,215,.38);border-radius:12px;color:rgba(235,245,238,.95);font-family:var(--kr);font-size:13px;font-weight:900;cursor:pointer;align-items:center;gap:6px;white-space:nowrap;transition:.18s;box-shadow:0 2px 10px rgba(0,0,0,.18);letter-spacing:.2px;" onmouseenter="this.style.background='rgba(105,118,110,.85)';this.style.borderColor='rgba(220,235,225,.55)'" onmouseleave="this.style.background='rgba(88,98,92,.78)';this.style.borderColor='rgba(210,225,215,.38)'">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          전일복사
+        </button>
       </div>
 
       <!-- 작전 목록 카드 -->
@@ -5152,6 +5188,8 @@ document.addEventListener('DOMContentLoaded',()=>{
         </div>
         <!-- 공유 해지 요청 버튼 -->
         <div id="disconnectArea" style="margin-top:6px;"></div>
+        <!-- 달성일 변경 요청 영역 -->
+        <div id="cycleChangeArea"></div>
         <!-- 특수작전 연결 요청 영역 (비활성화) -->
         <div id="specialOpArea" style="display:none;"></div>
       </div>
@@ -5264,7 +5302,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             <div style="margin:12px 14px 0;">
               <button id="tmHQSaveBtn" onclick="tmHQSave()" disabled
                 style="width:100%;padding:12px;border-radius:10px;font-family:var(--kr);font-size:14px;font-weight:900;cursor:not-allowed;transition:all .22s;border:2px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);color:rgba(255,255,255,.3);">
-                답글 + 상자를 선택 후 저장
+                임무완료
               </button>
             </div>
 
@@ -5346,27 +5384,6 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div id="tmLaunchBadges" style="display:none;"></div>
       <div id="tmRewardOverlay" style="display:none;">
         <div id="tmRewardPanel"><div id="tmRewardTitle"></div><div id="tmRewardSub"></div><div id="tmRewardBody"></div></div>
-      </div>
-
-      <!-- ★ 달성률 기준일 설정 카드 -->
-      <div class="card" style="padding:16px;background:linear-gradient(145deg,rgba(14,22,28,.96),rgba(10,16,22,.98));border-color:rgba(74,127,168,.18);">
-        <div class="card-title" style="margin-bottom:12px;color:var(--steel-dim);">⚙ 달성률 기준일 설정</div>
-        <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.38);margin-bottom:12px;line-height:1.6;">매달 리셋 기준을 선택하세요.<br>선택한 날짜부터 다음 주기 전날까지의 기록이 달성률에 반영됩니다.</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-          <button onclick="setCycleDay(1)" id="cycleBtn1" style="padding:13px 6px;border-radius:12px;border:1.5px solid rgba(74,127,168,.22);background:rgba(10,20,36,.7);cursor:pointer;transition:.18s;" onmouseenter="this.style.borderColor='rgba(74,127,168,.5)'" onmouseleave="renderCycleBtns()">
-            <div style="font-family:var(--orb);font-size:18px;font-weight:900;color:var(--steel-dim);line-height:1;">1일</div>
-            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.35);margin-top:4px;">1일→말일</div>
-          </button>
-          <button onclick="setCycleDay(10)" id="cycleBtn10" style="padding:13px 6px;border-radius:12px;border:1.5px solid rgba(74,127,168,.22);background:rgba(10,20,36,.7);cursor:pointer;transition:.18s;" onmouseenter="this.style.borderColor='rgba(74,127,168,.5)'" onmouseleave="renderCycleBtns()">
-            <div style="font-family:var(--orb);font-size:18px;font-weight:900;color:var(--steel-dim);line-height:1;">10일</div>
-            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.35);margin-top:4px;">10일→9일</div>
-          </button>
-          <button onclick="setCycleDay(25)" id="cycleBtn25" style="padding:13px 6px;border-radius:12px;border:1.5px solid rgba(74,127,168,.22);background:rgba(10,20,36,.7);cursor:pointer;transition:.18s;" onmouseenter="this.style.borderColor='rgba(74,127,168,.5)'" onmouseleave="renderCycleBtns()">
-            <div style="font-family:var(--orb);font-size:18px;font-weight:900;color:var(--steel-dim);line-height:1;">25일</div>
-            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.35);margin-top:4px;">25일→24일</div>
-          </button>
-        </div>
-        <div id="cycleCurLabel" style="margin-top:10px;font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.65);text-align:center;"></div>
       </div>
 
     </div><!-- /panelTeam -->
@@ -5702,18 +5719,19 @@ function renderDayTabs(){
     const isToday=ds===todayStr;
     const isSel=ds===selDate;
     let pastCls='';let pctTxt='';
-    const showStat=isPast||isToday;
-    if(showStat){
-      const items=allData[ds]||[];
-      if(items.length===0){
-        if(isPast) pastCls='past-none';
-      } else {
-        const total=items.length;
-        const done=items.filter(q=>q.completed).length;
-        const pct=Math.round((done/total)*100);
-        if(isPast) pastCls=pct===100?'past-success':pct>0?'past-partial':'past-fail';
-        pctTxt=pct+'%';
+    /* 날짜 무관하게 해당 날짜에 데이터가 있으면 달성률 계산 */
+    const items=(ds===selDate ? quests : null) || allData[ds] || [];
+    if(items.length > 0){
+      const total=items.length;
+      const done=items.filter(q=>q.completed).length;
+      const pct=Math.round((done/total)*100);
+      pctTxt=pct+'%';
+      /* 색상 클래스: 과거+오늘만 (미래는 색상 없이 숫자만) */
+      if(isPast||isToday){
+        pastCls=pct===100?'past-success':pct>0?'past-partial':'past-fail';
       }
+    } else {
+      if(isPast) pastCls='past-none';
     }
     const el=document.createElement('div');
     let cls='dtab';
@@ -5721,10 +5739,19 @@ function renderDayTabs(){
     if(isSel)   cls+=' sel';
     if(sun)     cls+=' sun';
     if(isPast&&!isToday) cls+=' '+pastCls;
+    else if(isToday&&pastCls) cls+=' '+pastCls;
     el.className=cls;
     /* 요일 위 / 일(숫자) 아래 / 달성률 맨 아래 */
     const dayNum=d.getDate();
-    el.innerHTML=`<div class="dtab-nm">${dayNm}</div><div class="dtab-dt">${dayNum}</div>${pctTxt?`<div class="dtab-pct">${pctTxt}</div>`:'<div class="dtab-pct" style="visibility:hidden;">-</div>'}`;    el.addEventListener('click',()=>{
+    let pctHtml;
+    if(pctTxt){
+      pctHtml=`<div class="dtab-pct">${pctTxt}</div>`;
+    } else if(isPast||isToday){
+      pctHtml=`<div class="dtab-pct" style="opacity:.25;">-</div>`;
+    } else {
+      pctHtml=`<div class="dtab-pct" style="visibility:hidden;">-</div>`;
+    }
+    el.innerHTML=`<div class="dtab-nm">${dayNm}</div><div class="dtab-dt">${dayNum}</div>${pctHtml}`;    el.addEventListener('click',()=>{
       selDate=ds;
       if(!allData[ds]) allData[ds]=[];
       quests=allData[ds];
@@ -5870,7 +5897,10 @@ function renderQ(){
         +'<span style="font-family:var(--orb);font-size:15px;font-weight:900;color:'+pctColor+';">'+pct+'%</span></div>'
         +waitMsg
         +'</div>'
-        +'<button class="qbtn cum-complete'+lockCls+'" style="width:100%;margin:2px 0 4px;font-size:13px;padding:10px;display:block;'+lockStyle+'" '+disabledAttr+'>작전완료</button>';
+        +'<div style="display:flex;gap:5px;align-items:center;margin:2px 0 4px;">'
+        +'<button class="qbtn cum-complete'+lockCls+'" style="flex:1;font-size:13px;padding:10px;display:block;'+lockStyle+'" '+disabledAttr+'>작전완료</button>'
+        +'<button class="qdel-btn cum-del-btn" style="width:22px;height:22px;background:rgba(80,20,20,.65);border:1px solid rgba(255,100,100,.4);border-radius:5px;color:#ffffff;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>'
+        +'</div>';
     }
 
     div.innerHTML=`
@@ -5886,7 +5916,10 @@ function renderQ(){
           ${(!hasCum||q.completed)?`<div class="qright" style="flex-shrink:0;">
             ${!q.completed?`<div style="font-family:var(--orb);font-size:8px;font-weight:900;letter-spacing:1.5px;color:var(--green-dim);text-align:right;margin-bottom:6px;display:flex;align-items:center;justify-content:flex-end;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--green-dim);display:inline-block;box-shadow:0 0 6px var(--green-dim);animation:blink 1.2s infinite;"></span>ACTIVE</div>`:''}
             <div style="display:flex;gap:5px;align-items:center;">
-              ${q.completed?`<button class="qbtn done">철회</button>`:`<button class="qbtn">작전완료</button><button class="qdel-btn" style="width:28px;height:28px;background:rgba(60,10,10,.6);border:1px solid rgba(200,50,50,.3);border-radius:7px;color:rgba(255,80,80,.6);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>`}
+              ${q.completed
+                ? `<button class="qbtn done">철회</button><button class="qdel-btn" style="width:22px;height:22px;background:rgba(80,20,20,.65);border:1px solid rgba(255,100,100,.4);border-radius:5px;color:#ffffff;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>`
+                : `<button class="qbtn">작전완료</button><button class="qdel-btn" style="width:22px;height:22px;background:rgba(80,20,20,.65);border:1px solid rgba(255,100,100,.4);border-radius:5px;color:#ffffff;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>`
+              }
             </div>
           </div>`:''}
         </div>
@@ -5934,20 +5967,29 @@ function renderQ(){
       showCat(curCat,document.querySelector('.ctab.active'));
     });
     if(!q.completed){
-      const del=div.querySelector('.qdel-btn');
-      del&&del.addEventListener('click',e=>{
-        e.stopPropagation();
-        quests.splice(oi,1);saveQ();renderQ();updateHUD();
-        showCat(curCat,document.querySelector('.ctab.active'));
+      /* 일반 삭제 버튼 (.qdel-btn) + 누적형 삭제 버튼 (.cum-del-btn) 모두 처리 */
+      div.querySelectorAll('.qdel-btn, .cum-del-btn').forEach(btn=>{
+        btn.addEventListener('click',e=>{
+          e.stopPropagation();
+          quests.splice(oi,1);saveQ();renderQ();updateHUD();
+          showCat(curCat,document.querySelector('.ctab.active'));
+        });
       });
       list.appendChild(div);
     }else{
       if(selHiddenIdx.includes(oi)) div.style.outline='2px solid rgba(200,255,100,.5)';
       div.addEventListener('click',e=>{
         if(e.target.classList.contains('qbtn')) return;
+        if(e.target.classList.contains('qdel-btn')) return;
         const i=selHiddenIdx.indexOf(oi);
         if(i>-1){selHiddenIdx.splice(i,1);div.style.outline='none';}
         else{selHiddenIdx.push(oi);div.style.outline='2px solid rgba(200,255,100,.5)';}
+      });
+      const delBtn=div.querySelector('.qdel-btn');
+      delBtn&&delBtn.addEventListener('click',e=>{
+        e.stopPropagation();
+        quests.splice(oi,1);saveQ();renderQ();updateHUD();
+        showCat(curCat,document.querySelector('.ctab.active'));
       });
       hlist.appendChild(div);
     }
@@ -5977,6 +6019,16 @@ function renderQ(){
     bar.onclick=openCatAndScroll;
   } else {
     bar.classList.add('hidden');
+  }
+
+  /* 전일복사 버튼 — 금액 추가 가능할 때만 표시 */
+  const copyBtn = document.getElementById('copyYesterdayBtn');
+  if(copyBtn){
+    if(total < 10000 && !capReached){
+      copyBtn.style.display='flex';
+    } else {
+      copyBtn.style.display='none';
+    }
   }
 
   document.getElementById('opsCnt').textContent=`${comp} / ${quests.length}`;
@@ -9174,6 +9226,8 @@ function teamQAOnConnect(){
   const hq=document.getElementById('tmHQWrap');
   if(hq){ hq.style.display='block'; }
   tmHQRenderHome();
+  /* 스페셜 임무 실시간 구독 즉시 시작 */
+  if(typeof _spSubForDayUpdate==='function') _spSubForDayUpdate();
 }
 
 function teamQAOnDisconnect(){
@@ -10098,16 +10152,9 @@ async function _spEnter(){
   let d = {};
   try{ const snap=await _fbGet(path); d=snap.exists()?snap.val():{};} catch(e){}
 
-  const confirmed = d.special_confirmed||null;
-
-  if(!confirmed){
-    /* 화면1: 미션 선택 */
-    _spShowSelectScreen(d);
-    _startSpecialSelectWatch();
-  } else {
-    /* 화면2: DAY 수행 */
-    _spShowDayScreen(d);
-  }
+  /* 항상 Day 수행 화면으로 직행 (미션선택 화면 제거) */
+  _spShowDayScreen(d);
+  _spSubForDayUpdate();
 }
 
 /* ─── 화면1: 미션선택 화면 ─── */
@@ -10495,8 +10542,12 @@ function _spSubForDayUpdate(){
   if(!path||!FB_READY||!_fbDb) return;
   _fbOn(path, snap=>{
     const d = snap && snap.exists() ? snap.val() : {};
+    /* tmHQSpecialDay 또는 tmHQWrap이 보이면 즉시 갱신 */
     const dayEl = document.getElementById('tmHQSpecialDay');
-    if(dayEl && dayEl.style.display !== 'none'){
+    const wrap  = document.getElementById('tmHQWrap');
+    if(wrap && wrap.style.display !== 'none'){
+      _spShowDayScreen(d);
+    } else if(dayEl && dayEl.style.display !== 'none'){
       _spShowDayScreen(d);
     }
   });
@@ -10732,12 +10783,12 @@ function tmHQCheckReady(){
   btn.disabled=!ready;
   btn.style.cursor=ready?'pointer':'not-allowed';
   if(ready){
-    btn.textContent=isSpecial?'✅ 오늘 답글 저장':'✅ 답글 + 상자 저장';
+    btn.textContent='✅ 임무완료';
     btn.style.background=`linear-gradient(135deg,${cfg.color.replace('1)','0.9)')},${cfg.colorDim.replace('1)','0.8)')})`;
     btn.style.color='rgba(0,0,0,.9)';
     btn.style.borderColor=cfg.border;
   } else {
-    btn.textContent=isSpecial?'답글 입력 후 저장':'답글 + 상자를 선택 후 저장';
+    btn.textContent='임무완료';
     btn.style.background='rgba(255,255,255,.07)';
     btn.style.color='rgba(255,255,255,.3)';
     btn.style.borderColor='rgba(255,255,255,.15)';
