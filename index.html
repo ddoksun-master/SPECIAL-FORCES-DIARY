@@ -970,6 +970,9 @@ let partnerData      = null;
 let connectionStatus = 'none';
 let disconnectRequested = false;
 let specialOpRequested = false;   /* 내가 특수작전 연결 요청을 보낸 상태 */
+let _cyclePickerOpen = false;     /* 달성일 변경 팝업 열림 */
+let _cycleChangeRequested = false; /* 내가 달성일 변경 요청을 보낸 상태 */
+let _pendingCycleDay = 0;          /* 요청한 기준일 */
 window._pendingFromUid  = null;
 window._pendingFromNick = '';
 window._pendingFromCode = '';
@@ -1017,6 +1020,15 @@ async function initFirebase(){
     connectionStatus    = d.connectionStatus||'none';
     disconnectRequested = d.disconnectRequest||false;
     specialOpRequested  = d.specialOpRequest||false;
+    /* 내가 보낸 달성일 변경요청 복원 (새로고침 후에도 상태 유지) */
+    if(d.cycleChangeRequest && d.cycleChangeRequest !== missionCycleDay){
+      _cycleChangeRequested = true;
+      _pendingCycleDay = d.cycleChangeRequest;
+    } else if(_cycleChangeRequested && !d.cycleChangeRequest){
+      /* 상대가 수락/거절해서 Firebase에서 0으로 초기화됨 → 로컬 상태도 초기화 */
+      _cycleChangeRequested = false;
+      _pendingCycleDay = 0;
+    }
     if(d.specialOpAccepted) window._specialOpAccepted = true;
     const partnerUid    = d.partnerUid||'';
     if(partnerUid && connectionStatus==='connected'){
@@ -1031,6 +1043,15 @@ async function initFirebase(){
               disconnectRequest:pd.disconnectRequest||false,
               specialOpRequest:pd.specialOpRequest||false,
               cycleChangeRequest:pd.cycleChangeRequest||0};
+          }
+          /* 달성일 변경 요청 수신 알림 */
+          if(partnerData && partnerData.cycleChangeRequest && partnerData.cycleChangeRequest !== missionCycleDay){
+            if(!window._lastCycleReqNotified || window._lastCycleReqNotified !== partnerData.cycleChangeRequest){
+              window._lastCycleReqNotified = partnerData.cycleChangeRequest;
+              showToast('📅 '+partnerData.nickname+' 님이 달성일 변경을 요청했습니다 ('+partnerData.cycleChangeRequest+'일)');
+            }
+          } else {
+            window._lastCycleReqNotified = 0;
           }
           renderConnectCard();
           if(window.renderActiveMissionCard) renderActiveMissionCard();
@@ -1525,8 +1546,9 @@ async function acceptDisconnect(){
   if(!confirm('공유를 해지하시겠습니까?'))return;
   if(!FB_READY||!_fbDb||!partnerData)return;
   const pUid=partnerData.uid;
-  await _fbUpdate(PATH.user(MY_UID),{connectionStatus:'none',partnerUid:'',disconnectRequest:false});
-  await _fbUpdate(PATH.user(pUid),{connectionStatus:'none',partnerUid:'',disconnectRequest:false});
+  await _fbUpdate(PATH.user(MY_UID),{connectionStatus:'none',partnerUid:'',disconnectRequest:false,cycleChangeRequest:0});
+  await _fbUpdate(PATH.user(pUid),{connectionStatus:'none',partnerUid:'',disconnectRequest:false,cycleChangeRequest:0});
+  _cycleChangeRequested=false; _pendingCycleDay=0; _cyclePickerOpen=false;
   partnerData=null; connectionStatus='none'; renderConnectCard();
 }
 
@@ -1661,9 +1683,6 @@ async function resetSpecialOp1(){
 /* ============================================================
    달성일 변경 요청 — 팝업 방식 (요청/수락 Firebase 연동)
    ============================================================ */
-let _cyclePickerOpen = false;
-let _cycleChangeRequested = false;
-let _pendingCycleDay = 0;
 
 function _toggleCyclePicker(){
   _cyclePickerOpen = !_cyclePickerOpen;
