@@ -1029,7 +1029,8 @@ async function initFirebase(){
             partnerData={uid:partnerUid,nickname:pd.nickname||'상대',
               shareCode:pd.shareCode||'',money:pd.money||0,
               disconnectRequest:pd.disconnectRequest||false,
-              specialOpRequest:pd.specialOpRequest||false};
+              specialOpRequest:pd.specialOpRequest||false,
+              cycleChangeRequest:pd.cycleChangeRequest||0};
           }
           renderConnectCard();
           if(window.renderActiveMissionCard) renderActiveMissionCard();
@@ -1093,7 +1094,7 @@ async function initFirebase(){
               window._missionRewardShown=true;
               const gn = tmData.activeGemN||1;
               const rew = (window.GEM_REWARDS&&window.GEM_REWARDS[gn])||10000;
-              const label = gn==='special'?'스페셜작전':'특수작전'+gn;
+              const label = gn==='special'?'⭐ 특별임무 루틴':'특수작전'+gn;
               setTimeout(()=>{
                 showToast('🎉 '+label+' 완료! '+rew.toLocaleString()+'원 보상!');
                 window._missionRewardShown=false;
@@ -1390,6 +1391,10 @@ function renderConnectCard(){
     const vn=document.getElementById('vsOppNick');
     if(vn) vn.textContent=partnerData.nickname;
 
+    /* 기준일 배지 업데이트 */
+    const cycleBadge = document.getElementById('vsCycleDayBadge');
+    if(cycleBadge) cycleBadge.textContent = '기준일 '+missionCycleDay+'일';
+
     /* 해지 영역 */
     const da=document.getElementById('disconnectArea');
     if(da){
@@ -1412,19 +1417,7 @@ function renderConnectCard(){
 
     /* ── 달성일 변경 요청 영역 ── */
     const cycleArea = document.getElementById('cycleChangeArea');
-    if(cycleArea){
-      cycleArea.innerHTML=`
-        <div style="margin-top:10px;padding:12px;background:rgba(4,20,36,.6);border:1px solid rgba(46,127,168,.20);border-radius:11px;">
-          <div style="font-family:var(--kr);font-size:11px;color:rgba(78,176,216,.75);font-weight:700;margin-bottom:8px;">📅 달성일 변경 요청 <span style="font-size:9px;color:rgba(255,255,255,.3);font-weight:400;">(팀원과 동일 기준일로)</span></div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px;">
-            ${[1,10,25].map(d=>`<button onclick="setCycleDay(${d});renderConnectCard();" style="padding:9px 4px;border-radius:8px;border:1.5px solid ${missionCycleDay===d?'rgba(78,176,216,.75)':'rgba(46,127,168,.18)'};background:${missionCycleDay===d?'rgba(6,28,52,.88)':'rgba(3,12,24,.65)'};cursor:pointer;transition:.15s;">
-              <div style="font-family:var(--orb);font-size:15px;font-weight:900;color:${missionCycleDay===d?'rgba(78,176,216,1)':'rgba(78,176,216,.45)'};">${d}일</div>
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.28);margin-top:2px;">${d===1?'1→말':d===10?'10→9':'25→24'}</div>
-            </button>`).join('')}
-          </div>
-          <div style="font-family:var(--kr);font-size:9px;color:rgba(78,176,216,.5);text-align:center;">현재: 매월 ${missionCycleDay}일 기준</div>
-        </div>`; 
-    }
+    if(cycleArea){ renderCycleChangeArea(cycleArea); }
 
     /* ── 특수작전 연결 요청 영역 ── */
     renderSpecialOpArea();
@@ -1490,7 +1483,8 @@ async function acceptConnectRequest(){
     const pd = pSnap.val();
     partnerData = {uid:fromUid, nickname:pd.nickname||'상대',
       shareCode:pd.shareCode||'', money:pd.money||0,
-      disconnectRequest:pd.disconnectRequest||false};
+      disconnectRequest:pd.disconnectRequest||false,
+      cycleChangeRequest:pd.cycleChangeRequest||0};
   }
   renderConnectCard();
   renderStatsRevenueCard();
@@ -1659,6 +1653,92 @@ async function resetSpecialOp1(){
   showToast('🔄 특수작전1 재실행 완료. 연결 요청부터 다시 시작하세요.');
   renderConnectCard();
   if(window.updateGemBoxes) updateGemBoxes();
+}
+
+/* ============================================================
+   달성일 변경 요청 — Firebase 기반 요청/수락 플로우
+   ============================================================ */
+let cycleChangeRequested = false;  /* 내가 변경 요청을 보낸 상태 */
+let _pendingCycleDay = 0;          /* 요청한 기준일 */
+
+function renderCycleChangeArea(el){
+  if(!el) return;
+  /* 상대방이 요청 보낸 경우 */
+  const pd = window.partnerData;
+  const incomingDay = pd && pd.cycleChangeRequest && pd.cycleChangeRequest !== missionCycleDay
+    ? pd.cycleChangeRequest : 0;
+
+  if(incomingDay && !cycleChangeRequested){
+    el.innerHTML=`<div style="margin-top:8px;padding:10px 12px;background:rgba(4,20,48,.7);border:1px solid rgba(78,176,216,.4);border-radius:10px;">
+      <div style="font-family:var(--kr);font-size:12px;color:rgba(100,180,255,.9);font-weight:700;margin-bottom:6px;">📅 ${pd.nickname} 님이 기준일 변경을 요청했습니다</div>
+      <div style="font-family:var(--orb);font-size:13px;color:rgba(78,176,216,1);font-weight:900;text-align:center;margin-bottom:8px;">${missionCycleDay}일 → <span style="color:#fff;">${incomingDay}일</span></div>
+      <div style="display:flex;gap:6px;">
+        <button onclick="acceptCycleChange(${incomingDay})" style="flex:1;padding:8px;background:rgba(6,40,80,.6);border:1px solid rgba(78,176,216,.5);border-radius:7px;color:rgba(100,200,255,.9);font-family:var(--kr);font-size:12px;font-weight:700;cursor:pointer;">✅ 수락</button>
+        <button onclick="rejectCycleChange()" style="flex:1;padding:8px;background:rgba(40,40,40,.5);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:rgba(255,255,255,.5);font-family:var(--kr);font-size:12px;cursor:pointer;">❌ 거절</button>
+      </div></div>`;
+    return;
+  }
+
+  if(cycleChangeRequested){
+    el.innerHTML=`<div style="margin-top:8px;padding:8px 12px;background:rgba(4,18,40,.5);border:1px dashed rgba(78,176,216,.3);border-radius:8px;text-align:center;">
+      <div style="font-family:var(--kr);font-size:11px;color:rgba(78,176,216,.65);">기준일 변경 요청 전송됨 (${_pendingCycleDay}일) — 상대 수락 대기중</div>
+      <button onclick="cancelCycleChange()" style="margin-top:6px;padding:5px 14px;background:rgba(40,40,40,.6);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:rgba(255,255,255,.4);font-family:var(--kr);font-size:11px;cursor:pointer;">요청 취소</button>
+    </div>`;
+    return;
+  }
+
+  /* 기본 상태: 요청 버튼 */
+  el.innerHTML=`<div style="margin-top:8px;padding:11px 12px;background:rgba(4,18,38,.55);border:1px solid rgba(46,127,168,.18);border-radius:10px;">
+    <div style="font-family:var(--kr);font-size:11px;color:rgba(78,176,216,.7);font-weight:700;margin-bottom:8px;">📅 달성일 변경 요청</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px;">
+      ${[1,10,25].map(d=>{
+        const isCurrentDay = d===missionCycleDay;
+        return `<button ${isCurrentDay?'disabled':''} onclick="sendCycleChangeRequest(${d})"
+          style="padding:9px 4px;border-radius:8px;border:1.5px solid ${isCurrentDay?'rgba(78,176,216,.55)':'rgba(46,127,168,.22)'};
+          background:${isCurrentDay?'rgba(6,28,52,.88)':'rgba(3,12,24,.65)'};
+          cursor:${isCurrentDay?'not-allowed':'pointer'};transition:.15s;opacity:${isCurrentDay?'1':'.85'};">
+          <div style="font-family:var(--orb);font-size:15px;font-weight:900;color:${isCurrentDay?'rgba(78,176,216,1)':'rgba(78,176,216,.5)'};">${d}일</div>
+          ${isCurrentDay?'<div style="font-family:var(--kr);font-size:8px;color:rgba(78,176,216,.55);margin-top:2px;">현재 기준</div>':'<div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.28);margin-top:2px;">${d===1?"1→말":d===10?"10→9":"25→24"}</div>'}
+        </button>`;
+      }).join('')}
+    </div>
+    <div style="font-family:var(--kr);font-size:9px;color:rgba(78,176,216,.45);text-align:center;">선택 시 상대방에게 변경 요청이 전송됩니다</div>
+  </div>`;
+}
+
+async function sendCycleChangeRequest(d){
+  if(d===missionCycleDay) return;
+  if(!FB_READY||!_fbDb||!partnerData) return;
+  if(!confirm('기준일을 '+d+'일로 변경 요청할까요?\n상대방이 수락해야 변경됩니다.')) return;
+  await _fbUpdate(PATH.user(MY_UID),{cycleChangeRequest:d});
+  cycleChangeRequested=true;
+  _pendingCycleDay=d;
+  renderConnectCard();
+}
+
+async function cancelCycleChange(){
+  if(!FB_READY||!_fbDb) return;
+  await _fbUpdate(PATH.user(MY_UID),{cycleChangeRequest:0});
+  cycleChangeRequested=false;
+  _pendingCycleDay=0;
+  renderConnectCard();
+}
+
+async function acceptCycleChange(d){
+  if(!FB_READY||!_fbDb||!partnerData) return;
+  /* 양쪽 모두 해당 기준일로 변경, 요청 필드 초기화 */
+  await _fbUpdate(PATH.user(MY_UID),{cycleChangeRequest:0});
+  await _fbUpdate(PATH.user(partnerData.uid),{cycleChangeRequest:0});
+  saveCycleDay(d);
+  showToast('✅ 기준일이 매월 '+d+'일로 변경되었습니다');
+  renderConnectCard();
+}
+
+async function rejectCycleChange(){
+  if(!FB_READY||!_fbDb||!partnerData) return;
+  await _fbUpdate(PATH.user(partnerData.uid),{cycleChangeRequest:0});
+  showToast('달성일 변경 요청을 거절했습니다');
+  renderConnectCard();
 }
 
 /* ============================================================
@@ -1850,7 +1930,7 @@ function renderActiveMissionCard(){
       </div>`;
     }
 
-    const typeLabel = gn==='special' ? '🌟 스페셜작전' : `⚔ 특수작전${gn}`;
+    const typeLabel = gn==='special' ? '⭐ 특별임무 루틴' : `⚔ 특수작전${gn}`;
     const statusColor = bothDone ? 'rgba(127,191,106,.9)' : 'rgba(200,168,75,.85)';
     const statusTxt   = bothDone ? '작전완료' : '작전진행중';
 
@@ -1909,7 +1989,7 @@ function renderActiveMissionCard(){
   if(!td.todayMission && td.activeGemN){
     const gn = td.activeGemN;
     const rew = GEM_REWARDS[gn] || 10000;
-    const label = gn==='special' ? '스페셜작전' : '특수작전'+gn;
+    const label = gn==='special' ? '⭐ 특별임무 루틴' : '특수작전'+gn;
     const myProposal  = td.myProposal || null;
     const oppProposal = (td.oppGemProposal && td.oppGemProposal[gn]) || null;
     const myMoney  = calcTotalPersonalMoney ? calcTotalPersonalMoney() : 0;
@@ -5027,7 +5107,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             <div style="text-align:right;">
               <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">개인임무 최대 100,000</div>
               <div style="font-family:var(--kr);font-size:10px;color:rgba(255,100,100,.45);">특수임무 최대 120,000</div>
-              <div style="font-family:var(--kr);font-size:10px;color:rgba(251,191,36,.45);">스페셜임무 100,000</div>
+              <div style="font-family:var(--kr);font-size:10px;color:rgba(251,191,36,.45);">특별임무 루틴 100,000</div>
             </div>
           </div>
           <div style="height:1px;background:rgba(200,168,75,.12);margin-bottom:6px;"></div>
@@ -5165,7 +5245,10 @@ document.addEventListener('DOMContentLoaded',()=>{
 
       <!-- ③ VS 현황 (연결 후만 표시) — 틸 테마 -->
       <div class="card" id="teamVsCard" style="display:none;padding:16px;background:linear-gradient(145deg,rgba(2,18,20,.97),rgba(1,12,14,.98));border-color:rgba(42,144,128,.20);box-shadow:0 6px 28px rgba(0,0,0,.75),0 0 12px rgba(42,144,128,.07) inset;">
-        <div class="card-title" style="margin-bottom:12px;color:var(--teal-dim);">📊 전투 현황</div>
+        <div class="card-title" style="margin-bottom:12px;color:var(--teal-dim);display:flex;align-items:center;justify-content:space-between;">
+          <span>📊 전투 현황</span>
+          <span id="vsCycleDayBadge" style="font-family:var(--orb);font-size:10px;color:rgba(78,176,216,.8);background:rgba(4,20,36,.7);border:1px solid rgba(46,127,168,.3);border-radius:8px;padding:3px 9px;font-weight:700;letter-spacing:.5px;"></span>
+        </div>
         <!-- 수정 10: 나(%) --- 프로그레스바 --- 상대(%) 레이아웃 -->
         <div id="vsProgressRow" style="margin-bottom:10px;">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
@@ -5202,7 +5285,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div id="tmCard4" style="display:none;"></div>
       </div>
 
-      <!-- ★ 특수임무 사령부 — 인라인 카드 UI (연결 후 표시) -->
+      <!-- ★ 특별임무 루틴 사령부 — 인라인 카드 UI (연결 후 표시) -->
       <div id="tmHQWrap" style="display:none;">
         <style>
           @keyframes tmBoxOpen{0%{transform:scaleY(0) translateY(-8px);opacity:0}60%{transform:scaleY(1.04) translateY(0);opacity:1}100%{transform:scaleY(1);opacity:1}}
@@ -5232,8 +5315,8 @@ document.addEventListener('DOMContentLoaded',()=>{
             <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;position:relative;">
               <div style="width:40px;height:40px;border-radius:50%;background:rgba(200,168,75,.12);border:1.5px solid rgba(200,168,75,.5);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;animation:tmGlowPulse 2.5s ease infinite;">⚡</div>
               <div style="flex:1;">
-                <div style="font-family:var(--orb);font-size:8px;letter-spacing:3px;color:rgba(200,168,75,.5);margin-bottom:2px;">SPECIAL OPERATION HQ</div>
-                <div style="font-family:var(--kr);font-size:16px;font-weight:900;color:#fff;">특수임무 사령부</div>
+                <div style="font-family:var(--orb);font-size:8px;letter-spacing:3px;color:rgba(200,168,75,.5);margin-bottom:2px;">ROUTINE OPERATION HQ</div>
+                <div style="font-family:var(--kr);font-size:16px;font-weight:900;color:#fff;">특별임무 루틴 사령부</div>
               </div>
               <button id="tmHQStatusBadge" onclick="tmHQToggleRewardPanel()" class="tm-hq-badge"
                 style="background:linear-gradient(135deg,rgba(200,168,75,.25),rgba(160,128,45,.2));border:1.5px solid rgba(200,168,75,.55);color:rgba(255,215,100,.95);cursor:pointer;padding:5px 12px;font-size:9px;letter-spacing:.5px;font-weight:900;border-radius:20px;display:flex;align-items:center;gap:5px;">
@@ -5362,7 +5445,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             <!-- 기본 완료 화면 -->
             <div id="tmHQResultMain" style="padding:22px 16px;text-align:center;">
               <div id="tmHQResultStamp" style="margin-bottom:14px;cursor:pointer;" onclick="tmHQShowResultDetail()"></div>
-              <div style="font-family:var(--kr);font-size:17px;font-weight:900;color:#fff;margin-bottom:5px;">특수임무 완료!</div>
+              <div style="font-family:var(--kr);font-size:17px;font-weight:900;color:#fff;margin-bottom:5px;">특별임무 루틴 완료!</div>
               <div id="tmHQResultSub" style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.4);margin-bottom:16px;line-height:1.6;"></div>
               <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);margin-bottom:16px;">↑ 도장을 탭하면 결과를 확인할 수 있어요</div>
               <button id="tmHQRewardBtn" onclick="tmHQShowReward()" style="width:100%;padding:14px;border-radius:12px;font-family:var(--kr);font-size:15px;font-weight:900;cursor:pointer;letter-spacing:.3px;border:2px solid;transition:box-shadow .2s;">🎁 보상확인</button>
@@ -6598,7 +6681,7 @@ function openGemBox(n){
     return;
   }
   if(!unlocked){
-    const label=n==='special'?'스페셜작전':'특수작전'+n;
+    const label=n==='special'?'⭐ 특별임무 루틴':'특수작전'+n;
     showToast(`🎯 ${label}: 양쪽 모두 ${th.toLocaleString()}원 필요 (나: ${total.toLocaleString()}원 / 상대: ${oppM.toLocaleString()}원)`);
     return;
   }
@@ -6619,7 +6702,7 @@ function openGemBox(n){
   }
   activeGemLock=n;
   const modal=document.getElementById('gemModal');
-  const label=n==='special'?'스페셜작전':'특수작전'+n;
+  const label=n==='special'?'⭐ 특별임무 루틴':'특수작전'+n;
   const missionType = '위험임무에서 선택';
   document.getElementById('gemModalTitle').textContent=`⚔ ${label} — ${GEM_REWARDS[n].toLocaleString()}원 보상`;
   /* 제안 설명 업데이트 */
@@ -6768,7 +6851,7 @@ function selectGemMission(opt){
         spdays_a:[false,false,false,false,false],
         spdays_b:[false,false,false,false,false],
         specialStartedAt:Date.now()
-      }).then(()=>showToast('🌟 스페셜작전 확정! 5일 동안 매일 수행하세요.'));
+      }).then(()=>showToast('⭐ 특별임무 루틴 확정! 5일 동안 매일 수행하세요.'));
     }
     closeGemModal();
     updateGemBoxes();
@@ -6881,7 +6964,7 @@ function confirmMission(gn, who){
         proposal_a: null, proposal_b: null
       });
     }
-    showToast('🌟 스페셜작전 확정! 5일 연속 수행하세요.');
+    showToast('⭐ 특별임무 루틴 확정! 5일 연속 수행하세요.');
     renderTeamPanel();
     renderActiveMissionCard();
     updateGemBoxes();
@@ -6976,7 +7059,7 @@ function openSpecialModal(){
     const todayDay=findTodaySpecialDay(myD);
     const canComplete=todayDay>=0&&!myD[todayDay];
 
-    document.getElementById('gemModalTitle').textContent='🌟 스페셜작전 진행중';
+    document.getElementById('gemModalTitle').textContent='⭐ 특별임무 루틴 진행중';
     document.getElementById('gemProposalArea').style.display='none';
     document.getElementById('gemSelectArea').style.display='none';
 
@@ -7002,7 +7085,7 @@ function openSpecialModal(){
 
   /* 스페셜 미시작 → 제안 */
   activeGemLock='special';
-  document.getElementById('gemModalTitle').textContent='🌟 스페셜작전 — 5일 연속 임무 (보상 50,000원)';
+  document.getElementById('gemModalTitle').textContent='⭐ 특별임무 루틴 — 5일 연속 특수임무 (보상 50,000원)';
   document.getElementById('gemProposalArea').style.display='block';
   document.getElementById('gemSelectArea').style.display='none';
   let extra=document.getElementById('specialModalBody');
@@ -7065,7 +7148,7 @@ function completeSpecialDay(dayIdx){
       if(myD.every(Boolean)&&oppD.every(Boolean)){
         setTimeout(()=>{
           const earned=commonDone*20000;
-          alert('🌟 스페셜작전 5일 완료!\n양쪽 모두 완료한 날: '+commonDone+'일\n보상: '+earned.toLocaleString()+'원');
+          alert('⭐ 특별임무 루틴 5일 완료!\n양쪽 모두 완료한 날: '+commonDone+'일\n보상: '+earned.toLocaleString()+'원');
           _fbUpdate(PATH.teamRoom(MY_UID,partnerData.uid),{specialMission:null,spdays_a:null,spdays_b:null,specialStartedAt:null});
           window.teamData.specialMission=null;
           window.teamData.specialDays={my:[false,false,false,false,false],opp:[false,false,false,false,false]};
@@ -7425,7 +7508,7 @@ function renderStatsGemProposalGrid(){
   const grid=document.getElementById('statsGemProposalGrid');
   if(!grid) return;
   const ops=[1,2,3,4,'special'];
-  const labels={1:'특수작전1',2:'특수작전2',3:'특수작전3',4:'특수작전4',special:'스페셜작전'};
+  const labels={1:'특수작전1',2:'특수작전2',3:'특수작전3',4:'특수작전4',special:'⭐ 특별임무 루틴'};
   const thresholds=GEM_THRESHOLDS;
   const myM=window.calcTotalPersonalMoney?calcTotalPersonalMoney():0;
   const oppM=window.partnerData?window.partnerData.money:0;
@@ -7622,7 +7705,7 @@ async function mpOpen(id){
   const d = mpData[id];
 
   /* 헤더 */
-  const label = id==='special'?'스페셜작전':'특수작전'+id;
+  const label = id==='special'?'⭐ 특별임무 루틴':'특수작전'+id;
   document.getElementById('mpTitle').textContent = `작전카드 — ${label}`;
   document.getElementById('mpSub').textContent   = `MISSION ${id} · ${d.days}일 공동 임무`;
 
@@ -7955,7 +8038,7 @@ function mpUpdateGemBox(id){
   if(!box) return;
 
   if(d.status==='complete'){
-    const label=id==='special'?'스페셜작전':'특수작전'+id;
+    const label=id==='special'?'⭐ 특별임무 루틴':'특수작전'+id;
     box.className='gem-box stamped';
     box.onclick=()=>mpOpen(id);
     /* 특수작전1 + specialOpAccepted 완료 시 → 재실행 버튼 포함 */
@@ -7970,7 +8053,7 @@ function mpUpdateGemBox(id){
   } else if(d.status==='checking'){
     box.className='gem-box state-checking';
     box.onclick=()=>mpOpen(id);
-    const label2=id==='special'?'스페셜작전':'특수작전'+id;
+    const label2=id==='special'?'⭐ 특별임무 루틴':'특수작전'+id;
     box.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;">
       <div style="font-family:var(--orb);font-size:8px;color:rgba(255,184,71,.5);letter-spacing:1px;">MISSION ${id}</div>
       <div style="font-size:18px;">⏳</div>
@@ -8261,7 +8344,7 @@ window._mpHandleAccepted = async function(n){
 
 /* ═══════════════════════════════════════════════════════════════════
    🎯 팀 비밀상자 미션 엔진 v3
-   특수임무1(2만) / 특수임무2(5만) / 특수임무3(7만) / 스페셜임무(10만)
+   특수임무1(2만) / 특수임무2(5만) / 특수임무3(7만) / 특별임무 루틴(10만)
 ═══════════════════════════════════════════════════════════════════ */
 
 /* 미션 설정 */
@@ -8287,13 +8370,13 @@ const TM = {
        bgCard:'rgba(2,28,50,.55)',   bgHeader:'linear-gradient(135deg,rgba(4,42,72,.9),rgba(2,22,45,.95))',
        topLine:'linear-gradient(90deg,transparent,rgba(56,189,248,.7),transparent)',
        box:'rgba(56,189,248,.5)',  rewards:[20000,30000,40000] },
-  /* 스페셜: 골드 — 최정예 비밀 임무 */
-  4: { th:100000, label:'스페셜임무', path:'tm_special',
+  /* 특별임무 루틴: 골드 — 특수임무(hard) 5일 연속 루틴 */
+  4: { th:100000, label:'⭐ 특별임무 루틴', path:'tm_special',
        color:'rgba(251,191,36,1)',   colorDim:'rgba(245,158,11,1)',
        border:'rgba(251,191,36,.55)',glow:'rgba(251,191,36,.2)',
        bgCard:'rgba(40,25,2,.55)',   bgHeader:'linear-gradient(135deg,rgba(55,34,3,.9),rgba(35,20,2,.95))',
        topLine:'linear-gradient(90deg,transparent,rgba(251,191,36,.7),transparent)',
-       box:'rgba(251,191,36,.6)',  rewards:null, days:5 }
+       box:'rgba(251,191,36,.6)',  rewards:null, days:5, routineType:'hard' }
 };
 
 const TM_QUESTIONS = [
@@ -8795,7 +8878,7 @@ async function tmSave(n){
           update.question = null;
           await _fbUpdate(path, update);
           if(newCompleted >= 5){
-            showToast('🎉 DAY 5 완료! 스페셜임무 달성! (+100,000원)');
+            showToast('🎉 DAY 5 완료! 특별임무 루틴 달성! (+100,000원)');
           } else {
             showToast('✅ DAY '+(todayIdx+1)+' 완료! 양쪽 모두 달성!');
           }
@@ -8872,7 +8955,7 @@ function tmTesterNextDay(){
         await _fbUpdate(path, u);
 
         if(newCompleted >= 5){
-          showToast('🎉 DAY 5 완료! 스페셜임무 달성! (+100,000원)');
+          showToast('🎉 DAY 5 완료! 특별임무 루틴 달성! (+100,000원)');
         } else {
           showToast('✅ DAY '+(idx+1)+' 완료! → DAY '+(newCompleted+1)+' 시작');
         }
@@ -9176,7 +9259,7 @@ function tmSubscribe(n){
           if(!window.teamData) window.teamData={};
           if(!window.teamData.completedMissions) window.teamData.completedMissions=[];
           if(!window.teamData.completedMissions.find(m=>m.n===4)){
-            window.teamData.completedMissions.push({n:4,label:'스페셜임무',reward:100000,completedAt:Date.now()});
+            window.teamData.completedMissions.push({n:4,label:'특별임무 루틴',reward:100000,completedAt:Date.now()});
           }
           renderStatsRevenueCard();
         }
@@ -9456,7 +9539,7 @@ function tmHQRenderHome(){
           </div>
           ${done ? `<div style="font-family:var(--kr);font-size:11px;color:${cfg.color};">보상 획득 완료</div>` : `
           <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);margin-bottom:6px;">${unlocked?'임무 진행 가능':'해제 조건: '+(cfg.th/10000).toFixed(0)+'만원 달성'}</div>
-          ${unlocked && n===4 ? `<button onclick="event.stopPropagation();_openSpecialSelectWithStatus()" style="padding:6px 12px;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.4);border-radius:7px;color:rgba(251,191,36,.9);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;margin-bottom:5px;width:100%;">💎 스페셜임무 선택 / 현황 확인</button>` : ''}
+          ${unlocked && n===4 ? `<button onclick="event.stopPropagation();_openSpecialSelectWithStatus()" style="padding:6px 12px;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.4);border-radius:7px;color:rgba(251,191,36,.9);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;margin-bottom:5px;width:100%;">⭐ 특별임무 루틴 선택 / 현황 확인</button>` : ''}
           <div style="height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-bottom:2px;">
             <div style="height:100%;width:${myPct}%;background:linear-gradient(90deg,${cfg.color},${cfg.colorDim});border-radius:2px;transition:width .5s;"></div>
           </div>
@@ -10919,7 +11002,7 @@ function _tmHQSubForComplete(n){
           if(!window.teamData) window.teamData={};
           if(!window.teamData.completedMissions) window.teamData.completedMissions=[];
           if(!window.teamData.completedMissions.find(m=>m.n===4)){
-            window.teamData.completedMissions.push({n:4,label:'스페셜임무',reward:100000,completedAt:Date.now()});
+            window.teamData.completedMissions.push({n:4,label:'특별임무 루틴',reward:100000,completedAt:Date.now()});
           }
           renderStatsRevenueCard();
           const waiting=document.getElementById('tmHQWaiting');
