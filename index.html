@@ -1045,7 +1045,7 @@ async function initFirebase(){
               cycleChangeRequest:pd.cycleChangeRequest||0};
           }
           /* 달성일 변경 요청 수신 알림 */
-          if(partnerData && partnerData.cycleChangeRequest && partnerData.cycleChangeRequest > 0 && !_cycleChangeRequested){
+          if(partnerData && partnerData.cycleChangeRequest > 0 && !_cycleChangeRequested){
             if(!window._lastCycleReqNotified || window._lastCycleReqNotified !== partnerData.cycleChangeRequest){
               window._lastCycleReqNotified = partnerData.cycleChangeRequest;
               showToast('📅 '+partnerData.nickname+' 님이 달성일 변경을 요청했습니다 ('+partnerData.cycleChangeRequest+'일)');
@@ -1693,7 +1693,9 @@ function _toggleCyclePicker(){
 function _renderCycleChangeArea(el){
   if(!el) return;
   const pd = window.partnerData;
-  const incomingDay = (pd && pd.cycleChangeRequest && pd.cycleChangeRequest > 0 && !_cycleChangeRequested)
+  /* !_cycleChangeRequested: 내가 요청 보낸 상태면 수락 UI 표시 안 함
+     !== missionCycleDay 조건 제거 — 요청 날짜가 내 기준일과 같아도 수락 UI 표시해야 함 */
+  const incomingDay = (pd && pd.cycleChangeRequest > 0 && !_cycleChangeRequested)
     ? pd.cycleChangeRequest : 0;
 
   /* 상대방이 변경 요청 보낸 경우 */
