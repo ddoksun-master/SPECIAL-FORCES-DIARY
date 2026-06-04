@@ -9005,25 +9005,51 @@ let _tmRewardBoxes = []; /* [{amt}] */
 /* Firebase 보상 경로 */
 function _tmRewardPath(n){ const p=_tmPath(n); return p ? p+'/reward_pick' : null; }
 
+/* Fisher-Yates 셔플 유틸 */
+function _tmShuffleArray(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
 /* 보상받기 버튼 클릭 */
 function tmOpenReward(n){
   _tmRewardN = n;
   const cfg  = TM[n];
-  _tmRewardBoxes = cfg.rewards.map(amt=>({amt}));
 
-  /* Firebase에서 현재 선택 현황 + 우선권 로드 */
-  const path = _tmPath(n);
+  /* Firebase에서 현재 선택 현황 + 우선권 + box_order 로드 */
+  const path  = _tmPath(n);
+  const rpath = _tmRewardPath(n);
   _fbGet(path).then(snap=>{
     const d = snap.exists() ? snap.val() : {};
     /* 우선권: 먼저 저장한 사람 (타임스탬프) */
     const myTime  = d[_tmMK()+'_at'] || 0;
     const oppTime = d[_tmOK()+'_at'] || Infinity;
     window._tmIPriority = (myTime <= oppTime);
-    /* 팝업 오픈 */
-    _tmShowRewardOv(n);
-    /* 실시간 구독 시작 */
-    _tmSubReward(n);
+
+    /* box_order: Firebase에 저장된 순서 우선 사용, 없으면 셔플 후 저장 */
+    return _fbGet(rpath).then(rsnap=>{
+      const rd = rsnap.exists() ? rsnap.val() : {};
+      if(rd.box_order && Array.isArray(rd.box_order) && rd.box_order.length === cfg.rewards.length){
+        /* 기존 box_order 사용 — 양쪽이 동일한 배열 참조 */
+        _tmRewardBoxes = rd.box_order.map(amt=>({amt}));
+      } else {
+        /* 최초: 셔플해서 Firebase에 저장 */
+        const shuffled = _tmShuffleArray(cfg.rewards);
+        _tmRewardBoxes = shuffled.map(amt=>({amt}));
+        _fbUpdate(rpath, {box_order: shuffled}).catch(()=>{});
+      }
+      /* 팝업 오픈 */
+      _tmShowRewardOv(n);
+      /* 실시간 구독 시작 */
+      _tmSubReward(n);
+    });
   }).catch(()=>{
+    /* 오류 시 그냥 셔플해서 진행 (Firebase 저장 실패 허용) */
+    _tmRewardBoxes = _tmShuffleArray(cfg.rewards).map(amt=>({amt}));
     window._tmIPriority = true;
     _tmShowRewardOv(n);
     _tmSubReward(n);
@@ -9049,6 +9075,10 @@ function _tmSubReward(n){
   if(!rpath||!FB_READY||!_fbDb) return;
   _fbOn(rpath, snap=>{
     const d = snap.exists() ? snap.val() : null;
+    /* box_order가 Firebase에 저장돼 있으면 _tmRewardBoxes 동기화 */
+    if(d && d.box_order && Array.isArray(d.box_order) && d.box_order.length){
+      _tmRewardBoxes = d.box_order.map(amt=>({amt}));
+    }
     _tmRenderRewardBody(n, d);
     /* 둘 다 선택 완료 → 자동 완료 처리 */
     if(d && d[_tmMK()+'_pick']!==undefined && d[_tmOK()+'_pick']!==undefined){
@@ -11058,7 +11088,11 @@ function _tmHQSubForComplete(n){
       if(!window['tmRewardDone'+n]){
         window['tmRewardDone'+n]=true;
         _tmRewardN=n;
-        _tmRewardBoxes=TM[n].rewards.map(amt=>({amt}));
+        if(d.box_order && Array.isArray(d.box_order) && d.box_order.length){
+          _tmRewardBoxes=d.box_order.map(amt=>({amt}));
+        } else {
+          _tmRewardBoxes=TM[n].rewards.map(amt=>({amt}));
+        }
         window['tmMyReward'+n]=_tmRewardBoxes[myIdx]?.amt||0;
         _tmSaveRewardFinal(n, myIdx, oppIdx);
       }
@@ -11123,9 +11157,14 @@ async function tmHQShowResultDetail(){
     const myPick = rd[mk+'_pick'];
     const oppPick= rd[ok+'_pick'];
 
-    /* 상대방 보상 금액 계산 */
-    const rewards = TM[n].rewards;
+    /* 상대방 보상 금액 계산 — box_order 있으면 우선 사용 */
+    const rewards = (rd.box_order && Array.isArray(rd.box_order) && rd.box_order.length)
+                    ? rd.box_order
+                    : TM[n].rewards;
     const oppAmt  = (oppPick !== undefined && rewards) ? (rewards[oppPick]||0) : 0;
+
+
+
 
     const myName  = (myNickname&&myNickname!=='')?myNickname:'나';
     const pName   = _tmPN();
