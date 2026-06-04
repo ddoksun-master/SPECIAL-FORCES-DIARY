@@ -1025,7 +1025,8 @@ async function initFirebase(){
       _cycleChangeRequested = true;
       _pendingCycleDay = d.cycleChangeRequest;
     } else if(_cycleChangeRequested && !d.cycleChangeRequest){
-      /* 상대가 수락/거절해서 Firebase에서 0으로 초기화됨 → 로컬 상태도 초기화 */
+      /* 상대가 수락해서 Firebase에서 0으로 초기화됨 → 요청자도 기준일 변경 적용 */
+      if(_pendingCycleDay > 0){ saveCycleDay(_pendingCycleDay); }
       _cycleChangeRequested = false;
       _pendingCycleDay = 0;
     }
@@ -1045,7 +1046,7 @@ async function initFirebase(){
               cycleChangeRequest:pd.cycleChangeRequest||0};
           }
           /* 달성일 변경 요청 수신 알림 */
-          if(partnerData && partnerData.cycleChangeRequest > 0 && !_cycleChangeRequested){
+          if(partnerData && partnerData.cycleChangeRequest > 0){
             if(!window._lastCycleReqNotified || window._lastCycleReqNotified !== partnerData.cycleChangeRequest){
               window._lastCycleReqNotified = partnerData.cycleChangeRequest;
               showToast('📅 '+partnerData.nickname+' 님이 달성일 변경을 요청했습니다 ('+partnerData.cycleChangeRequest+'일)');
@@ -1442,7 +1443,8 @@ function renderConnectCard(){
     /* ── 달성일 변경 요청 영역 — 해지요청과 동일 패턴 ── */
     const cycleArea = document.getElementById('cycleChangeArea');
     if(cycleArea){
-      if(partnerData.cycleChangeRequest && !_cycleChangeRequested){
+      if(partnerData.cycleChangeRequest > 0){
+        /* 수신 우선: 내가 요청 중이어도 상대방 요청이 오면 수락 UI 표시 */
         const _rd = partnerData.cycleChangeRequest;
         cycleArea.innerHTML=`<div style="margin-top:6px;padding:10px 12px;background:rgba(4,20,48,.7);border:1px solid rgba(78,176,216,.4);border-radius:10px;">
           <div style="font-family:var(--kr);font-size:12px;color:rgba(100,180,255,.9);font-weight:700;margin-bottom:6px;">📅 ${partnerData.nickname} 님이 달성일 변경을 요청했습니다</div>
