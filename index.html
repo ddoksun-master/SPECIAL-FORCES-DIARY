@@ -1021,7 +1021,7 @@ async function initFirebase(){
     disconnectRequested = d.disconnectRequest||false;
     specialOpRequested  = d.specialOpRequest||false;
     /* 내가 보낸 달성일 변경요청 복원 (새로고침 후에도 상태 유지) */
-    if(d.cycleChangeRequest && d.cycleChangeRequest !== missionCycleDay){
+    if(d.cycleChangeRequest && d.cycleChangeRequest > 0){
       _cycleChangeRequested = true;
       _pendingCycleDay = d.cycleChangeRequest;
     } else if(_cycleChangeRequested && !d.cycleChangeRequest){
@@ -1045,7 +1045,7 @@ async function initFirebase(){
               cycleChangeRequest:pd.cycleChangeRequest||0};
           }
           /* 달성일 변경 요청 수신 알림 */
-          if(partnerData && partnerData.cycleChangeRequest && partnerData.cycleChangeRequest !== missionCycleDay){
+          if(partnerData && partnerData.cycleChangeRequest && partnerData.cycleChangeRequest > 0 && !_cycleChangeRequested){
             if(!window._lastCycleReqNotified || window._lastCycleReqNotified !== partnerData.cycleChangeRequest){
               window._lastCycleReqNotified = partnerData.cycleChangeRequest;
               showToast('📅 '+partnerData.nickname+' 님이 달성일 변경을 요청했습니다 ('+partnerData.cycleChangeRequest+'일)');
@@ -1693,11 +1693,11 @@ function _toggleCyclePicker(){
 function _renderCycleChangeArea(el){
   if(!el) return;
   const pd = window.partnerData;
-  const incomingDay = pd && pd.cycleChangeRequest && pd.cycleChangeRequest !== missionCycleDay
+  const incomingDay = (pd && pd.cycleChangeRequest && pd.cycleChangeRequest > 0 && !_cycleChangeRequested)
     ? pd.cycleChangeRequest : 0;
 
   /* 상대방이 변경 요청 보낸 경우 */
-  if(incomingDay && !_cycleChangeRequested){
+  if(incomingDay){
     el.innerHTML=`<div style="margin-top:8px;padding:10px 12px;background:rgba(4,20,48,.7);border:1px solid rgba(78,176,216,.4);border-radius:10px;">
       <div style="font-family:var(--kr);font-size:12px;color:rgba(100,180,255,.9);font-weight:700;margin-bottom:6px;">📅 ${pd.nickname} 님이 달성일 변경을 요청했습니다</div>
       <div style="font-family:var(--orb);font-size:13px;color:rgba(78,176,216,1);font-weight:900;text-align:center;margin-bottom:8px;">${missionCycleDay}일 → <span style="color:#fff;">${incomingDay}일</span></div>
@@ -1766,6 +1766,9 @@ async function _cancelCycleChange(){
 
 async function _acceptCycleChange(d){
   if(!FB_READY||!_fbDb||!partnerData) return;
+  /* 즉시 로컬 상태 클리어 — 비동기 업데이트 전 재렌더링 방지 */
+  if(partnerData) partnerData.cycleChangeRequest = 0;
+  window._lastCycleReqNotified = 0;
   await _fbUpdate(PATH.user(MY_UID),{cycleChangeRequest:0});
   await _fbUpdate(PATH.user(partnerData.uid),{cycleChangeRequest:0});
   saveCycleDay(d);
@@ -1775,6 +1778,9 @@ async function _acceptCycleChange(d){
 
 async function _rejectCycleChange(){
   if(!FB_READY||!_fbDb||!partnerData) return;
+  /* 즉시 로컬 상태 클리어 */
+  if(partnerData) partnerData.cycleChangeRequest = 0;
+  window._lastCycleReqNotified = 0;
   await _fbUpdate(PATH.user(partnerData.uid),{cycleChangeRequest:0});
   showToast('달성일 변경 요청을 거절했습니다');
   renderConnectCard();
