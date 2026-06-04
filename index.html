@@ -1439,9 +1439,29 @@ function renderConnectCard(){
       }
     }
 
-    /* ── 달성일 변경 요청 영역 ── */
+    /* ── 달성일 변경 요청 영역 — 해지요청과 동일 패턴 ── */
     const cycleArea = document.getElementById('cycleChangeArea');
-    if(cycleArea){ _renderCycleChangeArea(cycleArea); }
+    if(cycleArea){
+      if(partnerData.cycleChangeRequest && !_cycleChangeRequested){
+        const _rd = partnerData.cycleChangeRequest;
+        cycleArea.innerHTML=`<div style="margin-top:6px;padding:10px 12px;background:rgba(4,20,48,.7);border:1px solid rgba(78,176,216,.4);border-radius:10px;">
+          <div style="font-family:var(--kr);font-size:12px;color:rgba(100,180,255,.9);font-weight:700;margin-bottom:6px;">📅 ${partnerData.nickname} 님이 달성일 변경을 요청했습니다</div>
+          <div style="font-family:var(--orb);font-size:13px;color:rgba(78,176,216,1);font-weight:900;text-align:center;margin-bottom:8px;">${missionCycleDay}일 → <span style="color:#fff;">${_rd}일</span></div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="_acceptCycleChange(${_rd})" style="flex:1;padding:8px;background:rgba(6,40,80,.6);border:1px solid rgba(78,176,216,.5);border-radius:7px;color:rgba(100,200,255,.9);font-family:var(--kr);font-size:12px;font-weight:700;cursor:pointer;">✅ 수락</button>
+            <button onclick="_rejectCycleChange()" style="flex:1;padding:8px;background:rgba(40,40,40,.5);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:rgba(255,255,255,.5);font-family:var(--kr);font-size:12px;cursor:pointer;">❌ 거절</button>
+          </div></div>`;
+      } else if(_cycleChangeRequested){
+        cycleArea.innerHTML=`<div style="margin-top:6px;padding:8px 12px;background:rgba(4,18,40,.5);border:1px dashed rgba(78,176,216,.3);border-radius:8px;text-align:center;">
+          <div style="font-family:var(--kr);font-size:11px;color:rgba(78,176,216,.65);">달성일 변경 요청 전송됨 (${_pendingCycleDay}일) — 상대 수락 대기중</div>
+          <button onclick="_cancelCycleChange()" style="margin-top:6px;padding:5px 14px;background:rgba(40,40,40,.6);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:rgba(255,255,255,.4);font-family:var(--kr);font-size:11px;cursor:pointer;">요청 취소</button>
+        </div>`;
+      } else if(_cyclePickerOpen){
+        _renderCyclePicker(cycleArea);
+      } else {
+        cycleArea.innerHTML='';
+      }
+    }
 
     /* ── 특수작전 연결 요청 영역 ── */
     renderSpecialOpArea();
@@ -1686,65 +1706,31 @@ async function resetSpecialOp1(){
 
 function _toggleCyclePicker(){
   _cyclePickerOpen = !_cyclePickerOpen;
-  const cycleArea = document.getElementById('cycleChangeArea');
-  if(cycleArea) _renderCycleChangeArea(cycleArea);
+  renderConnectCard();
 }
 
-function _renderCycleChangeArea(el){
+function _renderCyclePicker(el){
   if(!el) return;
-  const pd = window.partnerData;
-  /* !_cycleChangeRequested: 내가 요청 보낸 상태면 수락 UI 표시 안 함
-     !== missionCycleDay 조건 제거 — 요청 날짜가 내 기준일과 같아도 수락 UI 표시해야 함 */
-  const incomingDay = (pd && pd.cycleChangeRequest > 0 && !_cycleChangeRequested)
-    ? pd.cycleChangeRequest : 0;
-
-  /* 상대방이 변경 요청 보낸 경우 */
-  if(incomingDay){
-    el.innerHTML=`<div style="margin-top:8px;padding:10px 12px;background:rgba(4,20,48,.7);border:1px solid rgba(78,176,216,.4);border-radius:10px;">
-      <div style="font-family:var(--kr);font-size:12px;color:rgba(100,180,255,.9);font-weight:700;margin-bottom:6px;">📅 ${pd.nickname} 님이 달성일 변경을 요청했습니다</div>
-      <div style="font-family:var(--orb);font-size:13px;color:rgba(78,176,216,1);font-weight:900;text-align:center;margin-bottom:8px;">${missionCycleDay}일 → <span style="color:#fff;">${incomingDay}일</span></div>
-      <div style="display:flex;gap:6px;">
-        <button onclick="_acceptCycleChange(${incomingDay})" style="flex:1;padding:8px;background:rgba(6,40,80,.6);border:1px solid rgba(78,176,216,.5);border-radius:7px;color:rgba(100,200,255,.9);font-family:var(--kr);font-size:12px;font-weight:700;cursor:pointer;">✅ 수락</button>
-        <button onclick="_rejectCycleChange()" style="flex:1;padding:8px;background:rgba(40,40,40,.5);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:rgba(255,255,255,.5);font-family:var(--kr);font-size:12px;cursor:pointer;">❌ 거절</button>
-      </div></div>`;
-    return;
-  }
-
-  /* 내가 요청 보낸 상태 */
-  if(_cycleChangeRequested){
-    el.innerHTML=`<div style="margin-top:8px;padding:8px 12px;background:rgba(4,18,40,.5);border:1px dashed rgba(78,176,216,.3);border-radius:8px;text-align:center;">
-      <div style="font-family:var(--kr);font-size:11px;color:rgba(78,176,216,.65);">달성일 변경 요청 전송됨 (${_pendingCycleDay}일) — 상대 수락 대기중</div>
-      <button onclick="_cancelCycleChange()" style="margin-top:6px;padding:5px 14px;background:rgba(40,40,40,.6);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:rgba(255,255,255,.4);font-family:var(--kr);font-size:11px;cursor:pointer;">요청 취소</button>
-    </div>`;
-    return;
-  }
-
-  /* 팝업 열림 상태 */
-  if(_cyclePickerOpen){
-    const btns=[1,10,25].map(function(d){
-      const isCurrent=d===missionCycleDay;
-      const lbl=isCurrent?'현재기준':d===1?'1→말':d===10?'10→9':'25→24';
-      return '<button '+(isCurrent?'disabled':'')+' onclick="_sendCycleChangeRequest('+d+')"'
-        +' style="padding:9px 4px;border-radius:8px;'
-        +'border:1.5px solid '+(isCurrent?'rgba(78,176,216,.7)':'rgba(46,127,168,.25)')+';'
-        +'background:'+(isCurrent?'rgba(6,28,52,.9)':'rgba(3,12,24,.7)')+';'
-        +'cursor:'+(isCurrent?'not-allowed':'pointer')+';opacity:'+(isCurrent?'1':'.9')+';">'
-        +'<div style="font-family:var(--orb);font-size:15px;font-weight:900;color:'+(isCurrent?'rgba(78,176,216,1)':'rgba(78,176,216,.55)')+';">'+d+'일</div>'
-        +'<div style="font-family:var(--kr);font-size:8px;color:'+(isCurrent?'rgba(78,176,216,.6)':'rgba(255,255,255,.28)')+';margin-top:2px;">'+lbl+'</div>'
-        +'</button>';
-    }).join('');
-    el.innerHTML='<div style="margin-top:8px;padding:11px 12px;background:rgba(4,18,38,.7);border:1px solid rgba(46,127,168,.3);border-radius:10px;">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
-      +'<div style="font-family:var(--kr);font-size:11px;color:rgba(78,176,216,.8);font-weight:700;">📅 달성일 변경 요청</div>'
-      +'<button onclick="_toggleCyclePicker()" style="background:none;border:none;color:rgba(255,255,255,.35);font-size:14px;cursor:pointer;padding:2px 6px;">✕</button>'
-      +'</div>'
-      +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px;">'+btns+'</div>'
-      +'<div style="font-family:var(--kr);font-size:9px;color:rgba(78,176,216,.4);text-align:center;">선택하면 상대방에게 변경 요청이 전송됩니다</div>'
-      +'</div>';
-    return;
-  }
-
-  el.innerHTML = '';
+  const btns=[1,10,25].map(function(d){
+    const isCurrent=d===missionCycleDay;
+    const lbl=isCurrent?'현재기준':d===1?'1→말':d===10?'10→9':'25→24';
+    return '<button '+(isCurrent?'disabled':'')+' onclick="_sendCycleChangeRequest('+d+')"'
+      +' style="padding:9px 4px;border-radius:8px;'
+      +'border:1.5px solid '+(isCurrent?'rgba(78,176,216,.7)':'rgba(46,127,168,.25)')+';'
+      +'background:'+(isCurrent?'rgba(6,28,52,.9)':'rgba(3,12,24,.7)')+';'
+      +'cursor:'+(isCurrent?'not-allowed':'pointer')+';opacity:'+(isCurrent?'1':'.9')+';">'
+      +'<div style="font-family:var(--orb);font-size:15px;font-weight:900;color:'+(isCurrent?'rgba(78,176,216,1)':'rgba(78,176,216,.55)')+';">'+d+'일</div>'
+      +'<div style="font-family:var(--kr);font-size:8px;color:'+(isCurrent?'rgba(78,176,216,.6)':'rgba(255,255,255,.28)')+';margin-top:2px;">'+lbl+'</div>'
+      +'</button>';
+  }).join('');
+  el.innerHTML='<div style="margin-top:6px;padding:11px 12px;background:rgba(4,18,38,.7);border:1px solid rgba(46,127,168,.3);border-radius:10px;">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+    +'<div style="font-family:var(--kr);font-size:11px;color:rgba(78,176,216,.8);font-weight:700;">📅 달성일 변경 요청</div>'
+    +'<button onclick="_toggleCyclePicker()" style="background:none;border:none;color:rgba(255,255,255,.35);font-size:14px;cursor:pointer;padding:2px 6px;">✕</button>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px;">'+btns+'</div>'
+    +'<div style="font-family:var(--kr);font-size:9px;color:rgba(78,176,216,.4);text-align:center;">선택하면 상대방에게 변경 요청이 전송됩니다</div>'
+    +'</div>';
 }
 
 async function _sendCycleChangeRequest(d){
@@ -1768,9 +1754,8 @@ async function _cancelCycleChange(){
 
 async function _acceptCycleChange(d){
   if(!FB_READY||!_fbDb||!partnerData) return;
-  /* 즉시 로컬 상태 클리어 — 비동기 업데이트 전 재렌더링 방지 */
-  if(partnerData) partnerData.cycleChangeRequest = 0;
-  window._lastCycleReqNotified = 0;
+  if(partnerData) partnerData.cycleChangeRequest=0;
+  window._lastCycleReqNotified=0;
   await _fbUpdate(PATH.user(MY_UID),{cycleChangeRequest:0});
   await _fbUpdate(PATH.user(partnerData.uid),{cycleChangeRequest:0});
   saveCycleDay(d);
@@ -1780,9 +1765,8 @@ async function _acceptCycleChange(d){
 
 async function _rejectCycleChange(){
   if(!FB_READY||!_fbDb||!partnerData) return;
-  /* 즉시 로컬 상태 클리어 */
-  if(partnerData) partnerData.cycleChangeRequest = 0;
-  window._lastCycleReqNotified = 0;
+  if(partnerData) partnerData.cycleChangeRequest=0;
+  window._lastCycleReqNotified=0;
   await _fbUpdate(PATH.user(partnerData.uid),{cycleChangeRequest:0});
   showToast('달성일 변경 요청을 거절했습니다');
   renderConnectCard();
