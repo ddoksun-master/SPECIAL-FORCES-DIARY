@@ -969,7 +969,6 @@ let myNickname       = localStorage.getItem('myNickname')||'';
 let partnerData      = null;
 let connectionStatus = 'none';
 let disconnectRequested = false;
-let specialOpRequested = false;   /* 내가 특수작전 연결 요청을 보낸 상태 */
 let _cyclePickerOpen = false;     /* 달성일 변경 팝업 열림 */
 let _cycleChangeRequested = false; /* 내가 달성일 변경 요청을 보낸 상태 */
 let _pendingCycleDay = 0;          /* 요청한 기준일 */
@@ -1019,7 +1018,6 @@ async function initFirebase(){
     const d = snap.val();
     connectionStatus    = d.connectionStatus||'none';
     disconnectRequested = d.disconnectRequest||false;
-    specialOpRequested  = d.specialOpRequest||false;
     /* 내가 보낸 달성일 변경요청 복원 (새로고침 후에도 상태 유지) */
     if(d.cycleChangeRequest && d.cycleChangeRequest !== missionCycleDay){
       _cycleChangeRequested = true;
@@ -1029,7 +1027,6 @@ async function initFirebase(){
       _cycleChangeRequested = false;
       _pendingCycleDay = 0;
     }
-    if(d.specialOpAccepted) window._specialOpAccepted = true;
     const partnerUid    = d.partnerUid||'';
     if(partnerUid && connectionStatus==='connected'){
       /* 파트너 구독 — 중복 등록 방지 */
@@ -1041,7 +1038,6 @@ async function initFirebase(){
             partnerData={uid:partnerUid,nickname:pd.nickname||'상대',
               shareCode:pd.shareCode||'',money:pd.money||0,
               disconnectRequest:pd.disconnectRequest||false,
-              specialOpRequest:pd.specialOpRequest||false,
               cycleChangeRequest:pd.cycleChangeRequest||0};
           }
           /* 달성일 변경 요청 수신 알림 */
@@ -1093,17 +1089,7 @@ async function initFirebase(){
             window.teamData.activeGemN = n;
           }
 
-          /* 스페셜작전 5DAY 상태 동기화 */
-          if(tmData.specialMission){
-            window.teamData.specialMission = tmData.specialMission;
-            window.teamData.specialStartedAt = tmData.specialStartedAt||null;
-            if(!window.teamData.specialDays) window.teamData.specialDays={my:[],opp:[]};
-            window.teamData.specialDays.my  = tmData[mySpDaysKey] || [false,false,false,false,false];
-            window.teamData.specialDays.opp = tmData[oppSpDaysKey] || [false,false,false,false,false];
-          } else {
-            window.teamData.specialMission = null;
-            window.teamData.specialDays = {my:[false,false,false,false,false],opp:[false,false,false,false,false]};
-          }
+
 
           if(tmData.todayMission){
             window.teamData.todayMission = tmData.todayMission;
@@ -1115,7 +1101,7 @@ async function initFirebase(){
               window._missionRewardShown=true;
               const gn = tmData.activeGemN||1;
               const rew = (window.GEM_REWARDS&&window.GEM_REWARDS[gn])||10000;
-              const label = gn==='special'?'스페셜작전':'특수작전'+gn;
+              const label = '특수작전'+gn;
               setTimeout(()=>{
                 showToast('🎉 '+label+' 완료! '+rew.toLocaleString()+'원 보상!');
                 window._missionRewardShown=false;
@@ -1444,7 +1430,6 @@ function renderConnectCard(){
     if(cycleArea){ _renderCycleChangeArea(cycleArea); }
 
     /* ── 특수작전 연결 요청 영역 ── */
-    renderSpecialOpArea();
 
     updateGemBoxes();
     renderActiveMissionCard();
@@ -1514,7 +1499,6 @@ async function acceptConnectRequest(){
   renderStatsRevenueCard();
   setTimeout(()=>{
     if(typeof mpStartAllAbSubscriptions==='function') mpStartAllAbSubscriptions();
-    if(typeof _startSpecialSelectWatch==='function') _startSpecialSelectWatch();
   }, 600);
 }
 
@@ -1558,127 +1542,6 @@ async function rejectDisconnect(){
   renderConnectCard();
 }
 
-/* ============================================================
-   특수작전1 연결 요청 — disconnectRequest와 동일 패턴
-   ============================================================ */
-function renderSpecialOpArea(){
-  /* 특수작전 연결 요청 버튼 비활성화 */
-  const sa = document.getElementById('specialOpArea');
-  if(sa){ sa.style.display='none'; sa.innerHTML=''; }
-}
-
-/* 특수작전1 열기 버튼을 gemBox1 내부에 렌더 */
-function renderSpecialOpOpenBtn(){
-  const bx = document.getElementById('gemBox1');
-  if(!bx) return;
-  if(bx.querySelector('#specialOpOpenBtn')) return; /* 이미 있으면 skip */
-  const btn = document.createElement('button');
-  btn.id = 'specialOpOpenBtn';
-  btn.textContent = '⚔ 특수작전1 열기';
-  btn.style.cssText = `
-    margin-top:6px;padding:7px 12px;
-    background:linear-gradient(135deg,rgba(74,127,168,.25),rgba(56,150,138,.2));
-    border:1.5px solid rgba(74,127,168,.5);border-radius:9px;
-    color:rgba(114,200,220,.95);font-family:var(--kr);font-size:11px;font-weight:900;
-    cursor:pointer;width:100%;letter-spacing:.3px;
-    box-shadow:0 0 10px rgba(74,127,168,.2);
-    animation:mpPulse 2s ease-in-out infinite;
-  `;
-  btn.onclick = function(e){
-    e.stopPropagation();
-    if(typeof openGemBoxWithMission === 'function') openGemBoxWithMission(1);
-  };
-  bx.appendChild(btn);
-}
-
-async function requestSpecialOp(){
-  if(!confirm('특수작전을 연결하시겠습니까?\n상대방이 수락하면 특수작전1이 열립니다.')) return;
-  if(!FB_READY||!_fbDb) return;
-  await _fbUpdate(PATH.user(MY_UID),{specialOpRequest:true});
-  specialOpRequested = true;
-  renderSpecialOpArea();
-}
-
-async function cancelSpecialOp(){
-  if(!FB_READY||!_fbDb) return;
-  await _fbUpdate(PATH.user(MY_UID),{specialOpRequest:false});
-  specialOpRequested = false;
-  renderSpecialOpArea();
-}
-
-async function acceptSpecialOp(){
-  if(!FB_READY||!_fbDb||!partnerData) return;
-  /* 양쪽 모두 specialOpRequest 초기화, accepted 플래그 설정 */
-  await _fbUpdate(PATH.user(MY_UID),{specialOpRequest:false,specialOpAccepted:true});
-  await _fbUpdate(PATH.user(partnerData.uid),{specialOpRequest:false,specialOpAccepted:true});
-  window._specialOpAccepted = true;
-  showToast('✅ 특수작전1이 연결되었습니다!');
-  renderSpecialOpArea();
-  renderSpecialOpOpenBtn();
-}
-
-async function rejectSpecialOp(){
-  if(!FB_READY||!_fbDb||!partnerData) return;
-  await _fbUpdate(PATH.user(partnerData.uid),{specialOpRequest:false});
-  showToast('특수작전 연결 요청을 거절했습니다.');
-  if(partnerData) partnerData.specialOpRequest = false;
-  renderSpecialOpArea();
-}
-
-/* ============================================================
-   [테스터] 특수작전1 완전 초기화 — Firebase + 로컬 상태 리셋
-   ============================================================ */
-async function resetSpecialOp1(){
-  if(!confirm('⚠ 테스터 재실행: 특수작전1을 완전히 초기화합니다.\n양쪽 모두 초기 상태로 돌아갑니다.')) return;
-  if(!FB_READY||!_fbDb) return;
-
-  /* 로컬 상태 초기화 */
-  window._specialOpAccepted = false;
-  specialOpRequested = false;
-  if(window.mpData) delete window.mpData[1];
-  if(window.mpRandDays) delete window.mpRandDays[1];
-
-  /* Firebase — 내 유저 필드 초기화 */
-  await _fbUpdate(PATH.user(MY_UID), {
-    specialOpRequest: false,
-    specialOpAccepted: false
-  });
-
-  /* Firebase — 파트너 유저 필드 초기화 */
-  if(window.partnerData){
-    await _fbUpdate(PATH.user(partnerData.uid), {
-      specialOpRequest: false,
-      specialOpAccepted: false
-    });
-    /* Firebase — mp_1 데이터 삭제 */
-    const mpRoomPath = PATH.teamRoom(MY_UID, partnerData.uid)+'/mp_1';
-    await _fbSet(mpRoomPath, null);
-    /* Firebase — mp_proposal 초기화 */
-    const mpPropPath = PATH.teamRoom(MY_UID, partnerData.uid)+'/mp_proposal';
-    await _fbSet(mpPropPath, null);
-  }
-
-  /* gemBox1 원상 복구 */
-  const bx = document.getElementById('gemBox1');
-  if(bx){
-    bx.className='gem-box';
-    bx.onclick = ()=>openGemBoxWithMission(1);
-    bx.innerHTML=`
-      <div id="gemLock1" style="display:flex;flex-direction:column;align-items:center;position:absolute;inset:0;background:rgba(8,16,10,.88);border-radius:10px;justify-content:center;z-index:2;backdrop-filter:blur(1px);">
-        <span style="font-size:28px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">🔒</span>
-        <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.65);margin-top:5px;">20,000원</div>
-      </div>
-      <div style="font-family:var(--orb);font-size:8px;letter-spacing:1px;color:rgba(127,191,106,.6);margin-bottom:4px;">MISSION 1</div>
-      <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:#fff;">특수작전1</div>
-      <div style="font-family:var(--orb);font-size:11px;font-weight:700;color:var(--green);margin-top:4px;">+10,000원</div>
-      <div id="gemOppStatus1" style="margin-top:5px;padding:2px 7px;background:rgba(50,30,5,.5);border:1px solid rgba(200,130,40,.25);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(255,160,50,.65);">미등록</div>
-    `;
-  }
-
-  showToast('🔄 특수작전1 재실행 완료. 연결 요청부터 다시 시작하세요.');
-  renderConnectCard();
-  if(window.updateGemBoxes) updateGemBoxes();
-}
 
 /* ============================================================
    달성일 변경 요청 — 팝업 방식 (요청/수락 Firebase 연동)
@@ -1696,8 +1559,8 @@ function _renderCycleChangeArea(el){
   const incomingDay = pd && pd.cycleChangeRequest && pd.cycleChangeRequest !== missionCycleDay
     ? pd.cycleChangeRequest : 0;
 
-  /* 상대방이 변경 요청 보낸 경우 */
-  if(incomingDay && !_cycleChangeRequested){
+  /* 상대방이 변경 요청 보낸 경우 — 내 요청 상태와 무관하게 우선 표시 */
+  if(incomingDay){
     el.innerHTML=`<div style="margin-top:8px;padding:10px 12px;background:rgba(4,20,48,.7);border:1px solid rgba(78,176,216,.4);border-radius:10px;">
       <div style="font-family:var(--kr);font-size:12px;color:rgba(100,180,255,.9);font-weight:700;margin-bottom:6px;">📅 ${pd.nickname} 님이 달성일 변경을 요청했습니다</div>
       <div style="font-family:var(--orb);font-size:13px;color:rgba(78,176,216,1);font-weight:900;text-align:center;margin-bottom:8px;">${missionCycleDay}일 → <span style="color:#fff;">${incomingDay}일</span></div>
@@ -1768,6 +1631,7 @@ async function _acceptCycleChange(d){
   if(!FB_READY||!_fbDb||!partnerData) return;
   await _fbUpdate(PATH.user(MY_UID),{cycleChangeRequest:0});
   await _fbUpdate(PATH.user(partnerData.uid),{cycleChangeRequest:0});
+  _cycleChangeRequested=false; _pendingCycleDay=0;
   saveCycleDay(d);
   showToast('✅ 기준일이 매월 '+d+'일로 변경되었습니다');
   renderConnectCard();
@@ -1776,6 +1640,8 @@ async function _acceptCycleChange(d){
 async function _rejectCycleChange(){
   if(!FB_READY||!_fbDb||!partnerData) return;
   await _fbUpdate(PATH.user(partnerData.uid),{cycleChangeRequest:0});
+  await _fbUpdate(PATH.user(MY_UID),{cycleChangeRequest:0});
+  _cycleChangeRequested=false; _pendingCycleDay=0;
   showToast('달성일 변경 요청을 거절했습니다');
   renderConnectCard();
 }
@@ -1820,20 +1686,9 @@ function updateGemBoxes(){
     if(myBarEl)  myBarEl.style.width  = Math.min(100, Math.round(myM/th*100))+'%';
     if(oppBarEl) oppBarEl.style.width = Math.min(100, Math.round(oppM/th*100))+'%';
 
-    /* ── gemActionArea: specialOpAccepted 시 열기 버튼 ── */
     const aa = document.getElementById('gemActionArea'+n);
     if(aa){
-      if(n===1 && window._specialOpAccepted){
-        if(!aa.querySelector('#specialOpOpenBtn2')){
-          aa.innerHTML=`<button id="specialOpOpenBtn2" onclick="event.stopPropagation();openGemBoxWithMission(1)"
-            style="padding:4px 7px;background:linear-gradient(135deg,rgba(74,127,168,.25),rgba(56,150,138,.2));
-            border:1px solid rgba(74,127,168,.5);border-radius:7px;
-            color:rgba(114,200,220,.95);font-family:var(--kr);font-size:9px;font-weight:900;
-            cursor:pointer;white-space:nowrap;animation:mpPulse 2s ease-in-out infinite;">열기 ▶</button>`;
-        }
-      } else {
-        aa.innerHTML='';
-      }
+      aa.innerHTML='';
     }
 
     if(st){
@@ -1873,53 +1728,8 @@ function updateGemBoxes(){
   });
 
   /* 특수작전 연결 수락 상태면 gemBox1 열기 버튼 유지 (레거시 호환) */
-  if(window._specialOpAccepted && typeof renderSpecialOpOpenBtn === 'function'){
-    renderSpecialOpOpenBtn();
-  }
 
-  /* 스페셜작전 */
-  const spTh=GEM_THRESHOLDS['special'];
-  const spOk=myM>=spTh&&oppM>=spTh;
-  const spLk=document.getElementById('gemLockSpecial');
-  const spBx=document.getElementById('gemBoxSpecial');
-  const spSt=document.getElementById('gemOppStatusSpecial');
-  if(spLk) spLk.style.display=spOk?'none':'flex';
-  if(spBx){
-    const spActive=window.teamData&&window.teamData.specialMission;
-    spBx.style.borderColor=spActive?'rgba(200,168,75,.8)':spOk?'rgba(200,168,75,.55)':'rgba(200,168,75,.2)';
-    spBx.style.boxShadow=spActive?'0 0 22px rgba(200,168,75,.4)':spOk?'0 0 16px rgba(200,168,75,.2)':'none';
-    /* 잠금 해제 시 보석함 pulse 애니메이션 */
-    if(spOk) spBx.classList.add('chest-unlocked');
-    else spBx.classList.remove('chest-unlocked');
-  }
-  if(spSt){
-    const spOppP=(window.teamData&&window.teamData.oppGemProposal||{})['special']||null;
-    const rm=window._teamRoomData;
-    const activeN2=rm?rm.activeGemN:null;
-    if(spOppP && String(activeN2)==='special'){
-      spSt.textContent='등록완료';spSt.style.color='rgba(200,168,75,.9)';
-      spSt.style.borderColor='rgba(200,168,75,.5)';
-    } else {
-      spSt.textContent='미등록';spSt.style.color='rgba(200,168,75,.45)';
-      spSt.style.borderColor='rgba(200,168,75,.2)';
-    }
-  }
 
-  /* VS 프로그레스바 업데이트 (수정 10) */
-  const MAX_MONEY = 200000;
-  const myPct = Math.min(100, Math.round(myM/MAX_MONEY*100));
-  const oppPct = Math.min(100, Math.round(oppM/MAX_MONEY*100));
-  const myBarEl = document.getElementById('vsMyBar');
-  const oppBarEl = document.getElementById('vsOppBar');
-  const myPctEl = document.getElementById('vsMyPct');
-  const oppPctEl = document.getElementById('vsOppPct');
-  if(myBarEl) myBarEl.style.width = myPct+'%';
-  if(oppBarEl) oppBarEl.style.width = oppPct+'%';
-  if(myPctEl) myPctEl.textContent = myPct+'%';
-  if(oppPctEl) oppPctEl.textContent = oppPct+'%';
-
-  /* 스페셜 5DAY 진행바 업데이트 */
-  updateSpecialDayBar();
   if(window.renderStatsGemProposalGrid) renderStatsGemProposalGrid();
 }
 
@@ -1969,7 +1779,7 @@ function renderActiveMissionCard(){
       </div>`;
     }
 
-    const typeLabel = gn==='special' ? '🌟 스페셜작전' : `⚔ 특수작전${gn}`;
+    const typeLabel = `⚔ 특수작전${gn}`;
     const statusColor = bothDone ? 'rgba(127,191,106,.9)' : 'rgba(200,168,75,.85)';
     const statusTxt   = bothDone ? '작전완료' : '작전진행중';
 
@@ -2028,7 +1838,7 @@ function renderActiveMissionCard(){
   if(!td.todayMission && td.activeGemN){
     const gn = td.activeGemN;
     const rew = GEM_REWARDS[gn] || 10000;
-    const label = gn==='special' ? '스페셜작전' : '특수작전'+gn;
+    const label = '특수작전'+gn;
     const myProposal  = td.myProposal || null;
     const oppProposal = (td.oppGemProposal && td.oppGemProposal[gn]) || null;
     const myMoney  = calcTotalPersonalMoney ? calcTotalPersonalMoney() : 0;
@@ -2050,7 +1860,7 @@ function renderActiveMissionCard(){
               <span style="font-size:14px;">✅</span>
               <div style="font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(200,240,180,.9);">${myProposal}</div>
             </div>`
-          : `<button onclick="openGemBox(${gn==='special'?"'special'":gn})" style="width:100%;padding:10px 12px;background:rgba(12,28,12,.6);border:1.5px dashed rgba(90,158,72,.4);border-radius:9px;color:rgba(127,191,106,.7);font-family:var(--kr);font-size:13px;font-weight:700;cursor:pointer;text-align:left;">
+          : `<button onclick="openGemBox(gn)" style="width:100%;padding:10px 12px;background:rgba(12,28,12,.6);border:1.5px dashed rgba(90,158,72,.4);border-radius:9px;color:rgba(127,191,106,.7);font-family:var(--kr);font-size:13px;font-weight:700;cursor:pointer;text-align:left;">
               + 내 미션 제안하기
             </button>`
         }
@@ -2075,11 +1885,11 @@ function renderActiveMissionCard(){
             ✅ 양쪽 제안 완료! 작전을 선택해 확정하세요
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <button onclick="confirmMission(${gn==='special'?"'special'":gn}, 'my')" style="padding:11px 8px;background:linear-gradient(135deg,rgba(30,80,22,.9),rgba(20,60,15,.9));border:1.5px solid rgba(90,158,72,.5);border-radius:10px;color:rgba(200,240,180,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;line-height:1.4;text-align:center;">
+            <button onclick="confirmMission(gn, 'my')" style="padding:11px 8px;background:linear-gradient(135deg,rgba(30,80,22,.9),rgba(20,60,15,.9));border:1.5px solid rgba(90,158,72,.5);border-radius:10px;color:rgba(200,240,180,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;line-height:1.4;text-align:center;">
               <div style="font-family:var(--orb);font-size:8px;color:rgba(127,191,106,.65);margin-bottom:3px;">내 제안 채택</div>
               ${myProposal}
             </button>
-            <button onclick="confirmMission(${gn==='special'?"'special'":gn}, 'opp')" style="padding:11px 8px;background:linear-gradient(135deg,rgba(55,38,6,.9),rgba(38,26,4,.9));border:1.5px solid rgba(200,168,75,.5);border-radius:10px;color:rgba(240,200,100,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;line-height:1.4;text-align:center;">
+            <button onclick="confirmMission(gn, 'opp')" style="padding:11px 8px;background:linear-gradient(135deg,rgba(55,38,6,.9),rgba(38,26,4,.9));border:1.5px solid rgba(200,168,75,.5);border-radius:10px;color:rgba(240,200,100,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;line-height:1.4;text-align:center;">
               <div style="font-family:var(--orb);font-size:8px;color:rgba(200,168,75,.65);margin-bottom:3px;">상대 제안 수락</div>
               ${oppProposal}
             </button>
@@ -2099,7 +1909,7 @@ function renderActiveMissionCard(){
     const rows = completed.slice().reverse().map(m=>{
       const gn=m.n; const rew=m.reward||0;
       const date=m.completedAt?new Date(m.completedAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'-';
-      const typeLabel = gn==='special'?'스페셜':('특수작전'+gn);
+      const typeLabel = '특수작전'+gn;
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 11px;background:rgba(10,20,10,.5);border:1px solid rgba(90,158,72,.15);border-radius:8px;margin-bottom:5px;">
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="font-size:15px;">✅</span>
@@ -5141,12 +4951,11 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
             <div>
               <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.5);">달성 가능 최대 수익</div>
-              <div style="font-family:var(--orb);font-size:20px;font-weight:900;color:var(--gold);">300,000원</div>
+              <div style="font-family:var(--orb);font-size:20px;font-weight:900;color:var(--gold);">220,000원</div>
             </div>
             <div style="text-align:right;">
               <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.38);">개인임무 최대 100,000</div>
               <div style="font-family:var(--kr);font-size:10px;color:rgba(255,100,100,.45);">특수임무 최대 120,000</div>
-              <div style="font-family:var(--kr);font-size:10px;color:rgba(251,191,36,.45);">스페셜임무 100,000</div>
             </div>
           </div>
           <div style="height:1px;background:rgba(200,168,75,.12);margin-bottom:6px;"></div>
@@ -5309,8 +5118,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div id="disconnectArea" style="margin-top:6px;"></div>
         <!-- 달성일 변경 요청 영역 -->
         <div id="cycleChangeArea"></div>
-        <!-- 특수작전 연결 요청 영역 (비활성화) -->
-        <div id="specialOpArea" style="display:none;"></div>
+
       </div>
 
       <!-- 팀 미션 카드 컨테이너 (숨김 — 기존 JS 호환용) -->
@@ -5414,9 +5222,6 @@ document.addEventListener('DOMContentLoaded',()=>{
               <div id="tmHQBoxRow" style="display:flex;gap:8px;margin-bottom:6px;"></div>
               <div id="tmHQBoxHint" style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);text-align:center;min-height:14px;"></div>
             </div>
-            <!-- 스페셜임무 DAY 진행 표시 -->
-            <div id="tmHQDaySection" style="display:none;"></div>
-
             <!-- 저장 버튼 -->
             <div style="margin:12px 14px 0;">
               <button id="tmHQSaveBtn" onclick="tmHQSave()" disabled
@@ -5673,9 +5478,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     </div>
     <button class="mp-close-btn2" onclick="mpClose()">닫기</button>
     <!-- 테스터 재실행 버튼 -->
-    <div id="mpCvTesterReset" style="display:none;margin-top:8px;">
-      <button onclick="resetSpecialOp1()" style="width:100%;padding:9px;background:rgba(74,127,168,.12);border:1px dashed rgba(74,127,168,.35);border-radius:9px;color:rgba(114,168,204,.65);font-family:var(--kr);font-size:11px;cursor:pointer;">🔄 테스터 재실행 — 처음부터 다시</button>
-    </div>
+    
   </div>
 
 </div><!-- /app-shell -->
@@ -6661,28 +6464,23 @@ renderCycleBtns();
    ==================================================== */
 let teamData = JSON.parse(localStorage.getItem('teamData')||'null')||{
   myMoney:0, oppMoney:0,
-  gem1Used:0, gem2Used:0, gem3Used:0, gem4Used:0, specialUsed:0,
+  gem1Used:0, gem2Used:0, gem3Used:0, gem4Used:0,
   completedMissions:[],
   todayMission:null, myDone:false, oppDone:false,
-  gemState:{1:'locked',2:'locked',3:'locked',4:'locked',5:'locked',special:'locked'},
+  gemState:{1:'locked',2:'locked',3:'locked',4:'locked',5:'locked'},
   myProposal:'', oppProposal:'',
   /* 특수작전별 상대 제안 상태: null=미등록, string=등록완료 */
-  oppGemProposal:{1:null,2:null,3:null,4:null,5:null,special:null},
+  oppGemProposal:{1:null,2:null,3:null,4:null,5:null},
   activeGemN:null,  /* 현재 확정된 작전 번호 */
-  /* 스페셜작전 5DAY 진행 상태 */
-  specialMission:null,
-  specialDays:{my:[false,false,false,false,false], opp:[false,false,false,false,false]},
-  specialStartedAt:null
+
 };
 const saveTeam=()=>{
   if(!teamData.completedMissions) teamData.completedMissions=[];
   localStorage.setItem('teamData',JSON.stringify(teamData));
 };
 /* 특수작전1~5: 2만/4만/6만/8만/10만 누적 달성 시 개방, 보상 10000 */
-const GEM_THRESHOLDS={1:0,2:0,3:0,4:0,special:0}; /* 언락 제거 */
-const GEM_REWARDS={1:10000,2:20000,3:30000,4:40000,special:100000};
-/* 스페셜: 5day × 2만원 = 10만원 */
-const SPECIAL_DAY_REWARD=20000;
+const GEM_THRESHOLDS={1:0,2:0,3:0,4:0}; /* 언락 제거 */
+const GEM_REWARDS={1:10000,2:20000,3:30000,4:40000};
 
 function calcTotalPersonalMoney(){
   /* 현재 사이클 범위만 합산 (raw) */
@@ -6721,11 +6519,7 @@ function openGemBox(n){
     showToast(`🎯 ${label}: 양쪽 모두 ${th.toLocaleString()}원 필요 (나: ${total.toLocaleString()}원 / 상대: ${oppM.toLocaleString()}원)`);
     return;
   }
-  /* 스페셜작전: 진행중이거나 시작 전 */
-  if(n==='special'){
-    openSpecialModal();
-    return;
-  }
+
   /* 이미 진행중인 작전 체크 */
   if(teamData.todayMission){
     showToast('⚔ 작전 진행중! 팀작전 탭에서 완료하거나 철회하세요.');
@@ -6738,9 +6532,9 @@ function openGemBox(n){
   }
   activeGemLock=n;
   const modal=document.getElementById('gemModal');
-  const label=n==='special'?'스페셜작전':'특수작전'+n;
+  const label='특수작전'+n;
   const missionType = '위험임무에서 선택';
-  document.getElementById('gemModalTitle').textContent=`⚔ ${label} — ${GEM_REWARDS[n].toLocaleString()}원 보상`;
+  document.getElementById('gemModalTitle').textContent=`⚔ ${label} — ${(GEM_REWARDS[n]||0).toLocaleString()}원 보상`;
   /* 제안 설명 업데이트 */
   const pickerBtn = document.querySelector('#myMissionPickerWrap button');
   if(pickerBtn) pickerBtn.querySelector('#myMissionPickerLabel').textContent='위험임무에서 선택 ▾';
@@ -6749,7 +6543,7 @@ function openGemBox(n){
 
   /* 초기화 */
   document.getElementById('myMissionList').style.display='none';
-  document.getElementById('myMissionPickerLabel').textContent=activeGemLock==='special'?'특수임무에서 선택 ▾':'위험임무에서 선택 ▾';
+  document.getElementById('myMissionPickerLabel').textContent='위험임무에서 선택 ▾';
   document.getElementById('myMissionPreview').style.display='none';
   document.getElementById('myMissionPreviewName').textContent='';
   document.getElementById('myMissionPreviewBadge').style.display='none';
@@ -7041,167 +6835,6 @@ function closeGemModal(){
 /* ============================================================
    스페셜작전 5DAY 진행바 업데이트
    ============================================================ */
-function updateSpecialDayBar(){
-  const bar=document.getElementById('specialDayBar');
-  const grid=document.getElementById('specialDayGrid');
-  if(!bar||!grid) return;
-  const td=window.teamData;
-  if(!td||!td.specialMission){bar.style.display='none';return;}
-  bar.style.display='block';
-  const myD=td.specialDays&&td.specialDays.my||[false,false,false,false,false];
-  const oppD=td.specialDays&&td.specialDays.opp||[false,false,false,false,false];
-  const pn=window.partnerData?window.partnerData.nickname:'상대';
-  grid.innerHTML=[1,2,3,4,5].map(i=>{
-    const myOk=myD[i-1];
-    const oppOk=oppD[i-1];
-    const bothOk=myOk&&oppOk;
-    const bg=bothOk?'rgba(200,168,75,.25)':myOk||oppOk?'rgba(90,158,72,.15)':'rgba(10,20,10,.5)';
-    const bdr=bothOk?'rgba(200,168,75,.6)':myOk||oppOk?'rgba(90,158,72,.4)':'rgba(90,158,72,.12)';
-    const clr=bothOk?'rgba(200,168,75,.95)':myOk||oppOk?'rgba(127,191,106,.85)':'rgba(255,255,255,.28)';
-    return `<div style="text-align:center;padding:8px 2px;background:${bg};border:1px solid ${bdr};border-radius:8px;">
-      <div style="font-family:var(--orb);font-size:9px;font-weight:700;color:${clr};">${i}DAY</div>
-      <div style="font-size:10px;margin-top:3px;">${myOk?'✅':'⬜'}</div>
-      <div style="font-size:10px;">${oppOk?'✅':'⬜'}</div>
-    </div>`;
-  }).join('');
-}
-
-/* ============================================================
-   스페셜작전 모달 열기
-   ============================================================ */
-function openSpecialModal(){
-  const td=window.teamData;
-  const isActive=!!(td&&td.specialMission);
-
-  /* 이미 스페셜 진행중 → 현황 보기 모달 */
-  if(isActive){
-    const myD=td.specialDays&&td.specialDays.my||[false,false,false,false,false];
-    const oppD=td.specialDays&&td.specialDays.opp||[false,false,false,false,false];
-    const myCount=myD.filter(Boolean).length;
-    const oppCount=oppD.filter(Boolean).length;
-    const pn=window.partnerData?window.partnerData.nickname:'상대';
-    const mn=myNickname||'나';
-
-    const dayRows=[1,2,3,4,5].map(i=>{
-      const myOk=myD[i-1], oppOk=oppD[i-1];
-      const bg=myOk&&oppOk?'rgba(200,168,75,.12)':'rgba(10,20,10,.4)';
-      return `<div style="display:grid;grid-template-columns:40px 1fr 1fr;gap:6px;align-items:center;padding:8px 10px;background:${bg};border-radius:8px;margin-bottom:4px;">
-        <div style="font-family:var(--orb);font-size:10px;font-weight:700;color:rgba(200,168,75,.8);">${i}DAY</div>
-        <div style="text-align:center;font-family:var(--kr);font-size:12px;">${myOk?'✅ 완료':'⏳ 대기'}</div>
-        <div style="text-align:center;font-family:var(--kr);font-size:12px;">${oppOk?'✅ 완료':'⏳ 대기'}</div>
-      </div>`;
-    }).join('');
-
-    const todayDay=findTodaySpecialDay(myD);
-    const canComplete=todayDay>=0&&!myD[todayDay];
-
-    document.getElementById('gemModalTitle').textContent='🌟 스페셜작전 진행중';
-    document.getElementById('gemProposalArea').style.display='none';
-    document.getElementById('gemSelectArea').style.display='none';
-
-    /* 모달 내용 커스텀 */
-    const modal=document.getElementById('gemModal');
-    let extra=document.getElementById('specialModalBody');
-    if(!extra){extra=document.createElement('div');extra.id='specialModalBody';
-      modal.querySelector('div').insertBefore(extra,modal.querySelector('button[onclick*="closeGemModal"]'));}
-    extra.innerHTML=`
-      <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:rgba(200,168,75,.95);margin-bottom:4px;">⚔ ${td.specialMission}</div>
-      <div style="display:grid;grid-template-columns:40px 1fr 1fr;gap:6px;margin-bottom:6px;padding:4px 10px;">
-        <div></div>
-        <div style="text-align:center;font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.6);">${mn}</div>
-        <div style="text-align:center;font-family:var(--kr);font-size:10px;color:rgba(180,150,220,.6);">${pn}</div>
-      </div>
-      ${dayRows}
-      ${canComplete?`<button onclick="completeSpecialDay(${todayDay})" style="width:100%;margin-top:10px;padding:12px;background:linear-gradient(135deg,rgba(160,120,30,.9),rgba(100,80,20,.9));border:1px solid rgba(200,168,75,.4);border-radius:10px;color:#fff;font-family:var(--kr);font-size:14px;font-weight:900;cursor:pointer;">✅ ${todayDay+1}DAY 완료</button>`
-      :'<div style="margin-top:10px;padding:10px;text-align:center;background:rgba(200,168,75,.05);border:1px dashed rgba(200,168,75,.2);border-radius:10px;font-family:var(--kr);font-size:12px;color:rgba(200,168,75,.5);">오늘 이미 완료했거나 상대 완료 대기중</div>'}
-    `;
-    modal.style.display='flex';
-    return;
-  }
-
-  /* 스페셜 미시작 → 제안 */
-  activeGemLock='special';
-  document.getElementById('gemModalTitle').textContent='🌟 스페셜작전 — 5일 연속 임무 (보상 50,000원)';
-  document.getElementById('gemProposalArea').style.display='block';
-  document.getElementById('gemSelectArea').style.display='none';
-  let extra=document.getElementById('specialModalBody');
-  if(extra) extra.remove();
-
-  document.getElementById('myMissionList').style.display='none';
-  document.getElementById('myMissionPickerLabel').textContent=activeGemLock==='special'?'특수임무에서 선택 ▾':'위험임무에서 선택 ▾';
-  document.getElementById('myMissionPreview').style.display='none';
-  document.getElementById('myMissionPreviewName').textContent='';
-  document.getElementById('myMissionPreviewBadge').style.display='none';
-  const submitBtn=document.getElementById('gemSubmitBtn');
-  submitBtn.disabled=true;
-  submitBtn.style.color='rgba(255,255,255,.4)';
-  submitBtn.style.cursor='not-allowed';
-  document.getElementById('gemSelectedMission').value='';
-
-  const oppP=(td&&td.oppGemProposal||{})['special']||null;
-  const oppBox=document.getElementById('gemOppProposalBox');
-  if(oppP){
-    oppBox.innerHTML=`<div style="padding:12px 14px;background:rgba(60,35,10,.55);border:1.5px solid rgba(255,165,50,.45);border-radius:10px;position:relative;">
-      <div style="font-family:var(--orb);font-size:9px;letter-spacing:1.5px;color:rgba(255,165,50,.7);margin-bottom:5px;">상대방 제안 (5일 임무)</div>
-      <div style="font-family:var(--kr);font-size:15px;font-weight:900;color:rgba(255,200,100,.95);">${oppP}</div>
-    </div>`;
-  } else {
-    oppBox.innerHTML=`<div style="padding:12px 14px;background:rgba(20,20,20,.4);border:1px dashed rgba(255,255,255,.12);border-radius:10px;text-align:center;">
-      <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.3);">상대방 아직 미등록</div>
-      <div style="font-family:var(--orb);font-size:10px;color:rgba(255,255,255,.18);margin-top:3px;">5일 동안 매일 수행할 위험임무</div>
-    </div>`;
-  }
-  document.getElementById('gemModal').style.display='flex';
-}
-
-/* 스페셜작전 — 오늘 완료해야 할 DAY 인덱스 반환 */
-function findTodaySpecialDay(myD){
-  /* 가장 첫 번째 미완료 칸 반환 */
-  for(let i=0;i<5;i++){if(!myD[i]) return i;}
-  return -1;
-}
-
-/* 스페셜작전 DAY 완료 */
-function completeSpecialDay(dayIdx){
-  if(!confirm((dayIdx+1)+'DAY 완료 처리할까요?')) return;
-  if(!window.teamData.specialDays) window.teamData.specialDays={my:[false,false,false,false,false],opp:[false,false,false,false,false]};
-  window.teamData.specialDays.my[dayIdx]=true;
-  saveTeam();
-
-  if(FB_READY&&_fbDb&&window.partnerData){
-    const mySpDaysKey=MY_UID<partnerData.uid?'spdays_a':'spdays_b';
-    const update={};
-    update[mySpDaysKey]=window.teamData.specialDays.my;
-    _fbUpdate(PATH.teamRoom(MY_UID,partnerData.uid),update).then(()=>{
-      showToast('✅ '+(dayIdx+1)+'DAY 완료!');
-      /* 5일 모두 양쪽 완료 체크 */
-      const myD=window.teamData.specialDays.my;
-      const oppD=window.teamData.specialDays.opp;
-      /* 한 쪽이라도 완료한 DAY 수 계산 → 달성일수만큼 보상 */
-      const myDone=myD.filter(Boolean).length;
-      const oppDone=oppD.filter(Boolean).length;
-      const commonDone=myD.filter((v,i)=>v&&oppD[i]).length; /* 양쪽 모두 완료한 날 */
-      if(myD.every(Boolean)&&oppD.every(Boolean)){
-        setTimeout(()=>{
-          const earned=commonDone*20000;
-          alert('🌟 스페셜작전 5일 완료!\n양쪽 모두 완료한 날: '+commonDone+'일\n보상: '+earned.toLocaleString()+'원');
-          _fbUpdate(PATH.teamRoom(MY_UID,partnerData.uid),{specialMission:null,spdays_a:null,spdays_b:null,specialStartedAt:null});
-          window.teamData.specialMission=null;
-          window.teamData.specialDays={my:[false,false,false,false,false],opp:[false,false,false,false,false]};
-          window.teamData.specialUsed=(window.teamData.specialUsed||0)+commonDone;
-          saveTeam();
-          renderTeamPanel();
-          updateGemBoxes();
-          if(window.renderStatsRevenueCard) renderStatsRevenueCard();
-        },400);
-      }
-    });
-  }
-  closeGemModal();
-  updateGemBoxes();
-  updateSpecialDayBar();
-}
-
 /* ============================================================
    미션 철회 (확정 후 취소)
    ============================================================ */
@@ -7325,7 +6958,6 @@ function calcTeamRewardMoney(){
     }
   }
   /* 스페셜: 완료 일수 × 2만원 (구 방식) */
-  sum+=(td['specialUsed']||0)*SPECIAL_DAY_REWARD;
   /* HQ 특수임무 1~4 보상 포함 (새 방식) */
   for(let n=1;n<=4;n++){
     const rwd = window['tmMyReward'+n]||0;
@@ -7370,7 +7002,6 @@ function _refreshLockCards(){
   });
 
   /* 스페셜작전 잠금카드 */
-  const spTh = (window.GEM_THRESHOLDS&&window.GEM_THRESHOLDS['special'])||200000;
   const spBar  = document.getElementById('lockSpecialBar');
   const spLbl  = document.getElementById('lockSpecialLabel');
   const spSt   = document.getElementById('lockSpecialStatus');
@@ -7518,7 +7149,6 @@ function renderStatsRevenueCard(){
   const spLbl=document.getElementById('lockSpecialLabel');
   const spSt=document.getElementById('lockSpecialStatus');
   const spCard=document.getElementById('teamLockSpecialCard');
-  const spTh=GEM_THRESHOLDS['special']||200000;
   if(spBar){
     spBar.style.width=Math.min(100,(personal/spTh)*100)+'%';
     if(spLbl) spLbl.textContent=personal.toLocaleString()+' / '+spTh.toLocaleString()+'원';
@@ -8043,11 +7673,7 @@ function mpShowComplete(d){
   /* 테스터 재실행 버튼 (특수작전1 완료 시) */
   const testerEl = document.getElementById('mpCvTesterReset');
   if(testerEl){
-    if(mpCurrent===1 && window._specialOpAccepted){
-      testerEl.style.display='block';
-    } else {
-      testerEl.style.display='none';
-    }
+    testerEl.style.display='none';
   }
 
   document.getElementById('mpCard').scrollTop=0;
@@ -8077,14 +7703,13 @@ function mpUpdateGemBox(id){
     const label=id==='special'?'스페셜작전':'특수작전'+id;
     box.className='gem-box stamped';
     box.onclick=()=>mpOpen(id);
-    /* 특수작전1 + specialOpAccepted 완료 시 → 재실행 버튼 포함 */
-    const isSp1Done = id===1 && window._specialOpAccepted;
+    const isSp1Done = false;
     box.innerHTML=`<div class="gem-stamp-wrap">
       <div style="font-family:var(--orb);font-size:8px;letter-spacing:1px;color:rgba(92,184,172,.35);align-self:flex-start;margin-bottom:2px;">MISSION ${id}</div>
       <div class="gem-stamp-circle"><div class="gem-stamp-icon">🏆</div><div class="gem-stamp-word">COMPLETE</div></div>
       <div class="gem-stamp-title">${label}</div>
       <button class="gem-stamp-view" onclick="event.stopPropagation();mpOpen(${typeof id==='number'?id:"'"+id+"'"})">답변 보기</button>
-      ${isSp1Done?`<button onclick="event.stopPropagation();resetSpecialOp1()" style="margin-top:5px;padding:5px 10px;background:rgba(74,127,168,.18);border:1px dashed rgba(74,127,168,.4);border-radius:7px;color:rgba(114,168,204,.7);font-family:var(--kr);font-size:9px;cursor:pointer;width:100%;">🔄 테스터 재실행</button>`:''}
+      ${isSp1Done?`<button onclick="event.stopPropagation();" style="margin-top:5px;padding:5px 10px;background:rgba(74,127,168,.18);border:1px dashed rgba(74,127,168,.4);border-radius:7px;color:rgba(114,168,204,.7);font-family:var(--kr);font-size:9px;cursor:pointer;width:100%;">🔄 테스터 재실행</button>`:''}
     </div>`;
   } else if(d.status==='checking'){
     box.className='gem-box state-checking';
@@ -8137,7 +7762,6 @@ function mpMyRole(){
 
 /* gemBox 클릭 → AB 선택 팝업 */
 window.openGemBoxWithMission = async function(n){
-  if(n==='special'){ if(typeof openSpecialModal === 'function') openSpecialModal(); return; }
 
   const connOk = (typeof connectionStatus !== 'undefined' ? connectionStatus : 'none') === 'connected';
   if(!connOk){
@@ -9848,8 +9472,7 @@ function calcRewardCap(){
   const allSpecialDone = d1 && d2 && d3;
   const specialTotal = s1 + s2 + s3;
 
-  /* 스페셜임무(4번) */
-  const specialOp = window['tmMyReward4']||0;
+  const specialOp = 0; /* 스페셜임무 제거 */
 
   /*
    * 개인임무 한도 규칙:
@@ -9866,226 +9489,11 @@ function calcRewardCap(){
   return {
     specialTotal,
     specialBonus,
-    specialOp,
-    allSpecialDone,
     personalCap,
-    total: Math.min(300000, specialTotal + specialOp + personalCap)
+    total: Math.min(220000, specialTotal + personalCap)
   };
 }
 
-/* ═══════════════════════════════════════════════════════
-   스페셜임무 선택 시스템 (보물상자 방식)
-   - 각자 내 특수임무 1개 선택 → Firebase 저장
-   - 양쪽 등록 확인 시 "임무수행 시작" 버튼 활성화
-   - 버튼 클릭 → 랜덤 1개 확정 → DAY 미션 시작
-═══════════════════════════════════════════════════════ */
-
-/* 스페셜임무 선택 팝업 — Firebase 상태 로드 후 열기 */
-async function _openSpecialSelectWithStatus(){
-  if(!partnerData){ showToast('팀원과 연결 후 이용 가능합니다'); return; }
-  const path = _tmPath(4);
-  if(!path){ showToast('Firebase 연결이 필요합니다'); return; }
-  const mk = _tmMK(), ok = _tmOK();
-  try{
-    const snap = await _fbGet(path+'/special_select');
-    const d = snap && snap.exists() ? snap.val() : {};
-    _renderSpecialSelectUI(tplData['hard']||[], d[mk]||null, d[ok]||null, _tmPN(), mk, ok);
-  } catch(e){
-    _renderSpecialSelectUI(tplData['hard']||[], null, null, _tmPN(), mk, ok);
-  }
-}
-
-/* 스페셜임무 선택 팝업 열기 (구 인터페이스 호환) */
-function openSpecialMissionSelect(){
-  _openSpecialSelectWithStatus();
-}
-
-function _renderSpecialSelectUI(myHards, myChoice, oppChoice, pName, mk, ok){
-  /* 기존 팝업 제거 */
-  const prev = document.getElementById('specialSelectOverlay');
-  if(prev) prev.remove();
-
-  const bothReady = !!(myChoice && oppChoice);
-  const overlay = document.createElement('div');
-  overlay.id = 'specialSelectOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.88);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
-  overlay.onclick = e=>{ if(e.target===overlay) overlay.remove(); };
-
-  overlay.innerHTML = `
-    <div style="background:var(--card);border:1.5px solid rgba(251,191,36,.4);border-radius:18px;padding:20px;max-width:390px;width:100%;margin-top:20px;">
-      <!-- 헤더 -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div style="font-family:var(--title);font-size:15px;font-weight:900;color:rgba(251,191,36,.95);">💎 스페셜임무 선택</div>
-        <button onclick="document.getElementById('specialSelectOverlay').remove()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:20px;cursor:pointer;">✕</button>
-      </div>
-
-      <!-- 상태 카드: 나 vs 상대 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
-        <!-- 내 선택 상태 -->
-        <div style="padding:11px;background:${myChoice?'rgba(251,191,36,.1)':'rgba(255,255,255,.04)'};border:1.5px solid ${myChoice?'rgba(251,191,36,.55)':'rgba(255,255,255,.1)'};border-radius:12px;text-align:center;">
-          <div style="font-size:20px;margin-bottom:5px;">${myChoice?'✅':'📋'}</div>
-          <div style="font-family:var(--kr);font-size:10px;font-weight:700;color:${myChoice?'rgba(251,191,36,.9)':'rgba(255,255,255,.4)'};">나</div>
-          <div style="font-family:var(--kr);font-size:10px;color:${myChoice?'rgba(255,220,100,.8)':'rgba(255,255,255,.3)'};margin-top:3px;line-height:1.4;word-break:keep-all;">${myChoice?myChoice.name:'선택 대기중'}</div>
-        </div>
-        <!-- 상대 선택 상태 -->
-        <div style="padding:11px;background:${oppChoice?'rgba(180,150,220,.1)':'rgba(255,255,255,.04)'};border:1.5px solid ${oppChoice?'rgba(180,150,220,.45)':'rgba(255,255,255,.1)'};border-radius:12px;text-align:center;">
-          <div style="font-size:20px;margin-bottom:5px;">${oppChoice?'✅':'⏳'}</div>
-          <div style="font-family:var(--kr);font-size:10px;font-weight:700;color:${oppChoice?'rgba(180,150,220,.9)':'rgba(255,255,255,.4)'};">${pName}</div>
-          <div style="font-family:var(--kr);font-size:10px;color:${oppChoice?'rgba(200,170,255,.8)':'rgba(255,255,255,.3)'};margin-top:3px;line-height:1.4;">${oppChoice?oppChoice.name:'선택 대기중'}</div>
-        </div>
-      </div>
-
-      <!-- 양쪽 준비 완료 → 임무수행 시작 버튼 -->
-      ${bothReady ? `
-        <div style="margin-bottom:14px;padding:12px;background:rgba(251,191,36,.1);border:1.5px solid rgba(251,191,36,.5);border-radius:12px;text-align:center;">
-          <div style="font-family:var(--orb);font-size:8px;color:rgba(251,191,36,.7);letter-spacing:2px;margin-bottom:6px;">◈ 양쪽 선택 완료!</div>
-          <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.6);margin-bottom:10px;">버튼을 눌러 랜덤으로 임무를 확정하세요</div>
-          <button onclick="startSpecialMissionRandom()" style="width:100%;padding:13px;background:linear-gradient(135deg,rgba(180,130,0,.9),rgba(120,85,0,.95));border:2px solid rgba(251,191,36,.65);border-radius:11px;color:#fff;font-family:var(--title);font-size:15px;font-weight:900;cursor:pointer;letter-spacing:.5px;box-shadow:0 0 18px rgba(251,191,36,.2);">
-            🎲 임무수행 시작 (랜덤 확정)
-          </button>
-        </div>
-      ` : `
-        <div style="margin-bottom:14px;padding:9px 12px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.12);border-radius:10px;font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.4);text-align:center;">
-          ⏳ ${myChoice?pName+'의 선택을 기다리는 중...':'내 특수임무를 선택해주세요'}
-        </div>
-      `}
-
-      <!-- 내 특수임무 목록 (미선택 시만 표시) -->
-      ${!myChoice ? `
-        <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.45);margin-bottom:10px;">📋 상대에게 수행시킬 나의 특수임무 선택:</div>
-        ${myHards.length === 0 ? `
-          <div style="text-align:center;padding:20px;color:rgba(255,255,255,.3);font-size:12px;">
-            특수임무가 없습니다. 작전수첩에서 먼저 등록하세요.
-          </div>
-        ` : `
-          <div style="display:flex;flex-direction:column;gap:7px;max-height:250px;overflow-y:auto;">
-            ${myHards.map((m,i)=>`
-              <div onclick="pickMySpecialMission(${i})" style="padding:11px 14px;background:rgba(28,6,6,.85);border:1.5px solid rgba(220,60,60,.22);border-radius:11px;cursor:pointer;transition:.15s;"
-                onmouseover="this.style.borderColor='rgba(220,60,60,.55)'" onmouseout="this.style.borderColor='rgba(220,60,60,.22)'">
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <span style="font-size:13px;">⚡</span>
-                  <div style="flex:1;">
-                    <div style="font-family:var(--kr);font-size:13px;font-weight:800;color:#fff;">${m.name}</div>
-                    <div style="font-family:var(--orb);font-size:9px;color:rgba(255,120,120,.55);margin-top:2px;">특수임무 · 탭하여 선택</div>
-                  </div>
-                  <div style="color:rgba(255,80,80,.6);font-size:16px;">›</div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        `}
-      ` : `
-        <div style="text-align:center;padding:10px;">
-          <button onclick="_cancelSpecialMissionSelect()" style="padding:8px 18px;background:rgba(60,10,10,.6);border:1px solid rgba(200,50,50,.3);border-radius:8px;color:rgba(255,80,80,.7);font-family:var(--kr);font-size:12px;cursor:pointer;">선택 취소</button>
-        </div>
-      `}
-    </div>`;
-
-  document.body.appendChild(overlay);
-}
-
-/* 내 특수임무 선택 */
-async function pickMySpecialMission(idx){
-  const myHards = tplData['hard'] || [];
-  const mission = myHards[idx];
-  if(!mission) return;
-  const path = _tmPath(4);
-  if(!path){ showToast('Firebase 연결이 필요합니다'); return; }
-  const mk = _tmMK(), ok = _tmOK();
-
-  await _fbUpdate(path+'/special_select', {
-    [mk]: { name: mission.name, idx, selectedAt: Date.now() }
-  }).catch(()=>{});
-
-  /* 현재 상대 선택 확인 */
-  const snap = await _fbGet(path+'/special_select').catch(()=>null);
-  const d = snap && snap.exists() ? snap.val() : {};
-  const oppChoice = d[ok] || null;
-  const myChoice = d[mk] || { name: mission.name };
-
-  showToast(`✅ "${mission.name}" 선택 완료!`);
-  _renderSpecialSelectUI(myHards, myChoice, oppChoice, _tmPN(), mk, ok);
-  tmHQRenderHome();
-}
-
-/* 선택 취소 */
-async function _cancelSpecialMissionSelect(){
-  const path = _tmPath(4);
-  if(!path) return;
-  const mk = _tmMK(), ok = _tmOK();
-  await _fbUpdate(path+'/special_select', { [mk]: null }).catch(()=>{});
-  const myHards = tplData['hard'] || [];
-  const snap = await _fbGet(path+'/special_select').catch(()=>null);
-  const d = snap && snap.exists() ? snap.val() : {};
-  _renderSpecialSelectUI(myHards, null, d[ok]||null, _tmPN(), mk, ok);
-  tmHQRenderHome();
-}
-
-/* 스페셜 선택 실시간 감시 — 상대방 선택 시 화면 자동 갱신 */
-let _specialSelectSubFn = null;
-function _startSpecialSelectWatch(){
-  if(_specialSelectSubFn){ try{_specialSelectSubFn();}catch(e){} }
-  const path = _tmPath(4);
-  if(!path||!FB_READY||!_fbDb) return;
-  const mk = _tmMK(), ok = _tmOK();
-  _fbOn(path, snap=>{
-    const d = snap && snap.exists() ? snap.val() : {};
-    /* 미션 확정됐으면 DAY 수행 화면으로 전환 */
-    if(d.special_confirmed){
-      const selEl = document.getElementById('tmHQSpecialSelect');
-      if(selEl && selEl.style.display !== 'none'){
-        _spShowDayScreen(d);
-      }
-      return;
-    }
-    const selEl = document.getElementById('tmHQSpecialSelect');
-    if(selEl && selEl.style.display !== 'none'){
-      _spShowSelectScreen(d);
-    }
-    tmHQRenderHome();
-  });
-  _specialSelectSubFn = ()=>{};
-}
-
-/* 임무수행 시작 — 랜덤 확정 */
-async function startSpecialMissionRandom(){
-  const path = _tmPath(4);
-  if(!path){ showToast('Firebase 연결이 필요합니다'); return; }
-  const mk = _tmMK(), ok = _tmOK();
-
-  const snap = await _fbGet(path+'/special_select').catch(()=>null);
-  const d = snap && snap.exists() ? snap.val() : {};
-  const myChoice = d[mk];
-  const oppChoice = d[ok];
-
-  if(!myChoice || !oppChoice){ showToast('양쪽 선택이 완료되지 않았습니다'); return; }
-
-  /* 랜덤으로 1개 확정 */
-  const chosen = Math.random() < 0.5 ? myChoice : oppChoice;
-  const confirmedMission = chosen.name;
-
-  await _fbUpdate(path, {
-    'special_confirmed': { name: confirmedMission, confirmedAt: Date.now() },
-    'completedDays': 0
-  }).catch(()=>{});
-
-  /* 선택 화면 닫기 */
-  _tmHQShowView('tmHQSpecialDay');
-
-  /* 확정 팝업 */
-  const flash = document.createElement('div');
-  flash.style.cssText='position:fixed;inset:0;z-index:9800;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:20px;';
-  flash.innerHTML = `
-    <div style="text-align:center;max-width:300px;width:100%;">
-      <div style="font-size:56px;margin-bottom:12px;filter:drop-shadow(0 0 18px rgba(251,191,36,.6));">🎲</div>
-      <div style="font-family:var(--orb);font-size:9px;letter-spacing:3px;color:rgba(251,191,36,.6);margin-bottom:8px;">MISSION CONFIRMED</div>
-      <div style="font-family:var(--title);font-size:18px;font-weight:900;color:#fff;margin-bottom:6px;">스페셜임무 확정!</div>
-      <div style="font-family:var(--kr);font-size:14px;color:rgba(251,191,36,.95);font-weight:700;padding:12px 16px;background:rgba(251,191,36,.1);border:1.5px solid rgba(251,191,36,.4);border-radius:12px;margin-bottom:20px;line-height:1.5;">"${confirmedMission}"</div>
-      <button onclick="this.closest('[style*=fixed]').remove();_spEnter();" style="padding:13px 32px;background:linear-gradient(135deg,rgba(120,90,0,.9),rgba(80,60,0,.95));border:2px solid rgba(251,191,36,.55);border-radius:12px;color:#fff;font-family:var(--title);font-size:15px;font-weight:900;cursor:pointer;">✅ DAY 1 시작!</button>
-    </div>`;
-  document.body.appendChild(flash);
-  setTimeout(()=>{ if(flash.parentNode) flash.remove(); _spEnter(); }, 5000);
-}
 
 function tmHQBack(){
   _tmHQSubClean();
@@ -11222,6 +10630,10 @@ function _qaPath(n){ return _tmPath(n); }
 function _qaIsUnlocked(n){ return _tmUnlocked(n); }
 function renderTeamQAMission(d,n){ tmRender(d,n||1); }
 
+
+/* 스페셜임무 제거됨 — stub */
+function startSpecialMissionRandom(){ showToast('스페셜임무가 제거되었습니다'); }
+function resetSpecialOp1(){ }
 </script>
 <!-- 삭제된 팀작전 요소 스텁 (JS 호환용) -->
 <div style="display:none">
@@ -11229,7 +10641,6 @@ function renderTeamQAMission(d,n){ tmRender(d,n||1); }
   <div id="activeMissionsContainer"></div>
   <div id="teamMissionBanner"></div>
   <div id="mpProposalBanner"></div>
-  <div id="specialOpArea"></div>
   <div id="disconnectArea"></div>
   <div id="gemBox1"></div><div id="gemBox2"></div><div id="gemBox3"></div><div id="gemBox4"></div>
   <div id="gemActionArea1"></div><div id="gemActionArea2"></div><div id="gemActionArea3"></div><div id="gemActionArea4"></div>
@@ -11241,8 +10652,7 @@ function renderTeamQAMission(d,n){ tmRender(d,n||1); }
   <div id="lock1Bar"></div><div id="lock2Bar"></div><div id="lock3Bar"></div><div id="lock4Bar"></div>
   <div id="lock1Label"></div><div id="lock2Label"></div><div id="lock3Label"></div><div id="lock4Label"></div>
   <div id="lock1Status"></div><div id="lock2Status"></div><div id="lock3Status"></div><div id="lock4Status"></div>
-  <div id="teamLockSpecialCard"></div><div id="lockSpecialBar"></div><div id="lockSpecialLabel"></div><div id="lockSpecialStatus"></div>
-  <div id="gemOppStatusSpecial"></div><div id="specialDayBar"></div><div id="specialDayGrid"></div>
+  
 </div>
 
 </body>
