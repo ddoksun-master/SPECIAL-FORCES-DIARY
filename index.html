@@ -9525,6 +9525,11 @@ function renderPartnerOps(){
         };
         document.getElementById('cheerTargetName').textContent = (partnerData.nickname||'상대방') + '의 작전에 응원 메시지를 남겨보세요';
         document.getElementById('cheerMsgInput').value='';
+        /* 상대방 작전확인 패널 닫기 */
+        const _ob = document.getElementById('partnerOpsBody');
+        const _oc = document.getElementById('partnerOpsChevron');
+        if(_ob) _ob.style.display='none';
+        if(_oc) _oc.style.transform='';
         document.getElementById('cheerMsgPopup').style.display='flex';
       });
     }
@@ -9548,6 +9553,11 @@ function renderPartnerOps(){
         popup._coopQi = myCoopIdx >= 0 ? myCoopIdx : 0;
         document.getElementById('cheerTargetName').textContent = (partnerData.nickname||'상대방') + '의 협동작전에 응원 메시지를 남겨보세요';
         document.getElementById('cheerMsgInput').value='';
+        /* 상대방 작전확인 패널 닫기 */
+        const _ob = document.getElementById('partnerOpsBody');
+        const _oc = document.getElementById('partnerOpsChevron');
+        if(_ob) _ob.style.display='none';
+        if(_oc) _oc.style.transform='';
         popup.style.display='flex';
       });
     }
