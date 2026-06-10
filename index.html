@@ -8804,6 +8804,12 @@ async function acceptOpsTogether(){
   if(alreadyCoop){showToast('⚠ 협동작전은 하루 1개만 가능합니다. 기존 협동작전을 삭제 후 다시 시도하세요.');return;}
 
   const now = _virtualNow();
+  const _today = dateStr(new Date(now));
+  const _questDateForCoop = (n.questDate && n.questDate > _today) ? n.questDate : null;
+  /* 미래 날짜 작전 같이하기: 해당 날짜 04:00 활성화 */
+  const _futureActivate = _questDateForCoop
+    ? new Date(_questDateForCoop + 'T04:00:00').getTime()
+    : null;
 
   /* 상대방 원래 등록시간 + 기존 응원메세지 가져오기 */
   let partnerRegisteredAt = now;
@@ -8821,7 +8827,11 @@ async function acceptOpsTogether(){
     }
   } catch(e){}
 
-  const syncedCertAvail = partnerRegisteredAt + (60*60*1000);
+  /* 미래 날짜 작전: registeredAt/certAvailableAt을 해당 날짜 04:00/05:00 기준으로 고정 */
+  const syncedCertAvail = _futureActivate
+    ? (_futureActivate + (60*60*1000))
+    : partnerRegisteredAt + (60*60*1000);
+  const syncedRegisteredAt = _futureActivate ? _futureActivate : partnerRegisteredAt;
 
   /* ★ 동일 임무명이 내 퀘스트에 있으면 중복 추가 대신 coop으로 전환 */
   const _sameName = (n.questName||'').trim();
@@ -8833,7 +8843,7 @@ async function acceptOpsTogether(){
     quests[existingIdx].togetherAcceptedAt = now;
     quests[existingIdx].partnerCertified = false;
     quests[existingIdx].bonusClaimed = false;
-    quests[existingIdx].registeredAt = partnerRegisteredAt;
+    quests[existingIdx].registeredAt = syncedRegisteredAt;
     quests[existingIdx].certAvailableAt = syncedCertAvail;
     saveQ(); renderQ(); renderDayTabs(); updateHUD(); renderPartnerOps();
     /* 상대 퀘스트에 내 uid 기록 */
@@ -8860,7 +8870,7 @@ async function acceptOpsTogether(){
         });
       }
     }catch(e){}
-    showToast('🤝 같은 이름 작전을 같이하기로 전환했습니다! 💪');
+    showToast(_futureActivate ? `🤝 ${n.questDate} 04:00 활성화! 같이하기 예약 완료 💪` : '🤝 같은 이름 작전을 같이하기로 전환했습니다! 💪');
     return;
   }
 
@@ -8874,7 +8884,7 @@ async function acceptOpsTogether(){
     stamped: false,
     mode: 'coop',
     reason: n.questReason||'',
-    registeredAt: partnerRegisteredAt,
+    registeredAt: syncedRegisteredAt,
     certAvailableAt: syncedCertAvail,
     together: n.fromUid,
     togetherAcceptedAt: now,
@@ -8922,7 +8932,7 @@ async function acceptOpsTogether(){
     }
   }catch(e){}
 
-  showToast('🤝 같이하기 등록! 함께 완료해보세요 💪');
+  showToast(_futureActivate ? `🤝 ${n.questDate} 04:00 활성화! 같이하기 예약 완료 💪` : '🤝 같이하기 등록! 함께 완료해보세요 💪');
 }
 
 /* ══ 인증 팝업 ══ */
@@ -9341,8 +9351,8 @@ function subscribeMyOps(){
 /* 상대방 퀘스트 실시간 구독 — 작전바는 항상 오늘 날짜 기준 */
 function subscribePartnerOps(){
   if(!partnerData||!partnerData.uid||!_fbDb) return;
-  /* 가상 시계 기준 날짜 */
-  const barDate = dateStr(new Date(_virtualNow()));
+  /* 선택된 날짜 기준 (날짜 탭 이동 시 해당 날짜 작전 표시) */
+  const barDate = selDate || dateStr(new Date(_virtualNow()));
   const path = _questPath(partnerData.uid, barDate);
   /* 이미 같은 경로 구독 중이면 스킵 */
   if(_subscribedPartnerPath === path) return;
@@ -9385,7 +9395,10 @@ function renderPartnerOps(){
   if(!section||!list) return;
 
   const pName = (partnerData&&partnerData.nickname)||'팀원';
-  if(titleEl) titleEl.textContent = pName + '의 작전확인';
+  const _todayForTitle = dateStr(new Date(_virtualNow()));
+  const _isFuturePane = selDate && selDate > _todayForTitle;
+  const _titleDate = _isFuturePane ? ` (${selDate.slice(5).replace('-','/')})` : '';
+  if(titleEl) titleEl.textContent = pName + '의 작전확인' + _titleDate;
 
   const allOps = _partnerQuests||[];
 
@@ -9512,11 +9525,6 @@ function renderPartnerOps(){
         };
         document.getElementById('cheerTargetName').textContent = (partnerData.nickname||'상대방') + '의 작전에 응원 메시지를 남겨보세요';
         document.getElementById('cheerMsgInput').value='';
-        /* 상대방 작전확인 패널 닫기 */
-        const _opsBody = document.getElementById('partnerOpsBody');
-        const _opsChevron = document.getElementById('partnerOpsChevron');
-        if(_opsBody) _opsBody.style.display='none';
-        if(_opsChevron) _opsChevron.style.transform='';
         document.getElementById('cheerMsgPopup').style.display='flex';
       });
     }
@@ -9540,11 +9548,6 @@ function renderPartnerOps(){
         popup._coopQi = myCoopIdx >= 0 ? myCoopIdx : 0;
         document.getElementById('cheerTargetName').textContent = (partnerData.nickname||'상대방') + '의 협동작전에 응원 메시지를 남겨보세요';
         document.getElementById('cheerMsgInput').value='';
-        /* 상대방 작전확인 패널 닫기 */
-        const _opsBody2 = document.getElementById('partnerOpsBody');
-        const _opsChevron2 = document.getElementById('partnerOpsChevron');
-        if(_opsBody2) _opsBody2.style.display='none';
-        if(_opsChevron2) _opsChevron2.style.transform='';
         popup.style.display='flex';
       });
     }
