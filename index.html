@@ -5469,8 +5469,8 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
 
       <!-- ★ 인증 팝업 모달 -->
-      <div id="certPopup" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeCertPopup();">
-        <div style="background:linear-gradient(160deg,#1A2820,#131C16);border:1.5px solid rgba(82,212,164,.3);border-radius:20px;padding:22px;max-width:380px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.8);">
+      <div id="certPopup" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:12px;" onclick="if(event.target===this)closeCertPopup();">
+        <div style="background:linear-gradient(160deg,#1A2820,#131C16);border:1.5px solid rgba(82,212,164,.3);border-radius:20px;padding:16px;max-width:380px;width:100%;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-shadow:0 24px 64px rgba(0,0,0,.8);">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
             <div style="font-family:var(--title);font-size:15px;font-weight:900;color:#A8F0C8;">📸 작전 인증</div>
             <button onclick="closeCertPopup()" style="background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.65);font-size:17px;cursor:pointer;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;">✕</button>
@@ -8969,7 +8969,7 @@ function selectCertMode(mode){
   if(mode==='photo'){
     area.innerHTML=`
       <div id="certPhotoPreviewWrap" style="margin-bottom:10px;display:none;">
-        <img id="certPhotoPreview" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;border:1.5px solid rgba(82,212,164,.3);" />
+        <img id="certPhotoPreview" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;border:1.5px solid rgba(82,212,164,.3);" />
       </div>
       <label style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;box-sizing:border-box;padding:14px;background:rgba(42,144,128,.12);border:1.5px dashed rgba(82,212,164,.4);border-radius:10px;cursor:pointer;font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(82,212,164,.97);margin-bottom:10px;">
         📷 사진 선택
