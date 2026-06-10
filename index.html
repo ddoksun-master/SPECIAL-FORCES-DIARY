@@ -9934,7 +9934,13 @@ function _openEmpathyPopup(item, listIdx, _extCk, _extBtn){
   });
 }
 
+let _renderHistBusy=false;
 function renderHist(){
+  if(_renderHistBusy) return;
+  _renderHistBusy=true;
+  try{ _renderHistInner(); } finally{ _renderHistBusy=false; }
+}
+function _renderHistInner(){
   const el=document.getElementById('histContent');
   /* 내 작전 기록 날짜 목록 + 오늘 (파트너 작전만 있어도 오늘은 표시) */
   /* 가상 시계 기준 오늘 */
@@ -10053,8 +10059,11 @@ function renderHist(){
           _fbDb.ref(_questPath(partnerData.uid,date)).once('value',snap=>{
             window[pCacheKey]=snap.exists()?(snap.val()||[]):[];
             window[pCacheKey+'_loading']=false;
-            renderHist();
+            setTimeout(()=>renderHist(),0); /* ★ 재진입 방지: 현재 루프 끝난 후 재렌더 */
           });
+          return; /* ★ 로딩 중엔 이 날짜 entry 렌더 중단 */
+        } else if(window[pCacheKey+'_loading']){
+          return; /* ★ 이미 로딩 중이면 중복 entry 방지 */
         }
       }
     }
