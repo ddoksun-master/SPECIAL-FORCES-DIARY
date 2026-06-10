@@ -8701,20 +8701,49 @@ async function _doWithdraw(){
 
 /* ══ 비밀번호 변경 ══ */
 function _openChangePwPopup(){
-  const popup = document.getElementById('changePwPopup');
-  if(!popup) return;
-  document.getElementById('changePwCurrent').value = '';
-  document.getElementById('changePwNew').value = '';
-  document.getElementById('changePwConfirm').value = '';
-  _changePwClearErr();
-  const label = document.getElementById('changePwUserLabel');
-  if(label) label.textContent = (myNickname||'') + ' 님의 비밀번호를 변경합니다';
-  popup.style.display = 'flex';
-  setTimeout(()=>{ document.getElementById('changePwCurrent').focus(); }, 100);
+  /* 기존 팝업 있으면 제거 */
+  const existing = document.getElementById('changePwPopup');
+  if(existing) existing.remove();
+
+  /* document.body 직하위에 동적 생성 → app-shell overflow:hidden 영향 없음 */
+  const popup = document.createElement('div');
+  popup.id = 'changePwPopup';
+  popup.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px;';
+  popup.onclick = (e)=>{ if(e.target===popup) _closeChangePwPopup(); };
+  popup.innerHTML = `
+    <div style="background:linear-gradient(160deg,#2A1E52,#1A1230);border:1.5px solid rgba(155,120,212,.40);border-radius:18px;padding:24px 20px;width:100%;max-width:320px;box-shadow:0 8px 40px rgba(0,0,0,.55);">
+      <div style="font-family:var(--title);font-size:15px;font-weight:900;color:rgba(200,168,255,.95);margin-bottom:6px;letter-spacing:.3px;">🔑 비밀번호 변경</div>
+      <div id="changePwUserLabel" style="font-family:var(--kr);font-size:10px;color:rgba(200,168,255,.55);margin-bottom:18px;">${(myNickname||'')} 님의 비밀번호를 변경합니다</div>
+      <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.65);margin-bottom:5px;">현재 비밀번호 (4자리)</div>
+      <input id="changePwCurrent" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
+        style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(155,120,212,.30);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:12px;" />
+      <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.65);margin-bottom:5px;">새 비밀번호 (4자리)</div>
+      <input id="changePwNew" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
+        style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(155,120,212,.30);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:12px;" />
+      <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.65);margin-bottom:5px;">새 비밀번호 확인</div>
+      <input id="changePwConfirm" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
+        style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(155,120,212,.30);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:12px;" />
+      <div id="changePwErr" style="display:none;font-family:var(--kr);font-size:10px;color:rgba(255,120,80,.85);margin-bottom:12px;padding:8px 10px;background:rgba(200,50,30,.10);border:1px solid rgba(200,80,50,.25);border-radius:8px;line-height:1.6;"></div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="_closeChangePwPopup()" style="flex:1;padding:12px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.12);border-radius:11px;color:rgba(255,255,255,.55);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;">취소</button>
+        <button onclick="_doChangePw()" style="flex:2;padding:12px;background:linear-gradient(135deg,rgba(155,120,212,.35),rgba(106,78,158,.45));border:1.5px solid rgba(155,120,212,.55);border-radius:11px;color:rgba(220,200,255,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;letter-spacing:.3px;">변경 완료</button>
+      </div>
+    </div>`;
+  document.body.appendChild(popup);
+
+  /* 입력 이벤트 바인딩 */
+  document.getElementById('changePwCurrent').addEventListener('input', _changePwClearErr);
+  document.getElementById('changePwNew').addEventListener('input', _changePwClearErr);
+  document.getElementById('changePwConfirm').addEventListener('input', _changePwClearErr);
+  document.getElementById('changePwCurrent').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('changePwNew').focus(); });
+  document.getElementById('changePwNew').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('changePwConfirm').focus(); });
+  document.getElementById('changePwConfirm').addEventListener('keydown', e=>{ if(e.key==='Enter') _doChangePw(); });
+
+  setTimeout(()=>{ const el=document.getElementById('changePwCurrent'); if(el) el.focus(); }, 100);
 }
 function _closeChangePwPopup(){
   const popup = document.getElementById('changePwPopup');
-  if(popup) popup.style.display = 'none';
+  if(popup) popup.remove();
 }
 function _changePwClearErr(){
   const el = document.getElementById('changePwErr');
@@ -15237,37 +15266,5 @@ function _sendKakaoShare(){
   }catch(e){}
 }
 </script>
-      <!-- ★ 비밀번호 변경 팝업 -->
-      <div id="changePwPopup" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,.75);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)_closeChangePwPopup();">
-        <div style="background:linear-gradient(160deg,#2A1E52,#1A1230);border:1.5px solid rgba(155,120,212,.40);border-radius:18px;padding:24px 20px;width:100%;max-width:320px;box-shadow:0 8px 40px rgba(0,0,0,.55);">
-          <div style="font-family:var(--title);font-size:15px;font-weight:900;color:rgba(200,168,255,.95);margin-bottom:6px;letter-spacing:.3px;">🔑 비밀번호 변경</div>
-          <div id="changePwUserLabel" style="font-family:var(--kr);font-size:10px;color:rgba(200,168,255,.55);margin-bottom:18px;"></div>
-
-          <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.65);margin-bottom:5px;">현재 비밀번호 (4자리)</div>
-          <input id="changePwCurrent" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
-            oninput="_changePwClearErr()"
-            onkeydown="if(event.key==='Enter')document.getElementById('changePwNew').focus()"
-            style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(155,120,212,.30);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;font-family:var(--orb);letter-spacing:6px;text-align:center;outline:none;margin-bottom:12px;" />
-
-          <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.65);margin-bottom:5px;">새 비밀번호 (4자리)</div>
-          <input id="changePwNew" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
-            oninput="_changePwClearErr()"
-            onkeydown="if(event.key==='Enter')document.getElementById('changePwConfirm').focus()"
-            style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(155,120,212,.30);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;font-family:var(--orb);letter-spacing:6px;text-align:center;outline:none;margin-bottom:12px;" />
-
-          <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.65);margin-bottom:5px;">새 비밀번호 확인</div>
-          <input id="changePwConfirm" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
-            oninput="_changePwClearErr()"
-            onkeydown="if(event.key==='Enter')_doChangePw()"
-            style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(155,120,212,.30);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;font-family:var(--orb);letter-spacing:6px;text-align:center;outline:none;margin-bottom:12px;" />
-
-          <div id="changePwErr" style="display:none;font-family:var(--kr);font-size:10px;color:rgba(255,120,80,.85);margin-bottom:12px;padding:8px 10px;background:rgba(200,50,30,.10);border:1px solid rgba(200,80,50,.25);border-radius:8px;line-height:1.6;"></div>
-
-          <div style="display:flex;gap:8px;">
-            <button onclick="_closeChangePwPopup()" style="flex:1;padding:12px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.12);border-radius:11px;color:rgba(255,255,255,.55);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;">취소</button>
-            <button onclick="_doChangePw()" style="flex:2;padding:12px;background:linear-gradient(135deg,rgba(155,120,212,.35),rgba(106,78,158,.45));border:1.5px solid rgba(155,120,212,.55);border-radius:11px;color:rgba(220,200,255,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;letter-spacing:.3px;">변경 완료</button>
-          </div>
-        </div>
-      </div>
 </body>
 </html>
