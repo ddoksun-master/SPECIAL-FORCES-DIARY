@@ -5469,29 +5469,35 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
 
       <!-- ★ 인증 팝업 모달 -->
-      <div id="certPopup" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:12px;" onclick="if(event.target===this)closeCertPopup();">
-        <div style="background:linear-gradient(160deg,#1A2820,#131C16);border:1.5px solid rgba(82,212,164,.3);border-radius:20px;padding:16px;max-width:380px;width:100%;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-shadow:0 24px 64px rgba(0,0,0,.8);">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <div style="font-family:var(--title);font-size:15px;font-weight:900;color:#A8F0C8;">📸 작전 인증</div>
-            <button onclick="closeCertPopup()" style="background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.65);font-size:17px;cursor:pointer;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;">✕</button>
+      <div id="certPopup" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,.82);" onclick="if(event.target===this)closeCertPopup();">
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:linear-gradient(160deg,#1A2820,#131C16);border:1.5px solid rgba(82,212,164,.3);border-radius:20px;width:calc(100% - 24px);max-width:400px;max-height:calc(100dvh - 24px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.8);">
+          <!-- 헤더 (고정) -->
+          <div style="flex-shrink:0;padding:14px 16px 10px;border-bottom:1px solid rgba(82,212,164,.12);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <div style="font-family:var(--title);font-size:15px;font-weight:900;color:#A8F0C8;">📸 작전 인증</div>
+              <button onclick="closeCertPopup()" style="background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.65);font-size:17px;cursor:pointer;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;">✕</button>
+            </div>
+            <div id="certQuestName" style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.80);"></div>
           </div>
-          <div id="certQuestName" style="font-family:var(--kr);font-size:13px;color:rgba(255,255,255,.88);margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid rgba(82,212,164,.12);"></div>
-
-          <!-- 인증 방식 선택 -->
-          <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px;">인증 방식</div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:16px;">
-            <button id="cert-mode-check" onclick="selectCertMode('check')" style="padding:11px 6px;background:rgba(42,144,128,.22);border:1.5px solid rgba(42,144,128,.55);border-radius:10px;color:rgba(82,212,164,.95);font-family:var(--kr);font-size:12px;font-weight:800;cursor:pointer;transition:.15s;">✅ 체크 +1p</button>
-            <button id="cert-mode-memo" onclick="selectCertMode('memo')" style="padding:11px 6px;background:rgba(10,20,14,.7);border:1.5px solid rgba(82,212,164,.18);border-radius:10px;color:rgba(82,212,164,.4);font-family:var(--kr);font-size:12px;font-weight:800;cursor:pointer;transition:.15s;">📝 메모 +2p</button>
-            <button id="cert-mode-photo" onclick="selectCertMode('photo')" style="padding:11px 6px;background:rgba(10,20,14,.7);border:1.5px solid rgba(82,212,164,.18);border-radius:10px;color:rgba(82,212,164,.4);font-family:var(--kr);font-size:12px;font-weight:800;cursor:pointer;transition:.15s;">📷 사진 +3p</button>
-            <div style="grid-column:1/-1;font-family:var(--kr);font-size:11px;color:rgba(82,212,164,.5);text-align:center;padding-top:2px;">개인누적금액 달성 후 적립됩니다</div>
+          <!-- 스크롤 영역 -->
+          <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 16px;">
+            <!-- 인증 방식 선택 -->
+            <div style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.5);margin-bottom:6px;">인증 방식</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;">
+              <button id="cert-mode-check" onclick="selectCertMode('check')" style="padding:10px 4px;background:rgba(42,144,128,.22);border:1.5px solid rgba(42,144,128,.55);border-radius:10px;color:rgba(82,212,164,.95);font-family:var(--kr);font-size:11px;font-weight:800;cursor:pointer;transition:.15s;">✅ 체크 +1p</button>
+              <button id="cert-mode-memo" onclick="selectCertMode('memo')" style="padding:10px 4px;background:rgba(10,20,14,.7);border:1.5px solid rgba(82,212,164,.18);border-radius:10px;color:rgba(82,212,164,.4);font-family:var(--kr);font-size:11px;font-weight:800;cursor:pointer;transition:.15s;">📝 메모 +2p</button>
+              <button id="cert-mode-photo" onclick="selectCertMode('photo')" style="padding:10px 4px;background:rgba(10,20,14,.7);border:1.5px solid rgba(82,212,164,.18);border-radius:10px;color:rgba(82,212,164,.4);font-family:var(--kr);font-size:11px;font-weight:800;cursor:pointer;transition:.15s;">📷 사진 +3p</button>
+            </div>
+            <div style="font-family:var(--kr);font-size:10px;color:rgba(82,212,164,.45);text-align:center;margin-bottom:10px;">개인누적금액 달성 후 적립됩니다</div>
+            <!-- 인증 입력 영역 -->
+            <div id="certInputArea">
+              <textarea id="certMemoInput" placeholder="인증 내용을 입력하세요" style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(82,212,164,.25);border-radius:10px;padding:12px;color:#fff;font-size:13px;font-family:var(--kr);min-height:80px;resize:none;outline:none;"></textarea>
+            </div>
           </div>
-
-          <!-- 인증 입력 영역 -->
-          <div id="certInputArea" style="margin-bottom:16px;">
-            <textarea id="certMemoInput" placeholder="인증 내용을 입력하세요" style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(82,212,164,.25);border-radius:10px;padding:12px;color:#fff;font-size:13px;font-family:var(--kr);min-height:80px;resize:none;outline:none;"></textarea>
+          <!-- 제출 버튼 (항상 하단 고정) -->
+          <div style="flex-shrink:0;padding:10px 16px 14px;">
+            <button onclick="submitCert()" style="width:100%;padding:14px;background:linear-gradient(135deg,rgba(40,130,80,.92),rgba(20,80,50,.94));border:1.5px solid rgba(82,212,164,.45);border-radius:12px;color:#A8F0C8;font-size:15px;font-weight:800;font-family:var(--kr);cursor:pointer;">✅ 제출</button>
           </div>
-
-          <button onclick="submitCert()" style="width:100%;padding:14px;background:linear-gradient(135deg,rgba(40,130,80,.92),rgba(20,80,50,.94));border:1.5px solid rgba(82,212,164,.45);border-radius:12px;color:#A8F0C8;font-size:15px;font-weight:800;font-family:var(--kr);cursor:pointer;">✅ 제출</button>
         </div>
       </div>
 
@@ -8968,14 +8974,14 @@ function selectCertMode(mode){
   if(!area) return;
   if(mode==='photo'){
     area.innerHTML=`
-      <div id="certPhotoPreviewWrap" style="margin-bottom:10px;display:none;">
-        <img id="certPhotoPreview" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;border:1.5px solid rgba(82,212,164,.3);" />
+      <div id="certPhotoPreviewWrap" style="margin-bottom:8px;display:none;">
+        <img id="certPhotoPreview" style="width:100%;max-height:130px;object-fit:cover;border-radius:10px;border:1.5px solid rgba(82,212,164,.3);" />
       </div>
-      <label style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;box-sizing:border-box;padding:14px;background:rgba(42,144,128,.12);border:1.5px dashed rgba(82,212,164,.4);border-radius:10px;cursor:pointer;font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(82,212,164,.97);margin-bottom:10px;">
+      <label style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;box-sizing:border-box;padding:12px;background:rgba(42,144,128,.12);border:1.5px dashed rgba(82,212,164,.4);border-radius:10px;cursor:pointer;font-family:var(--kr);font-size:13px;font-weight:700;color:rgba(82,212,164,.97);margin-bottom:8px;">
         📷 사진 선택
         <input id="certPhotoInput" type="file" accept="image/*" style="display:none;" onchange="previewCertPhoto(this)"/>
       </label>
-      <textarea id="certMemoInput" placeholder="사진 설명 (선택사항)" style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(82,212,164,.25);border-radius:10px;padding:12px;color:#fff;font-size:13px;font-family:var(--kr);min-height:55px;resize:none;outline:none;"></textarea>`;
+      <textarea id="certMemoInput" placeholder="사진 설명 (선택사항)" style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(82,212,164,.25);border-radius:10px;padding:10px;color:#fff;font-size:13px;font-family:var(--kr);min-height:44px;resize:none;outline:none;"></textarea>`;
   } else if(mode==='memo'){
     area.innerHTML='<textarea id="certMemoInput" placeholder="인증 내용을 입력하세요" style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(82,212,164,.25);border-radius:10px;padding:12px;color:#fff;font-size:13px;font-family:var(--kr);min-height:80px;resize:none;outline:none;"></textarea>';
   } else if(mode==='number'){
