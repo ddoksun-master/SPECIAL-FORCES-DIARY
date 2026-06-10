@@ -5558,15 +5558,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         </div>
       </div>
 
-      <!-- ★ 응원 메시지 입력 팝업 -->
-      <div id="cheerMsgPopup" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(0,0,0,.72);align-items:flex-start;justify-content:center;padding:60px 20px 20px;overflow-y:auto;" onclick="if(event.target===this)closeCheerMsgPopup();">
-        <div style="background:linear-gradient(160deg,#1C2030,#141622);border:1.5px solid rgba(106,78,158,.45);border-radius:20px;padding:22px;max-width:360px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.8);">
-          <div style="font-family:var(--title);font-size:13px;font-weight:900;color:rgba(200,168,255,.95);margin-bottom:6px;">💜 응원 메시지</div>
-          <div id="cheerTargetName" style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.82);margin-bottom:14px;"></div>
-          <textarea id="cheerMsgInput" placeholder="응원 메시지를 입력하세요" style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(106,78,158,.35);border-radius:10px;padding:12px;color:#fff;font-size:11px;font-family:var(--kr);min-height:80px;resize:none;outline:none;margin-bottom:14px;"></textarea>
-          <button onclick="submitCheerMsg()" style="width:100%;padding:13px;background:rgba(106,78,158,.3);border:1.5px solid rgba(106,78,158,.6);border-radius:12px;color:rgba(200,168,255,.95);font-family:var(--kr);font-size:12px;font-weight:800;cursor:pointer;">전송 +2 협동포인트</button>
-        </div>
-      </div>
+
 
       <!-- 같이하기 수락 안내 팝업 -->
       <div id="coopAcceptedPopup" style="display:none;position:fixed;inset:0;z-index:9800;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)_closeCoopAcceptedPopup();">
@@ -6343,6 +6335,16 @@ document.addEventListener('DOMContentLoaded',()=>{
   </div>
 
 </div><!-- /app-shell -->
+
+<!-- ★ 응원 메시지 입력 팝업 — app-shell 바깥, body 직속으로 z-index 최우선 보장 -->
+<div id="cheerMsgPopup" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.72);align-items:flex-start;justify-content:center;padding:60px 20px 20px;overflow-y:auto;" onclick="if(event.target===this)closeCheerMsgPopup();">
+  <div style="background:linear-gradient(160deg,#1C2030,#141622);border:1.5px solid rgba(106,78,158,.45);border-radius:20px;padding:22px;max-width:360px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.8);">
+    <div style="font-family:var(--title);font-size:13px;font-weight:900;color:rgba(200,168,255,.95);margin-bottom:6px;">💜 응원 메시지</div>
+    <div id="cheerTargetName" style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.82);margin-bottom:14px;"></div>
+    <textarea id="cheerMsgInput" placeholder="응원 메시지를 입력하세요" style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(106,78,158,.35);border-radius:10px;padding:12px;color:#fff;font-size:11px;font-family:var(--kr);min-height:80px;resize:none;outline:none;margin-bottom:14px;"></textarea>
+    <button onclick="submitCheerMsg()" style="width:100%;padding:13px;background:rgba(106,78,158,.3);border:1.5px solid rgba(106,78,158,.6);border-radius:12px;color:rgba(200,168,255,.95);font-family:var(--kr);font-size:12px;font-weight:800;cursor:pointer;">전송 +2 협동포인트</button>
+  </div>
+</div>
 
 <script>
 /* ★ 가상 시계 — 모든 코드보다 먼저 선언 */
