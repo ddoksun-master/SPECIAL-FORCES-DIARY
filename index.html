@@ -1255,9 +1255,7 @@ async function initFirebase(){
           const _cr04 = new Date((n.questDate||dateStr(new Date(_virtualNow())))+'T04:00:00').getTime();
           if(_virtualNow() < _cr04){ return; } /* 04시 전 → 무시 */
           const fromNm=n.fromNick||'상대방';
-          /* 푸시 알림 */
-          _sendPush('💜 응원 메시지 요청!',
-            fromNm+'이(가) "'+(n.questName||'작전')+'" 응원을 요청했어요! 메시지를 보내주세요 💪');
+          /* 푸시 알림 — Cloud Functions FCM으로 처리 */
           const popup=document.getElementById('cheerMsgPopup');
           if(popup){
             document.getElementById('cheerTargetName').textContent=`💜 ${fromNm}이(가) 응원을 요청했어요! 메시지를 남겨보세요`;
@@ -1281,7 +1279,7 @@ async function initFirebase(){
           const _empCk='histEmpathy_'+MY_UID+'_'+(n.questDate||selDate)+'_'+(n.questIdx||0);
           if(!_getFlag(_empCk)){
             _showEmpathyRequestBadge(n);
-            _sendPush('✅ 파트너 인증 완료!', (n.fromNick||'파트너')+'이(가) "'+(n.questName||'작전')+'" 인증을 완료했어요! 수고했어를 보내보세요 💜');
+            /* 푸시 알림 — Cloud Functions FCM으로 처리 */
           }
         } else if(n.type==='coop_accepted'){
           /* 상대가 같이하기 수락 → 안내 팝업 표시 */
@@ -6892,10 +6890,7 @@ function _notifOnce(key, fn){
 const FCM_VAPID_KEY = 'BALoaiEdY29U6iCbSZn2Vuypm38ZP8cGFOrGpMsVh6P7c5R1c12K3wFs-zRwaRZCIZB9rpioPx8Sx5pw3hN2G1E';
 
 /* FCM 토큰 발급 후 Firebase에 저장 */
-let _fcmTokenRegistered = false;
 async function _registerFcmToken(){
-  if(_fcmTokenRegistered) return;
-  _fcmTokenRegistered = true;
   try{
     if(!window.firebase || !firebase.apps || !firebase.apps.length) return;
     if(!MY_UID) return;
@@ -6904,12 +6899,8 @@ async function _registerFcmToken(){
     if(!token) return;
     await _fbSet('fcmTokens/'+MY_UID, { token, updatedAt: Date.now() });
     console.log('[FCM] 토큰 등록 완료');
-    messaging.onMessage(payload=>{
-      /* 포그라운드: 브라우저 상단 알림 대신 앱 내 팝업만 표시 (중복 방지) */
-      const title = payload.notification && payload.notification.title ? payload.notification.title : '특전사 작전수첩';
-      const body  = payload.notification && payload.notification.body  ? payload.notification.body  : '';
-      _showAlertPopup('🔔', title, body);
-      /* sw.js 가 별도로 showNotification 하지 못하도록 빈 notification 을 서비스워커에 전달 */
+    messaging.onMessage(()=>{
+      /* 포그라운드: 팝업 없음, sw.js 중복 알림만 방지 */
       if(navigator.serviceWorker && navigator.serviceWorker.controller){
         navigator.serviceWorker.controller.postMessage({ type:'FCM_FOREGROUND_HANDLED' });
       }
@@ -6962,8 +6953,7 @@ const clk=()=>{
       _notifOnce('deadline_warn', ()=>{
         _showAlertPopup('⏰','작전 마감 1시간 전',
           '미완료 작전 '+undone.length+'개가 남아있습니다.\n자정 전에 인증을 완료하세요!');
-        _sendPush('⏰ 작전 마감 1시간 전',
-          '미완료 작전 '+undone.length+'개 남음 — 자정 전에 인증 완료하세요!');
+
       });
     }
   }
@@ -6976,8 +6966,7 @@ const clk=()=>{
       _notifOnce('reserved_active', ()=>{
         _showAlertPopup('🌅','예약 작전 활성화',
           '오늘 예약된 작전 '+reserved.length+'개가 활성화됐습니다.\n작전을 시작하세요!');
-        _sendPush('🌅 예약 작전 활성화',
-          '오늘 예약된 작전 '+reserved.length+'개가 활성화됐습니다!');
+
       });
     }
   }
