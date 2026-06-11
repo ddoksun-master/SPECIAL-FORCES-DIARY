@@ -7777,10 +7777,12 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
     if(_isFailed){showToast('❌ 임무실패 — 인증불가');return;}
     const n=_virtualNow();if(n<(quests[oi].certAvailableAt||0)){showToast('⏱ 인증 가능까지 '+Math.ceil(((quests[oi].certAvailableAt||0)-n)/60000)+'분 남았습니다');return;}openCertPopup(oi);
   });}
-  /* 개인 응원 요청 버튼 — 슬롯 내 바인딩 (유일한 바인딩 포인트) */
+  /* 개인 응원 요청 버튼 — 슬롯 내 바인딩
+     ✅ FIX: addEventListener → onclick 교체
+     renderQ() 반복 호출 시 리스너 누적 불가 (onclick은 마지막 할당만 유효) */
   const slotCheerReqBtn=slotEl.querySelector('.solo-cheer-req-btn');
   if(slotCheerReqBtn){
-    slotCheerReqBtn.addEventListener('click',async e=>{
+    slotCheerReqBtn.onclick=async e=>{
       e.stopPropagation();
       if(!partnerData||!partnerData.uid){showToast('💜 파트너 연결 후 응원 요청이 가능합니다');return;}
       if(quests[oi]&&quests[oi].cheerMsg){showToast('이미 응원 메시지가 있습니다');return;}
@@ -7794,7 +7796,7 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
         slotCheerReqBtn.disabled=true;slotCheerReqBtn.style.opacity='0.55';
         showToast('💜 응원 요청을 보냈어요!');
       }catch(err){showToast('전송 실패, 다시 시도해주세요');}
-    });
+    };
   }
   const coopCertBtn=slotEl.querySelector('.coop-cert-btn');
   if(coopCertBtn){coopCertBtn.addEventListener('click',e=>{e.stopPropagation();openCertPopup(oi);});}
