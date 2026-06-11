@@ -6897,7 +6897,9 @@ async function _registerFcmToken(){
     if(!window.firebase || !firebase.apps || !firebase.apps.length) return;
     if(!MY_UID) return;
     const messaging = firebase.messaging();
-    const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY });
+    /* 서비스워커가 준비될 때까지 기다린 후 토큰 발급 */
+    const swReg = await navigator.serviceWorker.ready;
+    const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: swReg });
     if(!token) return;
     await _fbSet('fcmTokens/'+MY_UID, { token, updatedAt: Date.now() });
     console.log('[FCM] 토큰 등록 완료');
