@@ -5841,77 +5841,72 @@ document.addEventListener('DOMContentLoaded',()=>{
     <!-- ====== 통계분석 패널 ====== -->
     <div class="panel" id="panelStats">
       <!-- 수익구조 요약 카드 -->
-      <div class="card" style="margin-top:10px;">
-        <div class="card-title">💰 수익 구조 현황</div>
+      <div class="card" style="margin-top:10px;background:linear-gradient(145deg,rgba(20,14,2,.98),rgba(12,8,1,.99));border-color:rgba(200,168,75,.28);overflow:hidden;position:relative;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(200,168,75,.7),transparent);"></div>
+        <!-- 헤더 -->
+        <div style="padding:14px 16px 0;display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <div style="font-size:24px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">💰</div>
+          <div>
+            <div style="font-family:var(--orb);font-size:9px;letter-spacing:2.5px;color:rgba(200,168,75,.80);margin-bottom:2px;">REVENUE STRUCTURE</div>
+            <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#fff;">수익 구조 현황</div>
+          </div>
+          <div style="margin-left:auto;text-align:right;">
+            <div style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.80);letter-spacing:1px;margin-bottom:2px;">TOTAL</div>
+            <div id="statsTotalAll" style="font-family:var(--orb);font-size:20px;font-weight:900;color:rgba(255,215,100,.95);text-shadow:0 0 12px rgba(200,168,75,.4);">0원</div>
+          </div>
+        </div>
 
-        <!-- 개인임무 누적 확보자금 -->
-        <div style="margin-bottom:10px;">
-          <div style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(200,168,75,.95);letter-spacing:.5px;margin-bottom:8px;">▎ 개인임무 누적 확보자금</div>
-          <div style="background:#0E1A10;border:1px solid rgba(90,158,72,.25);border-radius:10px;padding:12px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <span style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.6);">누적 확보자금</span>
+        <div style="margin:0 14px 14px;">
+          <!-- 개인임무 누적 -->
+          <div style="background:rgba(90,158,72,.07);border:1px solid rgba(90,158,72,.20);border-radius:10px;padding:11px 12px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;">
+              <span style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.75);">🪖 개인임무 누적</span>
               <span id="statsTotalMoney" style="font-family:var(--orb);font-size:14px;font-weight:700;color:var(--gold);">0원</span>
             </div>
-            <div style="height:4px;background:rgba(70,55,12,.5);border-radius:2px;overflow:hidden;margin-bottom:6px;">
+            <div style="height:4px;background:rgba(70,55,12,.5);border-radius:2px;overflow:hidden;margin-bottom:5px;">
               <div id="statsPersonalBar" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-dim));transition:width .5s;width:0%;"></div>
             </div>
             <div style="display:flex;justify-content:space-between;">
-              <span style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.90);">0</span>
-              <span style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.90);">목표 100,000원</span>
+              <span style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.75);">0</span>
+              <span style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.75);">목표 100,000원</span>
+            </div>
+          </div>
+
+          <!-- 팀전 누적 -->
+          <div style="background:rgba(200,168,75,.06);border:1px solid rgba(200,168,75,.22);border-radius:10px;padding:11px 12px;margin-bottom:8px;">
+            <div style="display:none;"><span id="statsCodeUploadStatus"></span><span id="statsMyCode"></span></div>
+            <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.75);margin-bottom:4px;">⚔ 팀전 누적 보상</div>
+            <div id="statsTeamMoney" style="font-family:var(--orb);font-size:14px;font-weight:900;color:rgba(200,168,75,.9);">0원</div>
+            <div id="statsTeamRewardDetail"></div>
+          </div>
+
+          <!-- 달성률 -->
+          <div style="background:rgba(30,50,20,.5);border:1px solid rgba(200,168,75,.20);border-radius:10px;padding:11px 12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.55);">달성 가능 최대</div>
+                <div style="font-family:var(--orb);font-size:17px;font-weight:900;color:var(--gold);">300,000원</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.45);">개인 최대 100,000</div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,100,100,.55);">특수 최대 100,000</div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(251,191,36,.80);">스페셜 (50p·100p)</div>
+              </div>
+            </div>
+            <div style="height:1px;background:rgba(200,168,75,.10);margin-bottom:8px;"></div>
+            <div id="personalCapInfo" style="padding:8px 10px;background:rgba(10,25,12,.5);border:1px solid rgba(90,158,72,.15);border-radius:8px;margin-bottom:7px;transition:.3s;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+                <span style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.8);">📋 개인임무 가용 한도</span>
+                <span id="personalCapAmt" style="font-family:var(--orb);font-size:11px;font-weight:900;color:rgba(127,191,106,.9);">150,000원</span>
+              </div>
+              <div id="personalCapNote" style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.65);line-height:1.5;">특수임무 완료 후 한도 조정 (현재 0/3 완료)</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.88);">현재 달성률</span>
+              <span id="statsTotalPct" style="font-family:var(--orb);font-size:11px;font-weight:700;color:rgba(127,191,106,.9);">0%</span>
             </div>
           </div>
         </div>
-
-        <!-- 팀전 누적 + 총합계 -->
-        <div style="margin-bottom:14px;">
-          <!-- 숨겨진 코드 요소 (JS 호환용) -->
-          <div style="display:none;"><span id="statsCodeUploadStatus"></span><span id="statsMyCode"></span></div>
-          <div style="margin-bottom:6px;">
-            <!-- 팀전 누적 보상 -->
-            <div style="background:#140F05;border:1px solid rgba(200,168,75,.28);border-radius:10px;padding:10px 12px;">
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.4);margin-bottom:4px;">팀전 누적 보상</div>
-              <div id="statsTeamMoney" style="font-family:var(--orb);font-size:13px;font-weight:900;color:rgba(200,168,75,.9);">0원</div>
-              <div id="statsTeamRewardDetail"></div>
-            </div>
-          </div>
-          <!-- 총 누적 합계 -->
-          <div style="background:linear-gradient(135deg,#1E3214,#281E05);border:1.5px solid rgba(200,168,75,.38);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
-            <div>
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.5);margin-bottom:3px;">총 누적 합계</div>
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.65);">개인 + 팀전 보상</div>
-            </div>
-            <div id="statsTotalAll" style="font-family:var(--orb);font-size:20px;font-weight:900;color:var(--gold);text-shadow:0 0 12px rgba(200,168,75,.4);">0원</div>
-          </div>
-        </div>
-
-        <!-- 달성률 요약 -->
-        <div style="padding:11px 14px;background:#1E3219;border:1px solid rgba(200,168,75,.25);border-radius:10px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <div>
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.5);">달성 가능 최대 수익</div>
-              <div style="font-family:var(--orb);font-size:18px;font-weight:900;color:var(--gold);">300,000원</div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);">개인임무 최대 100,000</div>
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(255,100,100,.45);">특수임무 최대 100,000</div>
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(251,191,36,.90);">스페셜임무 (50p·100p)</div>
-            </div>
-          </div>
-          <div style="height:1px;background:rgba(200,168,75,.12);margin-bottom:6px;"></div>
-          <!-- 개인임무 한도 안내 (특수임무 1~3 완료 후 활성화) -->
-          <div id="personalCapInfo" style="padding:9px 11px;background:rgba(10,25,12,.5);border:1px solid rgba(90,158,72,.15);border-radius:8px;margin-bottom:7px;transition:.3s;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-              <span style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.7);">📋 개인임무 가용 한도</span>
-              <span id="personalCapAmt" style="font-family:var(--orb);font-size:11px;font-weight:900;color:rgba(127,191,106,.9);">150,000원</span>
-            </div>
-            <div id="personalCapNote" style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.70);line-height:1.5;">특수임무 완료 후 한도 조정 (현재 0/3 완료)</div>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.88);">현재 달성률</span>
-            <span id="statsTotalPct" style="font-family:var(--orb);font-size:11px;font-weight:700;color:rgba(127,191,106,.8);">0%</span>
-          </div>
-        </div>
-
       </div>
 
       <!-- ★ 보급상점 (자금현황으로 이동) -->
@@ -6402,55 +6397,12 @@ document.addEventListener('DOMContentLoaded',()=>{
       <!-- 기존 JS 호환용 스텁 -->
       <div id="tmLaunchBanner" style="display:none;"></div>
       <div id="tmLaunchStatus" style="display:none;"></div>
+      <!-- JS 호환용 스텁 -->
+      <div id="tmLaunchBanner" style="display:none;"></div>
+      <div id="tmLaunchStatus" style="display:none;"></div>
       <div id="tmLaunchBadges" style="display:none;"></div>
       <div id="tmRewardOverlay" style="display:none;">
         <div id="tmRewardPanel"><div id="tmRewardTitle"></div><div id="tmRewardSub"></div><div id="tmRewardBody"></div></div>
-      </div>
-
-      <!-- ★ 알림 설정 카드 -->
-      <div class="card" style="padding:16px;background:linear-gradient(145deg,rgba(4,14,10,.97),rgba(2,10,7,.98));border-color:rgba(47,74,54,.30);margin-top:2px;">
-        <div style="font-family:var(--orb);font-size:9px;letter-spacing:2.5px;color:rgba(127,191,106,.6);margin-bottom:12px;">NOTIFICATION SETTINGS</div>
-        <div style="font-family:var(--kr);font-size:13px;font-weight:800;color:rgba(255,255,255,.88);margin-bottom:14px;">🔔 알림 설정</div>
-
-        <!-- 마감 임박 알림 -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:8px;">
-          <div>
-            <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">⏰ 작전 마감 임박</div>
-            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">매일 22:00 · 미완료 작전 있을 때</div>
-          </div>
-          <button id="notifToggle_deadline" onclick="toggleNotifSetting('deadline',this)"
-            style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;cursor:pointer;border:1px solid rgba(90,158,72,.4);background:rgba(90,158,72,.25);color:rgba(127,191,106,.9);letter-spacing:.5px;transition:all .2s;">ON</button>
-        </div>
-
-        <!-- 예약 작전 활성화 알림 -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:8px;">
-          <div>
-            <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">🌅 예약 작전 활성화</div>
-            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">매일 06:00 · 예약 작전 있을 때</div>
-          </div>
-          <button id="notifToggle_reserve" onclick="toggleNotifSetting('reserve',this)"
-            style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;cursor:pointer;border:1px solid rgba(90,158,72,.4);background:rgba(90,158,72,.25);color:rgba(127,191,106,.9);letter-spacing:.5px;transition:all .2s;">ON</button>
-        </div>
-
-        <!-- 실시간 알림 (항상 ON 표시) -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:8px;">
-          <div>
-            <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">🎖 파트너 인증 완료</div>
-            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">실시간 · 파트너 인증 시 즉시</div>
-          </div>
-          <span style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;border:1px solid rgba(46,127,168,.4);background:rgba(46,127,168,.18);color:rgba(78,176,216,.85);letter-spacing:.5px;">항상</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;">
-          <div>
-            <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">📣 응원 메시지 요청</div>
-            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">실시간 · 응원 요청 시 즉시</div>
-          </div>
-          <span style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;border:1px solid rgba(46,127,168,.4);background:rgba(46,127,168,.18);color:rgba(78,176,216,.85);letter-spacing:.5px;">항상</span>
-        </div>
-
-        <!-- 권한 상태 안내 -->
-        <div id="notifPermStatus" style="margin-top:12px;padding:10px 12px;border-radius:10px;font-family:var(--kr);font-size:10px;display:none;"></div>
-        <button onclick="_checkAndRequestNotifPerm()" style="width:100%;margin-top:10px;padding:10px;background:rgba(47,74,54,.3);border:1px solid rgba(47,74,54,.5);border-radius:10px;color:rgba(127,191,106,.75);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;">🔔 알림 권한 확인 / 재요청</button>
       </div>
 
     </div><!-- /panelTeam -->
@@ -8134,11 +8086,11 @@ function renderShopActivity(){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
       <div style="text-align:center;padding:9px;background:rgba(90,158,72,.08);border:1px solid rgba(90,158,72,.15);border-radius:8px;">
         <div style="font-family:var(--orb);font-size:16px;font-weight:900;color:var(--green-dim);">${dayCount}</div>
-        <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.4);margin-top:2px;">수행 일수</div>
+        <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,75,.4);margin-top:2px;">수행 일수</div>
       </div>
       <div style="text-align:center;padding:9px;background:rgba(200,168,75,.08);border:1px solid rgba(200,168,75,.15);border-radius:8px;">
         <div style="font-family:var(--orb);font-size:16px;font-weight:900;color:var(--gold-dim);">${totalCompleted}</div>
-        <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.4);margin-top:2px;">완료 임무</div>
+        <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,75,.4);margin-top:2px;">완료 임무</div>
       </div>
     </div>`;
 }
