@@ -1221,6 +1221,7 @@ async function initFirebase(){
   if(!firebase.apps||!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
   if(!_fbDb) _fbDb = firebase.database();
   setFbStatus('online');
+  _maybeRequestNotifPerm(); /* 알림 권한 요청 */
 
   /* ── 협동 작전 알림 수신 구독 ── */
   if(MY_UID){
@@ -1253,6 +1254,9 @@ async function initFirebase(){
           const _cr04 = new Date((n.questDate||dateStr(new Date(_virtualNow())))+'T04:00:00').getTime();
           if(_virtualNow() < _cr04){ return; } /* 04시 전 → 무시 */
           const fromNm=n.fromNick||'상대방';
+          /* 푸시 알림 */
+          _sendPush('💜 응원 메시지 요청!',
+            fromNm+'이(가) "'+(n.questName||'작전')+'" 응원을 요청했어요! 메시지를 보내주세요 💪');
           const popup=document.getElementById('cheerMsgPopup');
           if(popup){
             document.getElementById('cheerTargetName').textContent=`💜 ${fromNm}이(가) 응원을 요청했어요! 메시지를 남겨보세요`;
@@ -1274,7 +1278,10 @@ async function initFirebase(){
           _fbUpdate(`coopNotif/${MY_UID}/${key}`,{_seen:true});
           /* 이미 수고했어 보낸 퀘스트면 스킵 */
           const _empCk='histEmpathy_'+MY_UID+'_'+(n.questDate||selDate)+'_'+(n.questIdx||0);
-          if(!_getFlag(_empCk)) _showEmpathyRequestBadge(n);
+          if(!_getFlag(_empCk)){
+            _showEmpathyRequestBadge(n);
+            _sendPush('✅ 파트너 인증 완료!', (n.fromNick||'파트너')+'이(가) "'+(n.questName||'작전')+'" 인증을 완료했어요! 수고했어를 보내보세요 💜');
+          }
         } else if(n.type==='coop_accepted'){
           /* 상대가 같이하기 수락 → 안내 팝업 표시 */
           _fbUpdate(`coopNotif/${MY_UID}/${key}`,{_seen:true});
@@ -6723,15 +6730,124 @@ function totalEarned(){
   let s=0;Object.values(getCycleData()).forEach(d=>d.forEach(q=>{if(q.completed)s+=(q.reward||reward(q.difficulty));}));return s;
 }
 
+/* ══════════════════════════════════════════════════════════
+   알림 시스템
+   ══════════════════════════════════════════════════════════ */
+
+/* 브라우저 푸시 권한 요청 */
+async function _requestNotifPermission(){
+  if(!('Notification' in window)) return false;
+  if(Notification.permission==='granted') return true;
+  if(Notification.permission==='denied') return false;
+  const res = await Notification.requestPermission();
+  return res==='granted';
+}
+
+/* 브라우저 푸시 알림 발송 */
+function _sendPush(title, body){
+  if(!('Notification' in window)||Notification.permission!=='granted') return;
+  try{
+    navigator.serviceWorker.getRegistration().then(reg=>{
+      if(reg){
+        reg.showNotification(title,{body,icon:'icon-192.png',badge:'icon-192.png',vibrate:[200,100,200]});
+      } else {
+        new Notification(title,{body,icon:'icon-192.png'});
+      }
+    }).catch(()=>{ new Notification(title,{body}); });
+  }catch(e){ try{ new Notification(title,{body}); }catch(e2){} }
+}
+
+/* 인앱 알림 팝업 */
+function _showAlertPopup(emoji, title, body){
+  let el = document.getElementById('_alertPopup');
+  if(!el){
+    el = document.createElement('div');
+    el.id='_alertPopup';
+    el.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);'
+      +'z-index:10000;background:rgba(10,20,10,.97);border:2px solid rgba(90,180,80,.6);'
+      +'border-radius:18px;padding:26px 28px;min-width:270px;max-width:340px;width:88%;'
+      +'text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.7);';
+    el.innerHTML=''
+      +'<div id="_apEmoji" style="font-size:38px;margin-bottom:8px;"></div>'
+      +'<div id="_apTitle" style="font-family:var(--title);font-size:14px;font-weight:900;color:#C8F0B0;margin-bottom:7px;letter-spacing:1px;"></div>'
+      +'<div id="_apBody" style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.75);line-height:1.6;margin-bottom:18px;white-space:pre-line;"></div>'
+      +'<button onclick="document.getElementById(\'_alertPopup\').style.display=\'none\'" '
+      +'style="background:linear-gradient(135deg,rgba(60,130,50,.5),rgba(40,100,35,.6));'
+      +'border:1.5px solid rgba(90,180,70,.5);border-radius:10px;color:#C8F0B0;'
+      +'font-family:var(--kr);font-size:12px;font-weight:800;padding:9px 32px;cursor:pointer;">확인</button>';
+    document.body.appendChild(el);
+  }
+  document.getElementById('_apEmoji').textContent=emoji;
+  document.getElementById('_apTitle').textContent=title;
+  document.getElementById('_apBody').textContent=body;
+  el.style.display='block';
+}
+
+/* 알림 발송 플래그 (하루 1회) */
+const _NOTIF_FLAGS = {};
+function _notifOnce(key, fn){
+  const today = dateStr(new Date(_virtualNow()));
+  const fk = key+'_'+today;
+  if(_NOTIF_FLAGS[fk]) return;
+  _NOTIF_FLAGS[fk]=true;
+  fn();
+}
+
+/* 알림 권한 자동 요청 (로그인 후 최초 1회) */
+window._notifPermRequested=false;
+function _maybeRequestNotifPerm(){
+  if(window._notifPermRequested) return;
+  window._notifPermRequested=true;
+  if('Notification' in window && Notification.permission==='default'){
+    setTimeout(()=>{
+      _showAlertPopup('🔔','알림 권한 요청',
+        '작전 마감·활성화·파트너 인증 알림을 받으려면\n다음 화면에서 "허용"을 눌러주세요.');
+      setTimeout(_requestNotifPermission, 2000);
+    }, 3000);
+  }
+}
+
 /* ── 시계 (1초 동기화) ── */
 const clk=()=>{
   const n=new Date(_virtualNow());
-  const hhmm=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+  const hh=n.getHours(), mm=n.getMinutes(), ss=n.getSeconds();
+  const hhmm=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
   const el=document.getElementById('hudTime');
   if(el) el.textContent=hhmm;
   /* 작전기록 패널 시각도 동기화 */
   const el2=document.getElementById('histPanelClock');
   if(el2) el2.textContent=hhmm;
+
+  /* ── 시간 기반 알림 체크 (매 정시 00초에만) ── */
+  if(ss!==0) return;
+
+  /* ① 작전 마감 임박 — 매일 23:00 */
+  if(hh===23 && mm===0){
+    const todayQuests = allData[dateStr(new Date(_virtualNow()))]||[];
+    const undone = todayQuests.filter(q=>!q.completed&&!q.stamped&&q.name);
+    if(undone.length>0){
+      _notifOnce('deadline_warn', ()=>{
+        _showAlertPopup('⏰','작전 마감 1시간 전',
+          '미완료 작전 '+undone.length+'개가 남아있습니다.\n자정 전에 인증을 완료하세요!');
+        _sendPush('⏰ 작전 마감 1시간 전',
+          '미완료 작전 '+undone.length+'개 남음 — 자정 전에 인증 완료하세요!');
+      });
+    }
+  }
+
+  /* ② 예약 작전 04:00 활성화 */
+  if(hh===4 && mm===0){
+    const todayQuests = allData[dateStr(new Date(_virtualNow()))]||[];
+    const reserved = todayQuests.filter(q=>q.reserved&&!q.completed&&!q.stamped&&q.name);
+    if(reserved.length>0){
+      _notifOnce('reserved_active', ()=>{
+        _showAlertPopup('🌅','예약 작전 활성화',
+          '오늘 예약된 작전 '+reserved.length+'개가 활성화됐습니다.\n작전을 시작하세요!');
+        _sendPush('🌅 예약 작전 활성화',
+          '오늘 예약된 작전 '+reserved.length+'개가 활성화됐습니다!');
+      });
+    }
+  }
 };
 clk();setInterval(clk,1000);
 
