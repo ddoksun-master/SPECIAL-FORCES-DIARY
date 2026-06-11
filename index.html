@@ -6471,13 +6471,13 @@ async function _doSignup(){
   if(pw !== pw2){ _loginShowErr('signupErr','비밀번호가 일치하지 않습니다.'); return; }
   if(!await _ensureFb()){ _loginShowErr('signupErr','Firebase 연결 중입니다. 잠시 후 다시 시도해주세요.'); return; }
   try{
-    /* ── 유저 수 2명 제한 ── */
+    /* ── 유저 수 4명 제한 ── */
     const usersSnap = await _fbGet('users');
     if(usersSnap.exists()){
       const existingUsers = Object.values(usersSnap.val());
       const registeredCount = existingUsers.filter(u=>u.profile&&u.profile.nickname).length;
-      if(registeredCount >= 2){
-        _loginShowErr('signupErr','이미 2명이 등록되어 있습니다.<br>신규 등록이 불가합니다.');
+      if(registeredCount >= 4){
+        _loginShowErr('signupErr','이미 4명이 등록되어 있습니다.<br>신규 등록이 불가합니다.');
         return;
       }
     }
