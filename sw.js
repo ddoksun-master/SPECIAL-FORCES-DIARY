@@ -1,7 +1,6 @@
-const CACHE_NAME = 'jjakjeon-v3';
+const CACHE_NAME = 'jjakjeon-v4';
 const ASSETS = ['./index.html', './manifest.json'];
 
-/* ── Firebase Messaging 백그라운드 수신 ── */
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
 
@@ -17,11 +16,9 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-/* 앱이 닫혀있을 때 백그라운드 푸시 수신 */
 messaging.onBackgroundMessage(payload => {
-  /* data 필드에서 title/body 읽기 */
-  const title = (payload.data && payload.data.title) || '특전사 작전수첩';
-  const body  = (payload.data && payload.data.body)  || '';
+  const title = (payload.notification && payload.notification.title) || '특전사 작전수첩';
+  const body  = (payload.notification && payload.notification.body)  || '';
   self.registration.showNotification(title, {
     body,
     icon:    'icon-192.png',
@@ -31,9 +28,7 @@ messaging.onBackgroundMessage(payload => {
 });
 
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
-  );
+  e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
   self.skipWaiting();
 });
 
@@ -47,10 +42,6 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.url.includes('firebase') || e.request.url.includes('googleapis')) {
-    return;
-  }
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
-  );
+  if (e.request.url.includes('firebase') || e.request.url.includes('googleapis')) return;
+  e.respondWith(caches.match(e.request).then(cached => cached || fetch(e.request)));
 });
