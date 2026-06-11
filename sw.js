@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jjakjeon-v1';
+const CACHE_NAME = 'jjakjeon-v2';
 const ASSETS = ['./index.html', './manifest.json'];
 
 /* ── Firebase Messaging 백그라운드 수신 ── */
