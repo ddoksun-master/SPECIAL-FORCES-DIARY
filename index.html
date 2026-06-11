@@ -1255,7 +1255,9 @@ async function initFirebase(){
           const _cr04 = new Date((n.questDate||dateStr(new Date(_virtualNow())))+'T04:00:00').getTime();
           if(_virtualNow() < _cr04){ return; } /* 04시 전 → 무시 */
           const fromNm=n.fromNick||'상대방';
-          /* 푸시 알림 — Cloud Functions FCM으로 처리 */
+          /* 푸시 알림 */
+          _sendPush('💜 응원 메시지 요청!',
+            fromNm+'이(가) "'+(n.questName||'작전')+'" 응원을 요청했어요! 메시지를 보내주세요 💪');
           const popup=document.getElementById('cheerMsgPopup');
           if(popup){
             document.getElementById('cheerTargetName').textContent=`💜 ${fromNm}이(가) 응원을 요청했어요! 메시지를 남겨보세요`;
@@ -1279,7 +1281,7 @@ async function initFirebase(){
           const _empCk='histEmpathy_'+MY_UID+'_'+(n.questDate||selDate)+'_'+(n.questIdx||0);
           if(!_getFlag(_empCk)){
             _showEmpathyRequestBadge(n);
-            /* 푸시 알림 — Cloud Functions FCM으로 처리 */
+            _sendPush('✅ 파트너 인증 완료!', (n.fromNick||'파트너')+'이(가) "'+(n.questName||'작전')+'" 인증을 완료했어요! 수고했어를 보내보세요 💜');
           }
         } else if(n.type==='coop_accepted'){
           /* 상대가 같이하기 수락 → 안내 팝업 표시 */
@@ -6899,11 +6901,8 @@ async function _registerFcmToken(){
     if(!token) return;
     await _fbSet('fcmTokens/'+MY_UID, { token, updatedAt: Date.now() });
     console.log('[FCM] 토큰 등록 완료');
-    messaging.onMessage(()=>{
-      /* 포그라운드: 팝업 없음, sw.js 중복 알림만 방지 */
-      if(navigator.serviceWorker && navigator.serviceWorker.controller){
-        navigator.serviceWorker.controller.postMessage({ type:'FCM_FOREGROUND_HANDLED' });
-      }
+    messaging.onMessage(payload=>{
+      /* 포그라운드: data 전용 페이로드라 브라우저 자동 알림 없음 — 아무것도 안 함 */
     });
   }catch(e){
     console.warn('[FCM] 토큰 등록 실패:', e);
@@ -6953,7 +6952,8 @@ const clk=()=>{
       _notifOnce('deadline_warn', ()=>{
         _showAlertPopup('⏰','작전 마감 1시간 전',
           '미완료 작전 '+undone.length+'개가 남아있습니다.\n자정 전에 인증을 완료하세요!');
-
+        _sendPush('⏰ 작전 마감 1시간 전',
+          '미완료 작전 '+undone.length+'개 남음 — 자정 전에 인증 완료하세요!');
       });
     }
   }
@@ -6966,7 +6966,8 @@ const clk=()=>{
       _notifOnce('reserved_active', ()=>{
         _showAlertPopup('🌅','예약 작전 활성화',
           '오늘 예약된 작전 '+reserved.length+'개가 활성화됐습니다.\n작전을 시작하세요!');
-
+        _sendPush('🌅 예약 작전 활성화',
+          '오늘 예약된 작전 '+reserved.length+'개가 활성화됐습니다!');
       });
     }
   }
