@@ -1105,6 +1105,7 @@ html,body{
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 <script>
 /* ============================================================
    FIREBASE CONFIG
@@ -1123,6 +1124,181 @@ const FIREBASE_CONFIG = {
 
 const FB_READY = FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY";
 let _fbDb = null;
+
+/* ============================================================
+   FCM 푸시 알림 모듈
+   ============================================================
+   VAPID 키: Firebase Console → 프로젝트 설정 → 클라우드 메시징
+             → 웹 푸시 인증서 → 키 쌍 생성 → 공개 키 복사
+   ============================================================ */
+const FCM_VAPID_KEY = 'BALoaiEdY29U6iCbSZn2Vuypm38ZP8cGFOrGpMsVh6P7c5R1c12K3wFs-zRwaRZCIZB9rpioPx8Sx5pw3hN2G1E';
+
+let _fcmToken = null;
+
+/* ── FCM 초기화 (로그인 완료 후 호출) ── */
+async function initFCM(uid) {
+  if (!FB_READY || !uid) return;
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+
+  try {
+    // firebase-messaging-sw.js 를 FCM 전용 SW로 등록
+    const swReg = await navigator.serviceWorker.register('./firebase-messaging-sw.js', { scope: './' });
+    await navigator.serviceWorker.ready;
+
+    const messaging = firebase.messaging();
+
+    // 이미 허용된 상태면 바로 토큰 발급
+    if (Notification.permission === 'granted') {
+      await _acquireFCMToken(messaging, swReg, uid);
+    }
+    // denied가 아니면(default) 팝업으로 안내 — 잠시 후 표시
+    else if (Notification.permission !== 'denied') {
+      setTimeout(() => _showNotifPermPopup(messaging, swReg, uid), 1500);
+    }
+  } catch (e) {
+    console.warn('[FCM] 초기화 실패:', e.message);
+  }
+}
+
+/* ── FCM 토큰 발급 + Firebase DB 저장 ── */
+async function _acquireFCMToken(messaging, swReg, uid) {
+  try {
+    const token = await messaging.getToken({
+      vapidKey: FCM_VAPID_KEY,
+      serviceWorkerRegistration: swReg
+    });
+    if (!token) return;
+    _fcmToken = token;
+    // DB에 저장 — Cloud Functions가 읽어서 push 발송
+    await _fbUpdate(`users/${uid}`, { fcmToken: token });
+    console.log('[FCM] 토큰 등록 완료');
+  } catch (e) {
+    console.warn('[FCM] 토큰 발급 실패:', e.message);
+  }
+}
+
+/* ── 알림 권한 요청 팝업 표시 ── */
+function _showNotifPermPopup(messaging, swReg, uid) {
+  // 이미 처리됐으면 스킵
+  if (Notification.permission !== 'default') return;
+  const popup = document.getElementById('notifPermPopup');
+  if (popup) {
+    popup._messaging = messaging;
+    popup._swReg = swReg;
+    popup._uid = uid;
+    popup.style.display = 'flex';
+  }
+}
+
+/* ── 팝업에서 "허용" 버튼 클릭 ── */
+async function confirmNotifPerm() {
+  const popup = document.getElementById('notifPermPopup');
+  if (popup) popup.style.display = 'none';
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    const messaging = firebase.messaging();
+    const swReg = await navigator.serviceWorker.getRegistration('./firebase-messaging-sw.js');
+    await _acquireFCMToken(messaging, swReg, MY_UID);
+    showToast('🔔 푸시 알림이 활성화됐습니다!');
+  }
+}
+
+/* ── 팝업에서 "나중에" 버튼 클릭 ── */
+function dismissNotifPerm() {
+  const popup = document.getElementById('notifPermPopup');
+  if (popup) popup.style.display = 'none';
+}
+
+/* ── 알림 설정 토글 — Firebase DB users/{uid}/notifSettings 저장 ── */
+async function toggleNotifSetting(key, el) {
+  if (!MY_UID || !_fbDb) return;
+  const path = `users/${MY_UID}/notifSettings/${key}`;
+  const snap = await _fbGet(path);
+  const cur = !snap.exists() || snap.val() !== false; // 기본 true
+  const next = !cur;
+  await _fbSet(path, next);
+  el.textContent = next ? 'ON' : 'OFF';
+  el.style.background = next ? 'rgba(90,158,72,.25)' : 'rgba(80,40,40,.3)';
+  el.style.color = next ? 'rgba(127,191,106,.9)' : 'rgba(200,80,80,.8)';
+  el.style.borderColor = next ? 'rgba(90,158,72,.4)' : 'rgba(200,80,80,.3)';
+  showToast(next ? `🔔 ${_notifLabel(key)} 알림 켜짐` : `🔕 ${_notifLabel(key)} 알림 꺼짐`);
+}
+
+function _notifLabel(key) {
+  return { deadline:'마감 임박', reserve:'예약 활성화' }[key] || key;
+}
+
+/* ── 알림 권한 확인 / 재요청 버튼 핸들러 ── */
+async function _checkAndRequestNotifPerm() {
+  const statusEl = document.getElementById('notifPermStatus');
+  if (!('Notification' in window)) {
+    if (statusEl) {
+      statusEl.style.display = 'block';
+      statusEl.style.background = 'rgba(180,80,80,.15)';
+      statusEl.style.border = '1px solid rgba(200,80,80,.25)';
+      statusEl.style.color = 'rgba(220,100,100,.85)';
+      statusEl.textContent = '⚠ 이 브라우저는 알림을 지원하지 않습니다';
+    }
+    return;
+  }
+  const perm = Notification.permission;
+  if (perm === 'granted') {
+    if (statusEl) {
+      statusEl.style.display = 'block';
+      statusEl.style.background = 'rgba(47,74,54,.2)';
+      statusEl.style.border = '1px solid rgba(90,158,72,.3)';
+      statusEl.style.color = 'rgba(127,191,106,.85)';
+      statusEl.textContent = '✅ 알림 권한이 허용된 상태입니다';
+    }
+    // 토큰이 없으면 재발급 시도
+    if (!_fcmToken && MY_UID) {
+      try {
+        const messaging = firebase.messaging();
+        const swReg = await navigator.serviceWorker.getRegistration('./firebase-messaging-sw.js');
+        if (swReg) await _acquireFCMToken(messaging, swReg, MY_UID);
+      } catch(e) {}
+    }
+  } else if (perm === 'denied') {
+    if (statusEl) {
+      statusEl.style.display = 'block';
+      statusEl.style.background = 'rgba(180,80,80,.12)';
+      statusEl.style.border = '1px solid rgba(200,80,80,.25)';
+      statusEl.style.color = 'rgba(220,120,100,.85)';
+      statusEl.textContent = '🚫 알림이 차단됐습니다. 브라우저 설정 → 사이트 설정에서 직접 허용해주세요';
+    }
+  } else {
+    // default → 팝업으로 요청
+    const newPerm = await Notification.requestPermission();
+    if (newPerm === 'granted') {
+      if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.style.background = 'rgba(47,74,54,.2)';
+        statusEl.style.border = '1px solid rgba(90,158,72,.3)';
+        statusEl.style.color = 'rgba(127,191,106,.85)';
+        statusEl.textContent = '✅ 알림 권한이 허용됐습니다!';
+      }
+      const messaging = firebase.messaging();
+      const swReg = await navigator.serviceWorker.getRegistration('./firebase-messaging-sw.js');
+      if (swReg) await _acquireFCMToken(messaging, swReg, MY_UID);
+      showToast('🔔 푸시 알림 활성화 완료!');
+    }
+  }
+}
+
+/* ── 설정 UI 초기화 (팀작전 패널 진입 시 호출) ── */
+async function renderNotifSettings() {
+  if (!MY_UID || !_fbDb) return;
+  for (const key of ['deadline','reserve']) {
+    const el = document.getElementById('notifToggle_' + key);
+    if (!el) continue;
+    const snap = await _fbGet(`users/${MY_UID}/notifSettings/${key}`);
+    const on = !snap.exists() || snap.val() !== false;
+    el.textContent = on ? 'ON' : 'OFF';
+    el.style.background = on ? 'rgba(90,158,72,.25)' : 'rgba(80,40,40,.3)';
+    el.style.color = on ? 'rgba(127,191,106,.9)' : 'rgba(200,80,80,.8)';
+    el.style.borderColor = on ? 'rgba(90,158,72,.4)' : 'rgba(200,80,80,.3)';
+  }
+}
 
 /* ── 테스터 상수 (DOMContentLoaded보다 앞에 선언 필요) ── */
 const TESTER_UIDS={A:'tester_uid_A',B:'tester_uid_B'};
@@ -6170,10 +6346,68 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div id="tmRewardPanel"><div id="tmRewardTitle"></div><div id="tmRewardSub"></div><div id="tmRewardBody"></div></div>
       </div>
 
+      <!-- ★ 알림 설정 카드 -->
+      <div class="card" style="padding:16px;background:linear-gradient(145deg,rgba(4,14,10,.97),rgba(2,10,7,.98));border-color:rgba(47,74,54,.30);margin-top:2px;">
+        <div style="font-family:var(--orb);font-size:9px;letter-spacing:2.5px;color:rgba(127,191,106,.6);margin-bottom:12px;">NOTIFICATION SETTINGS</div>
+        <div style="font-family:var(--kr);font-size:13px;font-weight:800;color:rgba(255,255,255,.88);margin-bottom:14px;">🔔 알림 설정</div>
+
+        <!-- 마감 임박 알림 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:8px;">
+          <div>
+            <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">⏰ 작전 마감 임박</div>
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">매일 22:00 · 미완료 작전 있을 때</div>
+          </div>
+          <button id="notifToggle_deadline" onclick="toggleNotifSetting('deadline',this)"
+            style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;cursor:pointer;border:1px solid rgba(90,158,72,.4);background:rgba(90,158,72,.25);color:rgba(127,191,106,.9);letter-spacing:.5px;transition:all .2s;">ON</button>
+        </div>
+
+        <!-- 예약 작전 활성화 알림 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:8px;">
+          <div>
+            <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">🌅 예약 작전 활성화</div>
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">매일 06:00 · 예약 작전 있을 때</div>
+          </div>
+          <button id="notifToggle_reserve" onclick="toggleNotifSetting('reserve',this)"
+            style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;cursor:pointer;border:1px solid rgba(90,158,72,.4);background:rgba(90,158,72,.25);color:rgba(127,191,106,.9);letter-spacing:.5px;transition:all .2s;">ON</button>
+        </div>
+
+        <!-- 실시간 알림 (항상 ON 표시) -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:8px;">
+          <div>
+            <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">🎖 파트너 인증 완료</div>
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">실시간 · 파트너 인증 시 즉시</div>
+          </div>
+          <span style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;border:1px solid rgba(46,127,168,.4);background:rgba(46,127,168,.18);color:rgba(78,176,216,.85);letter-spacing:.5px;">항상</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;">
+          <div>
+            <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">📣 응원 메시지 요청</div>
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">실시간 · 응원 요청 시 즉시</div>
+          </div>
+          <span style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;border:1px solid rgba(46,127,168,.4);background:rgba(46,127,168,.18);color:rgba(78,176,216,.85);letter-spacing:.5px;">항상</span>
+        </div>
+
+        <!-- 권한 상태 안내 -->
+        <div id="notifPermStatus" style="margin-top:12px;padding:10px 12px;border-radius:10px;font-family:var(--kr);font-size:10px;display:none;"></div>
+        <button onclick="_checkAndRequestNotifPerm()" style="width:100%;margin-top:10px;padding:10px;background:rgba(47,74,54,.3);border:1px solid rgba(47,74,54,.5);border-radius:10px;color:rgba(127,191,106,.75);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;">🔔 알림 권한 확인 / 재요청</button>
+      </div>
+
     </div><!-- /panelTeam -->
     </div>
 
   </div><!-- /scroll-area -->
+
+<!-- ★ 알림 권한 요청 팝업 -->
+<div id="notifPermPopup" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.75);align-items:flex-end;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);">
+  <div style="width:100%;max-width:480px;background:linear-gradient(160deg,rgba(8,22,12,.98),rgba(4,14,8,.99));border:1.5px solid rgba(47,74,54,.55);border-radius:22px 22px 0 0;padding:28px 20px 32px;box-shadow:0 -12px 40px rgba(0,0,0,.8);">
+    <div style="width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 20px;"></div>
+    <div style="font-size:40px;text-align:center;margin-bottom:12px;">🔔</div>
+    <div style="font-family:var(--kr);font-size:17px;font-weight:900;color:#fff;text-align:center;margin-bottom:8px;">알림을 허용하시겠어요?</div>
+    <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.55);text-align:center;line-height:1.7;margin-bottom:24px;">파트너 인증 완료, 응원 요청,<br>작전 마감 임박 알림을 받을 수 있어요.<br><span style="color:rgba(127,191,106,.7);font-size:10px;">앱이 닫혀있어도 OS 상단에 알림이 옵니다</span></div>
+    <button onclick="confirmNotifPerm()" style="width:100%;padding:14px;background:linear-gradient(135deg,rgba(47,74,54,.9),rgba(30,50,35,.9));border:1.5px solid rgba(90,158,72,.45);border-radius:13px;color:rgba(200,255,180,.95);font-family:var(--kr);font-size:14px;font-weight:900;cursor:pointer;margin-bottom:10px;">✅ 허용하기</button>
+    <button onclick="dismissNotifPerm()" style="width:100%;padding:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:rgba(255,255,255,.4);font-family:var(--kr);font-size:12px;cursor:pointer;">나중에</button>
+  </div>
+</div>
 
 <!-- 전체화면 보상 팡 -->
 <div id="tmRewardFlash" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.96);align-items:center;justify-content:center;">
@@ -6627,7 +6861,10 @@ function _completeLogin(uid, nick){
   const codeBadge = document.getElementById('myCodeBadgeHeader');
   if(codeBadge) codeBadge.textContent = MY_CODE;
   document.getElementById('testerLoginOverlay').style.display='none';
-  initFirebase().then(()=>_initQuestsFromFb());
+  initFirebase().then(()=>{
+    _initQuestsFromFb();
+    initFCM(uid); /* FCM 푸시 알림 초기화 */
+  });
   showToast('✅ '+nick+' 로 로그인됨');
 }
 
@@ -6846,6 +7083,7 @@ function switchPanel(name,el){
     renderActiveMissionCard();
     updateGemBoxes();
     renderCycleBtns();
+    renderNotifSettings(); /* 알림 설정 토글 갱신 */
   }
   if(name==='diary'){
     _updateCapBanner();
