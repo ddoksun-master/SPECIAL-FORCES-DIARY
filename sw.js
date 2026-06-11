@@ -17,8 +17,18 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+/* 포그라운드에서 앱이 처리했다는 신호 수신 → 중복 알림 방지 */
+let _foregroundHandled = false;
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'FCM_FOREGROUND_HANDLED') {
+    _foregroundHandled = true;
+    setTimeout(() => { _foregroundHandled = false; }, 3000);
+  }
+});
+
 /* 앱이 완전히 닫혀있을 때 백그라운드 푸시 수신 */
 messaging.onBackgroundMessage(payload => {
+  if (_foregroundHandled) return;
   const title = (payload.notification && payload.notification.title) || '특전사 작전수첩';
   const body  = (payload.notification && payload.notification.body)  || '';
   self.registration.showNotification(title, {
