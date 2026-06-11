@@ -5914,6 +5914,62 @@ document.addEventListener('DOMContentLoaded',()=>{
 
       </div>
 
+      <!-- ★ 보급상점 (자금현황으로 이동) -->
+      <!-- 상점 헤더 카드 -->
+      <div class="card" style="margin-top:8px;background:linear-gradient(145deg,rgba(30,20,4,.97),rgba(20,14,2,.98));border-color:rgba(200,168,75,.25);overflow:hidden;position:relative;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(200,168,75,.7),transparent);"></div>
+        <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;">
+          <div style="font-size:26px;filter:drop-shadow(0 0 10px rgba(200,168,75,.4));">🏪</div>
+          <div>
+            <div style="font-family:var(--orb);font-size:9px;letter-spacing:2.5px;color:rgba(200,168,75,.90);margin-bottom:2px;">SUPPLY DEPOT</div>
+            <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#fff;">보급상점</div>
+          </div>
+          <div style="margin-left:auto;text-align:right;">
+            <div style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.90);letter-spacing:1px;margin-bottom:2px;">MY POINTS</div>
+            <div id="shopMyPoints" style="font-family:var(--orb);font-size:20px;font-weight:900;color:rgba(255,215,100,.95);">0<span style="font-size:10px;color:rgba(200,168,75,.6);"> P</span></div>
+          </div>
+        </div>
+        <div style="margin:0 14px 14px;padding:10px 12px;background:rgba(200,168,75,.07);border:1px dashed rgba(200,168,75,.25);border-radius:10px;">
+          <div style="font-family:var(--kr);font-size:9px;color:rgba(255,220,120,.75);line-height:1.7;">
+            <strong style="color:rgba(200,168,75,.95);">개인작전</strong> 5,000원×2 + <strong style="color:rgba(200,168,75,.95);">협동작전</strong> +5,000원 = <strong style="color:rgba(255,215,100,.95);">하루 최대 15,000원</strong><br>
+            개인한도 <strong style="color:rgba(200,168,75,.95);">15만원</strong> · 특수임무 합계 10만 미만 시 초과분만큼 한도 확장<br>
+            <span style="font-size:9px;color:rgba(255,255,255,.75);">✅ 체크 1P &nbsp;·&nbsp; 📝 메모 2P &nbsp;·&nbsp; 📷 사진 3P</span>
+          </div>
+        </div>
+      </div>
+      <!-- 아이템 목록 -->
+      <div class="card" style="margin-top:8px;background:linear-gradient(145deg,rgba(25,18,4,.97),rgba(15,10,2,.98));border-color:rgba(200,168,75,.15);">
+        <div style="font-family:var(--orb);font-size:7px;letter-spacing:2px;color:rgba(200,168,75,.90);margin-bottom:12px;">▸ AVAILABLE ITEMS</div>
+        <div class="shop-item-card" onclick="buyShopItem('extra_box')" style="display:flex;align-items:center;gap:12px;padding:13px 14px;background:rgba(200,168,75,.06);border:1.5px solid rgba(200,168,75,.22);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:.15s;" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
+          <div style="font-size:26px;flex-shrink:0;">🎲</div>
+          <div style="flex:1;">
+            <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:rgba(255,215,100,.95);margin-bottom:2px;">비밀상자 추가 오픈권</div>
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.82);line-height:1.4;">보물상자를 포인트 없이 한 번 더 오픈</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-family:var(--orb);font-size:14px;font-weight:900;color:rgba(255,215,100,.9);">40<span style="font-size:9px;color:rgba(200,168,75,.6);"> P</span></div>
+            <div id="shopItemStatus_extra_box" style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.7);margin-top:2px;"></div>
+          </div>
+        </div>
+        <div class="shop-item-card" onclick="buyShopItem('double_point')" style="display:flex;align-items:center;gap:12px;padding:13px 14px;background:rgba(78,150,220,.06);border:1.5px solid rgba(78,150,220,.22);border-radius:12px;margin-bottom:4px;cursor:pointer;transition:.15s;" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
+          <div style="font-size:26px;flex-shrink:0;">⚡</div>
+          <div style="flex:1;">
+            <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:rgba(120,190,255,.95);margin-bottom:2px;">더블포인트 패스</div>
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.82);line-height:1.4;">다음 작전 달성 시 포인트 2배 적립</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-family:var(--orb);font-size:14px;font-weight:900;color:rgba(120,190,255,.9);">80<span style="font-size:9px;color:rgba(78,150,220,.6);"> P</span></div>
+            <div id="shopItemStatus_double_point" style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.7);margin-top:2px;"></div>
+          </div>
+        </div>
+      </div>
+      <!-- 나의 수행 기록 요약 -->
+      <div class="card" style="margin-top:8px;">
+        <div style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.88);letter-spacing:1.5px;margin-bottom:7px;">▸ 나의 임무 수행 기록</div>
+        <div id="shopActivityInner" style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.82);">불러오는 중...</div>
+      </div>
+      <div id="shopActivitySummary" style="display:none;"></div>
+
     </div><!-- /panelStats -->
 
     <!-- ====== 작전기록 패널 ====== -->
@@ -5962,80 +6018,86 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
     </div>
 
-    <!-- ====== 보급상점 패널 ====== -->
+    <!-- ====== 사령부 패널 ====== -->
     <div class="panel" id="panelShop">
-      <!-- 상점 헤더 카드 -->
-      <div class="card" style="margin-top:10px;background:linear-gradient(145deg,rgba(30,20,4,.97),rgba(20,14,2,.98));border-color:rgba(200,168,75,.25);overflow:hidden;position:relative;">
-        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(200,168,75,.7),transparent);"></div>
+
+      <!-- 헤더 -->
+      <div class="card" style="margin-top:10px;background:linear-gradient(145deg,rgba(4,14,10,.98),rgba(2,10,7,.99));border-color:rgba(47,74,54,.35);overflow:hidden;position:relative;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(127,191,106,.5),transparent);"></div>
         <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;">
-          <div style="font-size:26px;filter:drop-shadow(0 0 10px rgba(200,168,75,.4));">🏪</div>
+          <div style="width:40px;height:40px;border-radius:50%;background:rgba(47,74,54,.4);border:1.5px solid rgba(90,158,72,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;">⚙</div>
           <div>
-            <div style="font-family:var(--orb);font-size:9px;letter-spacing:2.5px;color:rgba(200,168,75,.90);margin-bottom:2px;">SUPPLY DEPOT</div>
-            <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#fff;">보급상점</div>
-          </div>
-          <div style="margin-left:auto;text-align:right;">
-            <div style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.90);letter-spacing:1px;margin-bottom:2px;">MY POINTS</div>
-            <div id="shopMyPoints" style="font-family:var(--orb);font-size:20px;font-weight:900;color:rgba(255,215,100,.95);">0<span style="font-size:10px;color:rgba(200,168,75,.6);"> P</span></div>
-          </div>
-        </div>
-        <!-- 포인트 안내 -->
-        <div style="margin:0 14px 14px;padding:10px 12px;background:rgba(200,168,75,.07);border:1px dashed rgba(200,168,75,.25);border-radius:10px;">
-          <div style="font-family:var(--kr);font-size:9px;color:rgba(255,220,120,.75);line-height:1.7;">
-            <strong style="color:rgba(200,168,75,.95);">개인작전</strong> 5,000원×2 + <strong style="color:rgba(200,168,75,.95);">협동작전</strong> +5,000원 = <strong style="color:rgba(255,215,100,.95);">하루 최대 15,000원</strong><br>
-            개인한도 <strong style="color:rgba(200,168,75,.95);">15만원</strong> · 특수임무 합계 10만 미만 시 초과분만큼 한도 확장<br>
-            <span style="font-size:9px;color:rgba(255,255,255,.75);">✅ 체크 1P &nbsp;·&nbsp; 📝 메모 2P &nbsp;·&nbsp; 📷 사진 3P</span>
+            <div style="font-family:var(--orb);font-size:9px;letter-spacing:2.5px;color:rgba(127,191,106,.6);margin-bottom:2px;">HEADQUARTERS</div>
+            <div style="font-family:var(--kr);font-size:15px;font-weight:900;color:#fff;">사령부</div>
           </div>
         </div>
       </div>
 
-      <!-- 아이템 목록 -->
-      <div class="card" style="margin-top:8px;background:linear-gradient(145deg,rgba(25,18,4,.97),rgba(15,10,2,.98));border-color:rgba(200,168,75,.15);">
-        <div style="font-family:var(--orb);font-size:7px;letter-spacing:2px;color:rgba(200,168,75,.90);margin-bottom:12px;">▸ AVAILABLE ITEMS</div>
-
-        <!-- 비밀상자 추가 오픈권 -->
-        <div class="shop-item-card" onclick="buyShopItem('extra_box')" style="display:flex;align-items:center;gap:12px;padding:13px 14px;background:rgba(200,168,75,.06);border:1.5px solid rgba(200,168,75,.22);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:.15s;" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
-          <div style="font-size:26px;flex-shrink:0;">🎲</div>
-          <div style="flex:1;">
-            <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:rgba(255,215,100,.95);margin-bottom:2px;">비밀상자 추가 오픈권</div>
-            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.82);line-height:1.4;">보물상자를 포인트 없이 한 번 더 오픈</div>
+      <!-- 알림 설정 -->
+      <div class="card" style="margin-top:8px;background:linear-gradient(145deg,rgba(4,14,10,.97),rgba(2,10,7,.98));border-color:rgba(47,74,54,.30);">
+        <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(127,191,106,.55);margin-bottom:12px;">NOTIFICATION SETTINGS</div>
+        <div style="font-family:var(--kr);font-size:13px;font-weight:800;color:rgba(255,255,255,.88);margin-bottom:14px;">🔔 알림 설정</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:8px;">
+          <div>
+            <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">⏰ 작전 마감 임박</div>
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">매일 22:00 · 미완료 작전 있을 때</div>
           </div>
-          <div style="text-align:right;flex-shrink:0;">
-            <div style="font-family:var(--orb);font-size:14px;font-weight:900;color:rgba(255,215,100,.9);">40<span style="font-size:9px;color:rgba(200,168,75,.6);"> P</span></div>
-            <div id="shopItemStatus_extra_box" style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.7);margin-top:2px;"></div>
-          </div>
+          <button id="notifToggle_deadline" onclick="toggleNotifSetting('deadline',this)"
+            style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;cursor:pointer;border:1px solid rgba(90,158,72,.4);background:rgba(90,158,72,.25);color:rgba(127,191,106,.9);letter-spacing:.5px;transition:all .2s;">ON</button>
         </div>
-
-        <!-- 더블포인트 패스 -->
-        <div class="shop-item-card" onclick="buyShopItem('double_point')" style="display:flex;align-items:center;gap:12px;padding:13px 14px;background:rgba(78,150,220,.06);border:1.5px solid rgba(78,150,220,.22);border-radius:12px;margin-bottom:4px;cursor:pointer;transition:.15s;" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
-          <div style="font-size:26px;flex-shrink:0;">⚡</div>
-          <div style="flex:1;">
-            <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:rgba(120,190,255,.95);margin-bottom:2px;">더블포인트 패스</div>
-            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.82);line-height:1.4;">다음 작전 달성 시 포인트 2배 적립</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:8px;">
+          <div>
+            <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">🌅 예약 작전 활성화</div>
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">매일 06:00 · 예약 작전 있을 때</div>
           </div>
-          <div style="text-align:right;flex-shrink:0;">
-            <div style="font-family:var(--orb);font-size:14px;font-weight:900;color:rgba(120,190,255,.9);">80<span style="font-size:9px;color:rgba(78,150,220,.6);"> P</span></div>
-            <div id="shopItemStatus_double_point" style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.7);margin-top:2px;"></div>
-          </div>
+          <button id="notifToggle_reserve" onclick="toggleNotifSetting('reserve',this)"
+            style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;cursor:pointer;border:1px solid rgba(90,158,72,.4);background:rgba(90,158,72,.25);color:rgba(127,191,106,.9);letter-spacing:.5px;transition:all .2s;">ON</button>
         </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:8px;">
+          <div>
+            <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">🎖 파트너 인증 완료</div>
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">실시간 · 파트너 인증 시 즉시</div>
+          </div>
+          <span style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;border:1px solid rgba(46,127,168,.4);background:rgba(46,127,168,.18);color:rgba(78,176,216,.85);letter-spacing:.5px;">항상</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:12px;">
+          <div>
+            <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">📣 응원 메시지 요청</div>
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">실시간 · 응원 요청 시 즉시</div>
+          </div>
+          <span style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;border:1px solid rgba(46,127,168,.4);background:rgba(46,127,168,.18);color:rgba(78,176,216,.85);letter-spacing:.5px;">항상</span>
+        </div>
+        <div id="notifPermStatus" style="display:none;margin-bottom:10px;padding:10px 12px;border-radius:10px;font-family:var(--kr);font-size:10px;"></div>
+        <button onclick="_checkAndRequestNotifPerm()" style="width:100%;padding:10px;background:rgba(47,74,54,.3);border:1px solid rgba(47,74,54,.5);border-radius:10px;color:rgba(127,191,106,.75);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;">🔔 알림 권한 확인 / 재요청</button>
       </div>
 
-      <!-- 나의 수행 기록 요약 -->
+      <!-- 시스템 -->
       <div class="card" style="margin-top:8px;">
-        <div style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.88);letter-spacing:1.5px;margin-bottom:7px;">▸ 나의 임무 수행 기록</div>
-        <div id="shopActivityInner" style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.82);">불러오는 중...</div>
-      </div>
-      <div id="shopActivitySummary" style="display:none;"></div>
-
-      <!-- 시스템 버튼 -->
-      <div class="card" style="margin-top:4px;">
-        <div class="card-title">⚙ 시스템</div>
+        <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(200,168,255,.45);margin-bottom:12px;">SYSTEM</div>
+        <div style="font-family:var(--kr);font-size:13px;font-weight:800;color:rgba(255,255,255,.88);margin-bottom:14px;">⚙ 시스템</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
 
-          <!-- 비밀번호 변경 -->
-          <button class="setting-btn" onclick="_openChangePwPopup()"
-            style="background:rgba(155,120,212,.10);border-color:rgba(155,120,212,.35);color:rgba(200,168,255,.85);">
-            🔑 비밀번호 변경
-          </button>
+          <!-- 비밀번호 변경 — 인라인 토글 -->
+          <div id="changePwSection" style="border:1px solid rgba(155,120,212,.25);border-radius:12px;overflow:hidden;">
+            <button onclick="_toggleChangePwSection()"
+              style="width:100%;padding:13px 14px;background:rgba(155,120,212,.10);border:none;color:rgba(200,168,255,.85);font-family:var(--kr);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;letter-spacing:.2px;">
+              <span>🔑 비밀번호 변경</span>
+              <span id="changePwArrow" style="font-size:10px;transition:transform .2s;">▼</span>
+            </button>
+            <div id="changePwInline" style="display:none;padding:14px;background:rgba(30,18,60,.6);border-top:1px solid rgba(155,120,212,.18);">
+              <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.6);margin-bottom:4px;">현재 비밀번호 (4자리)</div>
+              <input id="changePwCurrent" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
+                style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(155,120,212,.30);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:10px;"/>
+              <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.6);margin-bottom:4px;">새 비밀번호 (4자리)</div>
+              <input id="changePwNew" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
+                style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(155,120,212,.30);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:10px;"/>
+              <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.6);margin-bottom:4px;">새 비밀번호 확인</div>
+              <input id="changePwConfirm" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
+                style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(155,120,212,.30);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:10px;"/>
+              <div id="changePwErr" style="display:none;font-family:var(--kr);font-size:10px;color:rgba(255,120,80,.85);margin-bottom:10px;padding:8px 10px;background:rgba(200,50,30,.10);border:1px solid rgba(200,80,50,.25);border-radius:8px;line-height:1.6;"></div>
+              <button onclick="_doChangePw()" style="width:100%;padding:12px;background:linear-gradient(135deg,rgba(155,120,212,.35),rgba(106,78,158,.45));border:1.5px solid rgba(155,120,212,.55);border-radius:11px;color:rgba(220,200,255,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;letter-spacing:.3px;">변경 완료</button>
+            </div>
+          </div>
 
           <!-- 로그아웃 -->
           <button class="setting-btn" onclick="_doLogout()"
@@ -6046,23 +6108,22 @@ document.addEventListener('DOMContentLoaded',()=>{
           <!-- 데이터 삭제 -->
           <div style="border:1.5px solid rgba(200,80,50,.22);border-radius:12px;padding:12px;">
             <div style="font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(220,80,60,.75);margin-bottom:8px;">⚠ 데이터 삭제</div>
-
-            <!-- 회원탈퇴 포함 체크박스 -->
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:10px;">
-              <input type="checkbox" id="withdrawCheckbox"
-                style="width:17px;height:17px;accent-color:rgba(220,80,60,.85);cursor:pointer;"/>
-              <span style="font-family:var(--kr);font-size:10px;color:rgba(220,80,60,.65);font-weight:700;">
-                회원가입 탈퇴도 함께 (닉네임까지 삭제)
-              </span>
+              <input type="checkbox" id="withdrawCheckbox" style="width:17px;height:17px;accent-color:rgba(220,80,60,.85);cursor:pointer;"/>
+              <span style="font-family:var(--kr);font-size:10px;color:rgba(220,80,60,.65);font-weight:700;">회원가입 탈퇴도 함께 (닉네임까지 삭제)</span>
             </label>
-
             <button class="setting-btn" onclick="_doDeleteData()"
               style="background:rgba(139,26,26,.10);border-color:rgba(139,26,26,.32);color:rgba(220,80,80,.80);font-size:11px;padding:11px;">
               🗑 삭제 실행
             </button>
           </div>
+
         </div>
       </div>
+
+      <!-- JS 호환용 스텁 -->
+      <div id="shopActivitySummary" style="display:none;"></div>
+
     </div>
 
     <!-- ====== 팀작전 패널 ====== -->
@@ -6475,8 +6536,8 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="nav-label">자금현황</div>
     </div>
     <div class="nav-item" onclick="switchPanel('shop',this)">
-      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
-      <div class="nav-label">전술본부</div>
+      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+      <div class="nav-label">사령부</div>
     </div>
   </div>
 
@@ -6728,16 +6789,6 @@ async function _doSignup(){
     if(snap.exists()){
       _loginShowErr('signupErr','이미 사용 중인 닉네임입니다.<br>다른 닉네임을 입력해주세요.');
       return;
-    }
-    /* 비밀번호 중복 체크 */
-    const allUsersSnap2 = await _fbGet('users');
-    if(allUsersSnap2.exists()){
-      const _allUsers = Object.values(allUsersSnap2.val());
-      const _pwDup = _allUsers.some(u=>u.profile&&u.profile.pw4===pw);
-      if(_pwDup){
-        _loginShowErr('signupErr','이미 사용 중인 비밀번호입니다.<br>다른 비밀번호를 입력해주세요.');
-        return;
-      }
     }
     await _fbSet('users/'+uid+'/profile',{nickname:nick, pw4:pw, createdAt:Date.now()});
     _completeLogin(uid, nick);
@@ -7073,7 +7124,7 @@ function switchPanel(name,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('panel'+name[0].toUpperCase()+name.slice(1)).classList.add('active');
   if(el) el.classList.add('active');
-  if(name==='stats'){renderCal();renderStatsRevenueCard();renderStatsGemProposalGrid();}
+  if(name==='stats'){renderCal();renderStatsRevenueCard();renderStatsGemProposalGrid();initShopPanel();}
   if(name==='history'){renderHist();renderCal();}
   if(name==='team'){
     if(window.renderConnectCard) renderConnectCard();
@@ -9020,52 +9071,26 @@ async function _doWithdraw(){
   _doDeleteData();
 }
 
-/* ══ 비밀번호 변경 ══ */
-function _openChangePwPopup(){
-  /* 기존 팝업 있으면 제거 */
-  const existing = document.getElementById('changePwPopup');
-  if(existing) existing.remove();
-
-  /* document.body 직하위에 동적 생성 → app-shell overflow:hidden 영향 없음 */
-  const popup = document.createElement('div');
-  popup.id = 'changePwPopup';
-  popup.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px;';
-  popup.onclick = (e)=>{ if(e.target===popup) _closeChangePwPopup(); };
-  popup.innerHTML = `
-    <div style="background:linear-gradient(160deg,#2A1E52,#1A1230);border:1.5px solid rgba(155,120,212,.40);border-radius:18px;padding:24px 20px;width:100%;max-width:320px;box-shadow:0 8px 40px rgba(0,0,0,.55);">
-      <div style="font-family:var(--title);font-size:15px;font-weight:900;color:rgba(200,168,255,.95);margin-bottom:6px;letter-spacing:.3px;">🔑 비밀번호 변경</div>
-      <div id="changePwUserLabel" style="font-family:var(--kr);font-size:10px;color:rgba(200,168,255,.55);margin-bottom:18px;">${(myNickname||'')} 님의 비밀번호를 변경합니다</div>
-      <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.65);margin-bottom:5px;">현재 비밀번호 (4자리)</div>
-      <input id="changePwCurrent" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
-        style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(155,120,212,.30);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:12px;" />
-      <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.65);margin-bottom:5px;">새 비밀번호 (4자리)</div>
-      <input id="changePwNew" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
-        style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(155,120,212,.30);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:12px;" />
-      <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.65);margin-bottom:5px;">새 비밀번호 확인</div>
-      <input id="changePwConfirm" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
-        style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(155,120,212,.30);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:12px;" />
-      <div id="changePwErr" style="display:none;font-family:var(--kr);font-size:10px;color:rgba(255,120,80,.85);margin-bottom:12px;padding:8px 10px;background:rgba(200,50,30,.10);border:1px solid rgba(200,80,50,.25);border-radius:8px;line-height:1.6;"></div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="_closeChangePwPopup()" style="flex:1;padding:12px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.12);border-radius:11px;color:rgba(255,255,255,.55);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;">취소</button>
-        <button onclick="_doChangePw()" style="flex:2;padding:12px;background:linear-gradient(135deg,rgba(155,120,212,.35),rgba(106,78,158,.45));border:1.5px solid rgba(155,120,212,.55);border-radius:11px;color:rgba(220,200,255,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;letter-spacing:.3px;">변경 완료</button>
-      </div>
-    </div>`;
-  document.body.appendChild(popup);
-
-  /* 입력 이벤트 바인딩 */
-  document.getElementById('changePwCurrent').addEventListener('input', _changePwClearErr);
-  document.getElementById('changePwNew').addEventListener('input', _changePwClearErr);
-  document.getElementById('changePwConfirm').addEventListener('input', _changePwClearErr);
-  document.getElementById('changePwCurrent').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('changePwNew').focus(); });
-  document.getElementById('changePwNew').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('changePwConfirm').focus(); });
-  document.getElementById('changePwConfirm').addEventListener('keydown', e=>{ if(e.key==='Enter') _doChangePw(); });
-
-  setTimeout(()=>{ const el=document.getElementById('changePwCurrent'); if(el) el.focus(); }, 100);
+/* ══ 비밀번호 변경 — 인라인 토글 ══ */
+function _toggleChangePwSection(){
+  const inline = document.getElementById('changePwInline');
+  const arrow  = document.getElementById('changePwArrow');
+  if(!inline) return;
+  const open = inline.style.display === 'block';
+  inline.style.display = open ? 'none' : 'block';
+  if(arrow) arrow.style.transform = open ? '' : 'rotate(180deg)';
+  if(!open){
+    /* 열릴 때 입력 초기화 */
+    ['changePwCurrent','changePwNew','changePwConfirm'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.value='';
+    });
+    _changePwClearErr();
+    setTimeout(()=>{ const el=document.getElementById('changePwCurrent'); if(el) el.focus(); },100);
+  }
 }
-function _closeChangePwPopup(){
-  const popup = document.getElementById('changePwPopup');
-  if(popup) popup.remove();
-}
+/* 하위호환 stub — 팝업 방식 호출 시 인라인으로 전환 */
+function _openChangePwPopup(){ switchPanel('shop',document.querySelector('.nav-item:last-child')); setTimeout(_toggleChangePwSection,150); }
+function _closeChangePwPopup(){ _toggleChangePwSection(); }
 function _changePwClearErr(){
   const el = document.getElementById('changePwErr');
   if(el){ el.style.display='none'; el.innerHTML=''; }
@@ -9090,7 +9115,11 @@ async function _doChangePw(){
     const profile = snap.val();
     if(profile.pw4 !== cur){ _changePwShowErr('현재 비밀번호가 맞지 않습니다.'); return; }
     await _fbSet('users/' + MY_UID + '/profile', { ...profile, pw4: nw });
-    _closeChangePwPopup();
+    /* 인라인 섹션 닫기 */
+    const inline = document.getElementById('changePwInline');
+    const arrow  = document.getElementById('changePwArrow');
+    if(inline) inline.style.display='none';
+    if(arrow)  arrow.style.transform='';
     showToast('🔑 비밀번호가 변경되었습니다!');
   }catch(e){ _changePwShowErr('오류: ' + e.message); }
 }
