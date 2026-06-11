@@ -6860,31 +6860,19 @@ const CAT_IC={
 
 /* ══ 00:00~03:59 활동 전면 차단 헬퍼 ══ */
 function _isBlackoutHour(){
-  const h = new Date(_virtualNow()).getHours();
-  return h >= 0 && h < 4; /* 00:00~03:59 */
+  return false; /* 야간 잠금 비활성화 */
 }
 function _assertNotBlackout(){
-  if(_isBlackoutHour()){
-    showToast('⚠ 00:00~04:00 사이에는 모든 활동이 잠금됩니다');
-    return true;
-  }
-  return false;
+  return false; /* 야간 잠금 비활성화 */
 }
-/* 현재 00~04시 차단 배너 표시 갱신 */
+/* 야간 잠금 배너 항상 숨김 */
 function _renderBlackoutBanner(){
-  /* 전역 고정 배너 제거 - 작전투입 위 + 작전기록 패널에만 표시 */
   const banner = document.getElementById('blackoutBanner');
   if(banner) banner.remove();
-  /* 작전투입 위 인라인 배너 */
   const slotBanner = document.getElementById('opsBlackoutBanner');
   const histBanner = document.getElementById('histBlackoutBanner');
-  if(_isBlackoutHour()){
-    if(slotBanner) slotBanner.style.display='flex';
-    if(histBanner) histBanner.style.display='flex';
-  } else {
-    if(slotBanner) slotBanner.style.display='none';
-    if(histBanner) histBanner.style.display='none';
-  }
+  if(slotBanner) slotBanner.style.display='none';
+  if(histBanner) histBanner.style.display='none';
 }
 
 
