@@ -6892,14 +6892,15 @@ function _notifOnce(key, fn){
 const FCM_VAPID_KEY = 'BALoaiEdY29U6iCbSZn2Vuypm38ZP8cGFOrGpMsVh6P7c5R1c12K3wFs-zRwaRZCIZB9rpioPx8Sx5pw3hN2G1E';
 
 /* FCM 토큰 발급 후 Firebase에 저장 */
+let _fcmTokenRegistered = false;
 async function _registerFcmToken(){
+  if(_fcmTokenRegistered) return;
+  _fcmTokenRegistered = true;
   try{
     if(!window.firebase || !firebase.apps || !firebase.apps.length) return;
     if(!MY_UID) return;
     const messaging = firebase.messaging();
-    /* 서비스워커가 준비될 때까지 기다린 후 토큰 발급 */
-    const swReg = await navigator.serviceWorker.ready;
-    const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: swReg });
+    const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY });
     if(!token) return;
     await _fbSet('fcmTokens/'+MY_UID, { token, updatedAt: Date.now() });
     console.log('[FCM] 토큰 등록 완료');
