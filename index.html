@@ -2511,18 +2511,19 @@ document.addEventListener('DOMContentLoaded',()=>{
       _fbDb=firebase.database();
     }catch(e){}
 
-    /* 로그인 체크: sessionStorage(탭별) 우선 → 없으면 로그인 화면 */
-    const savedUid = sessionStorage.getItem('sessionUid');
-    const savedNick = sessionStorage.getItem('sessionNick');
+    /* 로그인 체크: sessionStorage 우선 → localStorage 자동 로그인 → 로그인 화면 */
+    const savedUid = sessionStorage.getItem('sessionUid') || localStorage.getItem('autoLoginUid');
+    const savedNick = sessionStorage.getItem('sessionNick') || localStorage.getItem('autoLoginNick');
     if(savedUid && savedNick){
       window.MY_UID = savedUid;
       window.myNickname = savedNick;
       myNickname = savedNick;
       MY_UID = savedUid;
-      MY_CODE = nickToShareCode(savedNick); /* 닉네임 기반 코드 — 항상 일정 */
+      MY_CODE = nickToShareCode(savedNick);
+      sessionStorage.setItem('sessionUid', savedUid);
+      sessionStorage.setItem('sessionNick', savedNick);
       initFirebase().then(()=>{_initQuestsFromFb();});
     } else {
-      /* 새 탭 or 로그아웃 상태 — 항상 로그인 화면 */
       initFirebase().then(()=>{ _showTesterLogin(); });
     }
     /* 초기 팀작전 렌더 */
@@ -5299,15 +5300,13 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
     </div>
 
-    <!-- ── 기존 로그인 ── -->
+    <!-- ── 닉네임 선택 로그인 ── -->
     <div id="loginForm" style="display:block;">
-      <div style="font-family:var(--kr);font-size:9px;color:#7A5C1E;margin-bottom:6px;letter-spacing:.3px;">비밀번호 (4자리)</div>
-      <input id="loginPwInput" maxlength="4" placeholder="••••" type="password" inputmode="numeric"
-        oninput="_loginClearErr()" onkeydown="if(event.key==='Enter')_doLogin()"
-        style="display:block;width:100%;box-sizing:border-box;padding:11px 13px;background:rgba(255,255,255,.06);border:1.5px solid rgba(196,169,106,.28);border-radius:10px;color:#F0E8D8;font-size:20px;font-family:var(--orb);letter-spacing:8px;outline:none;margin-bottom:12px;"/>
+      <div style="font-family:var(--orb);font-size:7px;letter-spacing:2px;color:#7A5C1E;margin-bottom:10px;">▸ 계정 선택</div>
+      <div id="loginNickList" style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;">
+        <div style="font-family:var(--kr);font-size:10px;color:rgba(196,169,106,.88);text-align:center;padding:8px 0;">불러오는 중...</div>
+      </div>
       <div id="loginErr" style="display:none;font-family:var(--kr);font-size:10px;color:rgba(255,120,80,.85);margin-bottom:10px;padding:8px 10px;background:rgba(200,50,30,.10);border:1px solid rgba(200,80,50,.25);border-radius:8px;line-height:1.6;"></div>
-      <button onclick="_doLogin()" style="width:100%;padding:13px;background:linear-gradient(135deg,#2F4A36,#1E2D24);border:1.5px solid rgba(196,169,106,.40);border-radius:12px;color:#F0E8D8;font-family:var(--kr);font-size:13px;font-weight:900;cursor:pointer;letter-spacing:.3px;margin-bottom:10px;">🪖 입장</button>
-
       <!-- 신규등록 토글 버튼 -->
       <button onclick="_loginSwitchTab('signup')" style="width:100%;padding:10px;background:transparent;border:1.5px solid rgba(196,169,106,.22);border-radius:10px;color:#6B5020;font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.3px;">+ 신규 등록</button>
     </div>
@@ -6487,6 +6486,16 @@ async function _doSignup(){
       _loginShowErr('signupErr','이미 사용 중인 닉네임입니다.<br>다른 닉네임을 입력해주세요.');
       return;
     }
+    /* 비밀번호 중복 체크 */
+    const allUsersSnap2 = await _fbGet('users');
+    if(allUsersSnap2.exists()){
+      const _allUsers = Object.values(allUsersSnap2.val());
+      const _pwDup = _allUsers.some(u=>u.profile&&u.profile.pw4===pw);
+      if(_pwDup){
+        _loginShowErr('signupErr','이미 사용 중인 비밀번호입니다.<br>다른 비밀번호를 입력해주세요.');
+        return;
+      }
+    }
     await _fbSet('users/'+uid+'/profile',{nickname:nick, pw4:pw, createdAt:Date.now()});
     _completeLogin(uid, nick);
   }catch(e){ _loginShowErr('signupErr','오류: '+e.message); }
@@ -6515,16 +6524,53 @@ async function _loadLoginList(){
   }catch(e){ area.innerHTML='<div style="font-family:var(--kr);font-size:10px;color:rgba(255,100,80,.5);text-align:center;padding:8px 0;">불러오기 실패</div>'; }
 }
 
+/* 닉네임 목록 로드 → 버튼 클릭 시 바로 로그인 */
+async function _loadNickLoginList(){
+  const area = document.getElementById('loginNickList');
+  if(!area) return;
+  area.innerHTML = '<div style="font-family:var(--kr);font-size:10px;color:rgba(196,169,106,.88);text-align:center;padding:8px 0;">불러오는 중...</div>';
+  if(!await _ensureFb()){ area.innerHTML='<div style="font-family:var(--kr);font-size:10px;color:rgba(255,100,80,.5);text-align:center;padding:8px 0;">연결 실패</div>'; return; }
+  try{
+    const snap = await _fbGet('users');
+    if(!snap.exists()){ area.innerHTML='<div style="font-family:var(--kr);font-size:10px;color:rgba(196,169,106,.88);text-align:center;padding:8px 0;">등록된 계정이 없습니다</div>'; return; }
+    const users = snap.val();
+    const accounts = [];
+    Object.entries(users).forEach(([uid,u])=>{
+      if(u.profile&&u.profile.nickname) accounts.push({uid, nick:u.profile.nickname});
+    });
+    if(!accounts.length){ area.innerHTML='<div style="font-family:var(--kr);font-size:10px;color:rgba(196,169,106,.88);text-align:center;padding:8px 0;">등록된 계정이 없습니다</div>'; return; }
+    window._loginAccounts = accounts;
+    area.innerHTML = accounts.sort((a,b)=>a.nick.localeCompare(b.nick)).map((a,i)=>`
+      <button onclick="_doNickLogin(${i})"
+        style="width:100%;text-align:left;padding:13px 16px;background:rgba(255,255,255,.04);border:1.5px solid rgba(196,169,106,.22);border-radius:12px;color:#F0E8D8;font-family:var(--kr);font-size:14px;font-weight:900;cursor:pointer;letter-spacing:.3px;transition:.12s;display:flex;align-items:center;gap:10px;"
+        onmouseenter="this.style.background='rgba(196,169,106,.12)';this.style.borderColor='rgba(196,169,106,.5)'"
+        onmouseleave="this.style.background='rgba(255,255,255,.04)';this.style.borderColor='rgba(196,169,106,.22)'">
+        <span style="font-size:20px;">🪖</span>
+        <span>${a.nick}</span>
+      </button>`).join('');
+  }catch(e){ area.innerHTML='<div style="font-family:var(--kr);font-size:10px;color:rgba(255,100,80,.5);text-align:center;padding:8px 0;">불러오기 실패</div>'; }
+}
+
+/* 닉네임 버튼 탭 → 바로 로그인 */
+function _doNickLogin(idx){
+  const accounts = window._loginAccounts || [];
+  const sorted = accounts.sort((a,b)=>a.nick.localeCompare(b.nick));
+  const acc = sorted[idx];
+  if(!acc) return;
+  _completeLogin(acc.uid, acc.nick);
+}
+
 /* 리스트에서 닉네임 선택 → 로그인 폼으로 자동 입력 */
 function _loginListSelect(nick){
   _loginSwitchTab('login');
   const inp = document.getElementById('loginNickInput');
   if(inp){ inp.value=nick; inp.dispatchEvent(new Event('input')); }
-  setTimeout(()=>{ const pw=document.getElementById('loginPwInput'); if(pw) pw.focus(); }, 100);
 }
 
 function _completeLogin(uid, nick){
-  /* 탭별 분리 — sessionStorage에만 저장 */
+  /* 자동 로그인 — localStorage에 저장 (앱 껐다 켜도 유지) */
+  localStorage.setItem('autoLoginUid', uid);
+  localStorage.setItem('autoLoginNick', nick);
   sessionStorage.setItem('sessionUid', uid);
   sessionStorage.setItem('sessionNick', nick);
   /* 전역 변수 갱신 */
@@ -6558,6 +6604,7 @@ async function testerReset(){
 
 function _showTesterLogin(){
   document.getElementById('testerLoginOverlay').style.display='flex';
+  _loadNickLoginList();
 }
 
 /* ── Firebase 기반 quests ── */
@@ -8914,6 +8961,8 @@ function _doLogout(){
   if(!confirm('로그아웃 하시겠습니까?')) return;
   sessionStorage.removeItem('sessionUid');
   sessionStorage.removeItem('sessionNick');
+  localStorage.removeItem('autoLoginUid');
+  localStorage.removeItem('autoLoginNick');
   localStorage.removeItem('loginUid');
   localStorage.removeItem('loginNick');
   localStorage.removeItem('myNickname');
