@@ -5958,10 +5958,12 @@ document.addEventListener('DOMContentLoaded',()=>{
           </div>
         </div>
       </div>
-      <!-- 나의 수행 기록 요약 -->
-      <div class="card" style="margin-top:8px;">
-        <div style="font-family:var(--orb);font-size:9px;color:rgba(127,191,106,.88);letter-spacing:1.5px;margin-bottom:7px;">▸ 나의 임무 수행 기록</div>
-        <div id="shopActivityInner" style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.82);">불러오는 중...</div>
+      <!-- 나의 수행 기록 -->
+      <div class="card" style="margin-top:8px;background:linear-gradient(145deg,rgba(6,18,10,.97),rgba(3,12,6,.98));border-color:rgba(47,74,54,.35);overflow:hidden;position:relative;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(127,191,106,.4),transparent);"></div>
+        <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(127,191,106,.55);margin-bottom:10px;">OPERATION RECORDS</div>
+        <div style="font-family:var(--kr);font-size:13px;font-weight:800;color:rgba(255,255,255,.88);margin-bottom:14px;">📋 나의 임무 수행 기록</div>
+        <div id="shopActivityInner"></div>
       </div>
       <div id="shopActivitySummary" style="display:none;"></div>
 
@@ -6067,50 +6069,54 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
 
       <!-- 시스템 -->
-      <div class="card" style="margin-top:8px;">
-        <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(200,168,255,.45);margin-bottom:12px;">SYSTEM</div>
+      <div class="card" style="margin-top:8px;background:linear-gradient(145deg,rgba(4,14,10,.97),rgba(2,10,7,.98));border-color:rgba(47,74,54,.30);overflow:hidden;position:relative;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(127,191,106,.35),transparent);"></div>
+        <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(127,191,106,.45);margin-bottom:12px;">SYSTEM CONTROL</div>
         <div style="font-family:var(--kr);font-size:13px;font-weight:800;color:rgba(255,255,255,.88);margin-bottom:14px;">⚙ 시스템</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
 
           <!-- 비밀번호 변경 — 인라인 토글 -->
-          <div id="changePwSection" style="border:1px solid rgba(155,120,212,.25);border-radius:12px;overflow:hidden;">
+          <div id="changePwSection" style="border:1px solid rgba(47,74,54,.45);border-radius:12px;overflow:hidden;">
             <button onclick="_toggleChangePwSection()"
-              style="width:100%;padding:13px 14px;background:rgba(155,120,212,.10);border:none;color:rgba(200,168,255,.85);font-family:var(--kr);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;letter-spacing:.2px;">
+              style="width:100%;padding:13px 14px;background:rgba(47,74,54,.25);border:none;color:rgba(180,230,160,.85);font-family:var(--kr);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;letter-spacing:.2px;">
               <span>🔑 비밀번호 변경</span>
-              <span id="changePwArrow" style="font-size:10px;transition:transform .2s;">▼</span>
+              <span id="changePwArrow" style="font-size:10px;transition:transform .2s;color:rgba(127,191,106,.6);">▼</span>
             </button>
-            <div id="changePwInline" style="display:none;padding:14px;background:rgba(30,18,60,.6);border-top:1px solid rgba(155,120,212,.18);">
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.6);margin-bottom:4px;">현재 비밀번호 (4자리)</div>
+            <div id="changePwInline" style="display:none;padding:14px;background:rgba(2,10,6,.8);border-top:1px solid rgba(47,74,54,.3);">
+              <div style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.7);margin-bottom:4px;">현재 비밀번호 (4자리)</div>
               <input id="changePwCurrent" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
-                style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(155,120,212,.30);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:10px;"/>
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.6);margin-bottom:4px;">새 비밀번호 (4자리)</div>
+                style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.05);border:1.5px solid rgba(47,74,54,.45);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:10px;"/>
+              <div style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.7);margin-bottom:4px;">새 비밀번호 (4자리)</div>
               <input id="changePwNew" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
-                style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(155,120,212,.30);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:10px;"/>
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.6);margin-bottom:4px;">새 비밀번호 확인</div>
+                style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.05);border:1.5px solid rgba(47,74,54,.45);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:10px;"/>
+              <div style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.7);margin-bottom:4px;">새 비밀번호 확인</div>
               <input id="changePwConfirm" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
-                style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(155,120,212,.30);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:10px;"/>
+                style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.05);border:1.5px solid rgba(47,74,54,.45);border-radius:10px;padding:11px 12px;color:#fff;font-size:14px;letter-spacing:6px;text-align:center;outline:none;margin-bottom:10px;"/>
               <div id="changePwErr" style="display:none;font-family:var(--kr);font-size:10px;color:rgba(255,120,80,.85);margin-bottom:10px;padding:8px 10px;background:rgba(200,50,30,.10);border:1px solid rgba(200,80,50,.25);border-radius:8px;line-height:1.6;"></div>
-              <button onclick="_doChangePw()" style="width:100%;padding:12px;background:linear-gradient(135deg,rgba(155,120,212,.35),rgba(106,78,158,.45));border:1.5px solid rgba(155,120,212,.55);border-radius:11px;color:rgba(220,200,255,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;letter-spacing:.3px;">변경 완료</button>
+              <button onclick="_doChangePw()" style="width:100%;padding:12px;background:linear-gradient(135deg,rgba(47,74,54,.7),rgba(30,55,35,.8));border:1.5px solid rgba(90,158,72,.45);border-radius:11px;color:rgba(180,230,160,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;letter-spacing:.3px;">변경 완료</button>
             </div>
           </div>
 
           <!-- 로그아웃 -->
           <button class="setting-btn" onclick="_doLogout()"
-            style="background:rgba(46,127,168,.10);border-color:rgba(46,127,168,.35);color:rgba(78,176,216,.85);">
+            style="padding:13px 14px;background:rgba(46,127,168,.08);border:1px solid rgba(46,127,168,.28);border-radius:12px;color:rgba(78,176,216,.85);font-family:var(--kr);font-size:12px;font-weight:700;cursor:pointer;text-align:left;width:100%;">
             🚪 로그아웃
           </button>
 
           <!-- 데이터 삭제 -->
-          <div style="border:1.5px solid rgba(200,80,50,.22);border-radius:12px;padding:12px;">
-            <div style="font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(220,80,60,.75);margin-bottom:8px;">⚠ 데이터 삭제</div>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:10px;">
-              <input type="checkbox" id="withdrawCheckbox" style="width:17px;height:17px;accent-color:rgba(220,80,60,.85);cursor:pointer;"/>
-              <span style="font-family:var(--kr);font-size:10px;color:rgba(220,80,60,.65);font-weight:700;">회원가입 탈퇴도 함께 (닉네임까지 삭제)</span>
-            </label>
-            <button class="setting-btn" onclick="_doDeleteData()"
-              style="background:rgba(139,26,26,.10);border-color:rgba(139,26,26,.32);color:rgba(220,80,80,.80);font-size:11px;padding:11px;">
-              🗑 삭제 실행
-            </button>
+          <div style="border:1px solid rgba(180,60,40,.28);border-radius:12px;overflow:hidden;">
+            <div style="padding:11px 14px;background:rgba(100,20,10,.2);">
+              <div style="font-family:var(--orb);font-size:9px;letter-spacing:1.5px;color:rgba(220,80,60,.65);margin-bottom:8px;">DANGER ZONE</div>
+              <div style="font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(220,80,60,.85);margin-bottom:10px;">⚠ 데이터 삭제</div>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:10px;">
+                <input type="checkbox" id="withdrawCheckbox" style="width:17px;height:17px;accent-color:rgba(220,80,60,.85);cursor:pointer;"/>
+                <span style="font-family:var(--kr);font-size:10px;color:rgba(220,100,80,.75);font-weight:700;">회원가입 탈퇴도 함께 (닉네임까지 삭제)</span>
+              </label>
+              <button class="setting-btn" onclick="_doDeleteData()"
+                style="width:100%;padding:11px;background:rgba(100,20,10,.3);border:1px solid rgba(180,60,40,.35);border-radius:10px;color:rgba(220,80,80,.85);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;">
+                🗑 삭제 실행
+              </button>
+            </div>
           </div>
 
         </div>
@@ -8083,14 +8089,16 @@ function renderShopActivity(){
   const encourage = CAP_ENCOURAGE_MSGS[Math.floor(Math.random()*CAP_ENCOURAGE_MSGS.length)];
 
   inner.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-      <div style="text-align:center;padding:9px;background:rgba(90,158,72,.08);border:1px solid rgba(90,158,72,.15);border-radius:8px;">
-        <div style="font-family:var(--orb);font-size:16px;font-weight:900;color:var(--green-dim);">${dayCount}</div>
-        <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,75,.4);margin-top:2px;">수행 일수</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div style="text-align:center;padding:12px 8px;background:rgba(47,74,54,.25);border:1px solid rgba(90,158,72,.30);border-radius:10px;">
+        <div style="font-family:var(--orb);font-size:22px;font-weight:900;color:rgba(127,191,106,.95);">${dayCount}</div>
+        <div style="font-family:var(--orb);font-size:8px;letter-spacing:1.5px;color:rgba(127,191,106,.65);margin-top:4px;">DAYS SERVED</div>
+        <div style="font-family:var(--kr);font-size:9px;color:rgba(200,230,180,.75);margin-top:2px;">수행 일수</div>
       </div>
-      <div style="text-align:center;padding:9px;background:rgba(200,168,75,.08);border:1px solid rgba(200,168,75,.15);border-radius:8px;">
-        <div style="font-family:var(--orb);font-size:16px;font-weight:900;color:var(--gold-dim);">${totalCompleted}</div>
-        <div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,75,.4);margin-top:2px;">완료 임무</div>
+      <div style="text-align:center;padding:12px 8px;background:rgba(30,22,4,.5);border:1px solid rgba(200,168,75,.28);border-radius:10px;">
+        <div style="font-family:var(--orb);font-size:22px;font-weight:900;color:rgba(255,215,100,.95);">${totalCompleted}</div>
+        <div style="font-family:var(--orb);font-size:8px;letter-spacing:1.5px;color:rgba(200,168,75,.65);margin-top:4px;">MISSIONS DONE</div>
+        <div style="font-family:var(--kr);font-size:9px;color:rgba(255,220,140,.75);margin-top:2px;">완료 임무</div>
       </div>
     </div>`;
 }
