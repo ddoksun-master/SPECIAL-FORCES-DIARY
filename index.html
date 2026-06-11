@@ -7473,11 +7473,11 @@ function renderQ(){
         }catch(e){showToast('전송 실패');}
       });
     }
-    /* 개인 응원 요청 버튼 — 상대방에게 cheer_request 알림 전송만 수행 */
-    /* ✅ FIX: listenerBound 플래그로 중복 바인딩 방지 (슬롯 렌더와 공유) */
+    /* 개인 응원 요청 버튼 — 카드(list) 바인딩 비활성화
+       실제 유저가 보는 버튼은 slotEl.innerHTML로 새로 그린 슬롯 버튼.
+       ✅ FIX: 바인딩은 _fillSlot(slotCheerReqBtn)에서만 수행하도록 여기선 스킵 */
     const soloCheerReqBtn=div.querySelector('.solo-cheer-req-btn');
-    if(soloCheerReqBtn&&!soloCheerReqBtn.dataset.listenerBound){
-      soloCheerReqBtn.dataset.listenerBound='1';
+    if(false&&soloCheerReqBtn){
       soloCheerReqBtn.addEventListener('click',async e=>{
         e.stopPropagation();
         const qi2=parseInt(soloCheerReqBtn.dataset.qi);
@@ -7777,11 +7777,9 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
     if(_isFailed){showToast('❌ 임무실패 — 인증불가');return;}
     const n=_virtualNow();if(n<(quests[oi].certAvailableAt||0)){showToast('⏱ 인증 가능까지 '+Math.ceil(((quests[oi].certAvailableAt||0)-n)/60000)+'분 남았습니다');return;}openCertPopup(oi);
   });}
-  /* 개인 응원 요청 버튼 — 슬롯 내 바인딩 */
-  /* ✅ FIX: 카드 렌더(div)에서 이미 바인딩된 경우 중복 방지 */
+  /* 개인 응원 요청 버튼 — 슬롯 내 바인딩 (유일한 바인딩 포인트) */
   const slotCheerReqBtn=slotEl.querySelector('.solo-cheer-req-btn');
-  if(slotCheerReqBtn&&!slotCheerReqBtn.dataset.listenerBound){
-    slotCheerReqBtn.dataset.listenerBound='1';
+  if(slotCheerReqBtn){
     slotCheerReqBtn.addEventListener('click',async e=>{
       e.stopPropagation();
       if(!partnerData||!partnerData.uid){showToast('💜 파트너 연결 후 응원 요청이 가능합니다');return;}
