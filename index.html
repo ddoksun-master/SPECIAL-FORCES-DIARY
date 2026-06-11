@@ -5302,13 +5302,28 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     <!-- ── 닉네임 선택 로그인 ── -->
     <div id="loginForm" style="display:block;">
-      <div style="font-family:var(--orb);font-size:7px;letter-spacing:2px;color:#7A5C1E;margin-bottom:10px;">▸ 계정 선택</div>
-      <div id="loginNickList" style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;">
-        <div style="font-family:var(--kr);font-size:10px;color:rgba(196,169,106,.88);text-align:center;padding:8px 0;">불러오는 중...</div>
+
+      <!-- STEP 1: 닉네임 목록 -->
+      <div id="loginStep1">
+        <div style="font-family:var(--orb);font-size:7px;letter-spacing:2px;color:#7A5C1E;margin-bottom:10px;">▸ 계정 선택</div>
+        <div id="loginNickList" style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;">
+          <div style="font-family:var(--kr);font-size:10px;color:rgba(196,169,106,.88);text-align:center;padding:8px 0;">불러오는 중...</div>
+        </div>
+        <button onclick="_loginSwitchTab('signup')" style="width:100%;padding:10px;background:transparent;border:1.5px solid rgba(196,169,106,.22);border-radius:10px;color:#6B5020;font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.3px;">+ 신규 등록</button>
       </div>
-      <div id="loginErr" style="display:none;font-family:var(--kr);font-size:10px;color:rgba(255,120,80,.85);margin-bottom:10px;padding:8px 10px;background:rgba(200,50,30,.10);border:1px solid rgba(200,80,50,.25);border-radius:8px;line-height:1.6;"></div>
-      <!-- 신규등록 토글 버튼 -->
-      <button onclick="_loginSwitchTab('signup')" style="width:100%;padding:10px;background:transparent;border:1.5px solid rgba(196,169,106,.22);border-radius:10px;color:#6B5020;font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.3px;">+ 신규 등록</button>
+
+      <!-- STEP 2: 비밀번호 입력 -->
+      <div id="loginStep2" style="display:none;">
+        <button onclick="_loginBackToStep1()" style="display:flex;align-items:center;gap:5px;background:transparent;border:none;color:#7A5C1E;font-family:var(--kr);font-size:10px;cursor:pointer;margin-bottom:14px;padding:0;">← 뒤로</button>
+        <div id="loginStep2NickLabel" style="font-family:var(--title);font-size:15px;font-weight:900;color:#F0E8D8;text-align:center;margin-bottom:16px;letter-spacing:.3px;"></div>
+        <div style="font-family:var(--kr);font-size:9px;color:#7A5C1E;margin-bottom:6px;letter-spacing:.3px;">비밀번호 (4자리)</div>
+        <input id="loginPwInput" maxlength="4" placeholder="••••" type="password" inputmode="numeric"
+          oninput="_loginClearErr()" onkeydown="if(event.key==='Enter')_doLoginWithPw()"
+          style="display:block;width:100%;box-sizing:border-box;padding:11px 13px;background:rgba(255,255,255,.06);border:1.5px solid rgba(196,169,106,.28);border-radius:10px;color:#F0E8D8;font-size:20px;font-family:var(--orb);letter-spacing:8px;outline:none;margin-bottom:12px;"/>
+        <div id="loginErr" style="display:none;font-family:var(--kr);font-size:10px;color:rgba(255,120,80,.85);margin-bottom:10px;padding:8px 10px;background:rgba(200,50,30,.10);border:1px solid rgba(200,80,50,.25);border-radius:8px;line-height:1.6;"></div>
+        <button onclick="_doLoginWithPw()" style="width:100%;padding:13px;background:linear-gradient(135deg,#2F4A36,#1E2D24);border:1.5px solid rgba(196,169,106,.40);border-radius:12px;color:#F0E8D8;font-family:var(--kr);font-size:13px;font-weight:900;cursor:pointer;letter-spacing:.3px;">🪖 입장</button>
+      </div>
+
     </div>
 
     <!-- ── 신규 등록 ── -->
@@ -6551,13 +6566,45 @@ async function _loadNickLoginList(){
   }catch(e){ area.innerHTML='<div style="font-family:var(--kr);font-size:10px;color:rgba(255,100,80,.5);text-align:center;padding:8px 0;">불러오기 실패</div>'; }
 }
 
-/* 닉네임 버튼 탭 → 바로 로그인 */
+/* 닉네임 버튼 탭 → step2 비밀번호 입력으로 이동 */
 function _doNickLogin(idx){
   const accounts = window._loginAccounts || [];
   const sorted = accounts.sort((a,b)=>a.nick.localeCompare(b.nick));
   const acc = sorted[idx];
   if(!acc) return;
-  _completeLogin(acc.uid, acc.nick);
+  window._loginSelectedAcc = acc;
+  /* step1 숨기고 step2 표시 */
+  document.getElementById('loginStep1').style.display='none';
+  document.getElementById('loginStep2').style.display='block';
+  document.getElementById('loginStep2NickLabel').textContent='🪖 '+acc.nick;
+  const pw=document.getElementById('loginPwInput');
+  if(pw){ pw.value=''; setTimeout(()=>pw.focus(),100); }
+  _loginClearErr();
+}
+
+/* step2 뒤로가기 */
+function _loginBackToStep1(){
+  document.getElementById('loginStep2').style.display='none';
+  document.getElementById('loginStep1').style.display='block';
+  window._loginSelectedAcc=null;
+  _loginClearErr();
+}
+
+/* step2 비밀번호 확인 후 로그인 */
+async function _doLoginWithPw(){
+  const acc = window._loginSelectedAcc;
+  if(!acc) return;
+  const pw = (document.getElementById('loginPwInput').value||'').trim();
+  if(!pw){ _loginShowErr('loginErr','비밀번호를 입력해주세요.'); return; }
+  if(!/^\d{4}$/.test(pw)){ _loginShowErr('loginErr','비밀번호는 숫자 4자리입니다.'); return; }
+  if(!await _ensureFb()){ _loginShowErr('loginErr','Firebase 연결 중입니다. 잠시 후 다시 시도해주세요.'); return; }
+  try{
+    const snap = await _fbGet('users/'+acc.uid+'/profile');
+    if(!snap.exists()){ _loginShowErr('loginErr','계정 정보를 찾을 수 없습니다.'); return; }
+    const profile = snap.val();
+    if(profile.pw4 !== pw){ _loginShowErr('loginErr','비밀번호가 맞지 않습니다.'); return; }
+    _completeLogin(acc.uid, acc.nick);
+  }catch(e){ _loginShowErr('loginErr','오류: '+e.message); }
 }
 
 /* 리스트에서 닉네임 선택 → 로그인 폼으로 자동 입력 */
