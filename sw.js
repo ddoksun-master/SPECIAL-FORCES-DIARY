@@ -16,15 +16,32 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage(payload => {
-  const title = (payload.notification && payload.notification.title) || '특전사 작전수첩';
-  const body  = (payload.notification && payload.notification.body)  || '';
-  self.registration.showNotification(title, {
-    body,
-    icon:    'icon-192.png',
-    badge:   'icon-192.png',
-    vibrate: [200, 100, 200],
-  });
+// ✅ FIX: onBackgroundMessage 대신 push 이벤트 직접 처리
+// - 앱 열린 상태(포그라운드): 상단알림 표시 안 함
+// - 앱 닫힌 상태(백그라운드): 상단알림 표시
+self.addEventListener('push', e => {
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+      const focused = clients.some(c => c.visibilityState === 'visible');
+      if (focused) return; // 앱 열려있으면 알림 표시 안 함
+
+      // 앱 닫힌 상태 — payload에서 title/body 추출해서 직접 표시
+      let title = '특전사 작전수첩';
+      let body = '';
+      try {
+        const data = e.data && e.data.json();
+        title = (data.notification && data.notification.title) || title;
+        body  = (data.notification && data.notification.body)  || body;
+      } catch(_) {}
+
+      return self.registration.showNotification(title, {
+        body,
+        icon:    'icon-192.png',
+        badge:   'icon-192.png',
+        vibrate: [200, 100, 200],
+      });
+    })
+  );
 });
 
 self.addEventListener('install', e => {
