@@ -6902,9 +6902,14 @@ async function _registerFcmToken(){
     await _fbSet('fcmTokens/'+MY_UID, { token, updatedAt: Date.now() });
     console.log('[FCM] 토큰 등록 완료');
     messaging.onMessage(payload=>{
+      /* 포그라운드: 브라우저 상단 알림 대신 앱 내 팝업만 표시 (중복 방지) */
       const title = payload.notification && payload.notification.title ? payload.notification.title : '특전사 작전수첩';
       const body  = payload.notification && payload.notification.body  ? payload.notification.body  : '';
       _showAlertPopup('🔔', title, body);
+      /* sw.js 가 별도로 showNotification 하지 못하도록 빈 notification 을 서비스워커에 전달 */
+      if(navigator.serviceWorker && navigator.serviceWorker.controller){
+        navigator.serviceWorker.controller.postMessage({ type:'FCM_FOREGROUND_HANDLED' });
+      }
     });
   }catch(e){
     console.warn('[FCM] 토큰 등록 실패:', e);
