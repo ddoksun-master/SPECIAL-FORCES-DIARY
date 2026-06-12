@@ -18,13 +18,17 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+/* ── 아이콘 (base64 인라인 — 외부 파일 불필요) ── */
+const ICON_DATA  = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj4KICA8cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgcng9IjM4IiBmaWxsPSIjMUUyRDI0Ii8+CiAgPHJlY3QgeD0iOCIgeT0iOCIgd2lkdGg9IjE3NiIgaGVpZ2h0PSIxNzYiIHJ4PSIzMiIgZmlsbD0iIzJGNEEzNiIvPgogIDxwb2x5Z29uIHBvaW50cz0iOTYsMzggMTA2LDcwIDE0MCw3MCAxMTMsOTAgMTIzLDEyMiA5NiwxMDIgNjksMTIyIDc5LDkwIDUyLDcwIDg2LDcwIiBmaWxsPSIjQzRBOTZBIiBvcGFjaXR5PSIwLjk1Ii8+CiAgPHJlY3QgeD0iNjAiIHk9IjEzOCIgd2lkdGg9IjcyIiBoZWlnaHQ9IjUiIHJ4PSIyLjUiIGZpbGw9IiNDNEE5NkEiIG9wYWNpdHk9IjAuNiIvPgogIDxyZWN0IHg9Ijc0IiB5PSIxNTAiIHdpZHRoPSI0NCIgaGVpZ2h0PSI0IiByeD0iMiIgZmlsbD0iI0M0QTk2QSIgb3BhY2l0eT0iMC40Ii8+Cjwvc3ZnPg==';
+const BADGE_DATA = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA3MiA3MiI+CiAgPHJlY3Qgd2lkdGg9IjcyIiBoZWlnaHQ9IjcyIiByeD0iMTYiIGZpbGw9IiMxRTJEMjQiLz4KICA8cG9seWdvbiBwb2ludHM9IjM2LDEwIDQyLDI4IDYyLDI4IDQ2LDQwIDUyLDU4IDM2LDQ2IDIwLDU4IDI2LDQwIDEwLDI4IDMwLDI4IiBmaWxsPSIjQzRBOTZBIi8+Cjwvc3ZnPg==';
+
 /* ── 백그라운드 FCM 수신 → OS 알림 표시 ── */
 messaging.onBackgroundMessage(payload => {
   const d = payload.data || {};
   return self.registration.showNotification(d.title || '작전수첩', {
     body:      d.body  || '',
-    icon:      './icons/icon-192.png',
-    badge:     './icons/badge-72.png',
+    icon:      ICON_DATA,
+    badge:     BADGE_DATA,
     tag:       d.tag   || 'jjakjeon',
     renotify:  true,
     vibrate:   [200, 100, 200],
