@@ -21,10 +21,13 @@ const messaging = firebase.messaging();
 /* ── 백그라운드 FCM 수신 → OS 알림 표시 ── */
 messaging.onBackgroundMessage(payload => {
   const d = payload.data || {};
+
+  /* image / person 스타일 필드를 명시적으로 제거해 S 동그라미 아바타 차단 */
   return self.registration.showNotification(d.title || '작전수첩', {
     body:      d.body  || '',
     icon:      './icons/icon-192.png',
     badge:     './icons/badge-72.png',
+    image:     undefined,
     tag:       d.tag   || 'jjakjeon',
     renotify:  true,
     vibrate:   [200, 100, 200],
