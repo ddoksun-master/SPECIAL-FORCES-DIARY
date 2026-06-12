@@ -6697,13 +6697,19 @@ async function _ensureFb(){
 }
 
 /* ── 기존 로그인 ── */
+/* ── SHA-256 해시 함수 ── */
+async function _sha256(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
 async function _doLogin(){
   const pw = (document.getElementById('loginPwInput').value||'').trim();
   if(!pw)  { _loginShowErr('loginErr','비밀번호를 입력해주세요.'); return; }
   if(!/^\d{6}$/.test(pw)){ _loginShowErr('loginErr','비밀번호는 숫자 6자리입니다.'); return; }
   if(!await _ensureFb()){ _loginShowErr('loginErr','Firebase 연결 중입니다. 잠시 후 다시 시도해주세요.'); return; }
   try{
-    /* 비밀번호로 users 전체 스캔하여 매칭 닉네임 찾기 */
+    const pwHash = await _sha256(pw);
     const usersSnap = await _fbGet('users');
     if(!usersSnap.exists()){
       _loginShowErr('loginErr','등록된 사용자가 없습니다.<br>신규등록을 해주세요.');
@@ -6714,10 +6720,13 @@ async function _doLogin(){
     let matchedNick = null;
     for(const uid in usersData){
       const profile = usersData[uid] && usersData[uid].profile;
-      if(profile && profile.pw4 === pw && profile.nickname){
-        matchedUid = uid;
-        matchedNick = profile.nickname;
-        break;
+      if(!profile || !profile.nickname) continue;
+      /* 해시 비교 (이미 해시된 경우) */
+      if(profile.pw4 === pwHash){ matchedUid=uid; matchedNick=profile.nickname; break; }
+      /* 평문 비교 (마이그레이션 전 계정) — 일치하면 즉시 해시로 전환 */
+      if(profile.pw4 === pw){
+        await _fbUpdate('users/'+uid+'/profile',{pw4:pwHash});
+        matchedUid=uid; matchedNick=profile.nickname; break;
       }
     }
     if(!matchedUid){
@@ -6738,7 +6747,6 @@ async function _doSignup(){
   if(pw !== pw2){ _loginShowErr('signupErr','비밀번호가 일치하지 않습니다.'); return; }
   if(!await _ensureFb()){ _loginShowErr('signupErr','Firebase 연결 중입니다. 잠시 후 다시 시도해주세요.'); return; }
   try{
-    /* ── 유저 수 4명 제한 ── */
     const usersSnap = await _fbGet('users');
     if(usersSnap.exists()){
       const existingUsers = Object.values(usersSnap.val());
@@ -6754,7 +6762,8 @@ async function _doSignup(){
       _loginShowErr('signupErr','이미 사용 중인 닉네임입니다.<br>다른 닉네임을 입력해주세요.');
       return;
     }
-    await _fbSet('users/'+uid+'/profile',{nickname:nick, pw4:pw, createdAt:Date.now()});
+    const pwHash = await _sha256(pw);
+    await _fbSet('users/'+uid+'/profile',{nickname:nick, pw4:pwHash, createdAt:Date.now()});
     _completeLogin(uid, nick);
   }catch(e){ _loginShowErr('signupErr','오류: '+e.message); }
 }
@@ -6845,8 +6854,15 @@ async function _doLoginWithPw(){
     const snap = await _fbGet('users/'+acc.uid+'/profile');
     if(!snap.exists()){ _loginShowErr('loginErr','계정 정보를 찾을 수 없습니다.'); return; }
     const profile = snap.val();
-    if(profile.pw4 !== pw){ _loginShowErr('loginErr','비밀번호가 맞지 않습니다.'); return; }
-    _completeLogin(acc.uid, acc.nick);
+    const pwHash = await _sha256(pw);
+    /* 해시 비교 */
+    if(profile.pw4 === pwHash){ _completeLogin(acc.uid, acc.nick); return; }
+    /* 평문 비교 (마이그레이션 전) — 일치 시 즉시 해시로 전환 */
+    if(profile.pw4 === pw){
+      await _fbUpdate('users/'+acc.uid+'/profile',{pw4:pwHash});
+      _completeLogin(acc.uid, acc.nick); return;
+    }
+    _loginShowErr('loginErr','비밀번호가 맞지 않습니다.');
   }catch(e){ _loginShowErr('loginErr','오류: '+e.message); }
 }
 
@@ -9098,9 +9114,13 @@ async function _doChangePw(){
     const snap = await _fbGet('users/' + MY_UID + '/profile');
     if(!snap.exists()){ _changePwShowErr('사용자 정보를 찾을 수 없습니다.'); return; }
     const profile = snap.val();
-    if(profile.pw4 !== cur){ _changePwShowErr('현재 비밀번호가 맞지 않습니다.'); return; }
-    await _fbSet('users/' + MY_UID + '/profile', { ...profile, pw4: nw });
-    /* 인라인 섹션 닫기 */
+    const curHash = await _sha256(cur);
+    /* 해시 비교 후, 평문 비교(마이그레이션) 순으로 확인 */
+    if(profile.pw4 !== curHash && profile.pw4 !== cur){
+      _changePwShowErr('현재 비밀번호가 맞지 않습니다.'); return;
+    }
+    const newHash = await _sha256(nw);
+    await _fbSet('users/' + MY_UID + '/profile', { ...profile, pw4: newHash });
     const inline = document.getElementById('changePwInline');
     const arrow  = document.getElementById('changePwArrow');
     if(inline) inline.style.display='none';
