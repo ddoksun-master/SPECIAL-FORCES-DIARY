@@ -24,6 +24,11 @@ async function sendPush(token, { title, body, tag }) {
           renotify: true,
         },
         fcmOptions: { link: 'https://ddoksun-master.github.io/SPECIAL-FORCES-DIARY/index.html' }
+      },
+      data: {                    // 백그라운드 SW용
+        title: String(title),
+        body:  String(body),
+        tag:   String(tag || 'jjakjeon'),
       }
     });
   } catch (e) {
