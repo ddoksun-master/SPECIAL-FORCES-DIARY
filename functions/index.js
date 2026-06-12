@@ -19,16 +19,11 @@ async function sendPush(token, { title, body, tag }) {
         notification: {
           title,
           body,
-          icon:     'https://ddoksun-master.github.io/SPECIAL-FORCES-DIARY/icons/icon-192.png',
+          icon:     'https://special-forces-diary.vercel.app/icons/icon-192.png',
           tag:      tag || 'jjakjeon',
           renotify: true,
         },
-        fcmOptions: { link: 'https://ddoksun-master.github.io/SPECIAL-FORCES-DIARY/index.html' }
-      },
-      data: {                    // 백그라운드 SW용
-        title: String(title),
-        body:  String(body),
-        tag:   String(tag || 'jjakjeon'),
+        fcmOptions: { link: 'https://special-forces-diary.vercel.app/index.html' }
       }
     });
   } catch (e) {
