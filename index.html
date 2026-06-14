@@ -2674,6 +2674,9 @@ function renderActiveMissionCard(){
 
 /* ── DOMContentLoaded 초기화 ── */
 document.addEventListener('DOMContentLoaded',()=>{
+  /* SW 업데이트 감지기 — 로그인 전에도 항상 실행 */
+  _initAppUpdateDetector();
+
   setTimeout(async ()=>{
     /* Firebase 우선 초기화 */
     try{
@@ -6102,6 +6105,22 @@ document.addEventListener('DOMContentLoaded',()=>{
             </div>
           </div>
 
+          <!-- 앱 업데이트 -->
+          <div id="appUpdateSection" style="border:1px solid rgba(47,74,54,.45);border-radius:12px;overflow:hidden;">
+            <div style="padding:11px 14px;background:rgba(4,18,10,.5);">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div>
+                  <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(180,230,160,.85);">🔄 앱 업데이트</div>
+                  <div id="appUpdateStatusTxt" style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:3px;">최신 버전 확인 중...</div>
+                </div>
+                <div id="appUpdateBadge" style="display:none;padding:3px 10px;border-radius:20px;font-family:var(--orb);font-size:9px;font-weight:900;letter-spacing:.8px;background:rgba(220,140,30,.18);border:1px solid rgba(220,140,30,.5);color:rgba(255,180,60,.9);">UPDATE</div>
+              </div>
+              <button id="appUpdateBtn" onclick="_doAppUpdate()" style="display:none;width:100%;padding:11px;background:linear-gradient(135deg,rgba(47,74,54,.7),rgba(30,55,35,.8));border:1.5px solid rgba(90,158,72,.45);border-radius:10px;color:rgba(180,230,160,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;letter-spacing:.3px;">
+                업데이트 시작
+              </button>
+            </div>
+          </div>
+
           <!-- 로그아웃 -->
           <button class="setting-btn" onclick="_doLogout()"
             style="padding:13px 14px;background:rgba(46,127,168,.08);border:1px solid rgba(46,127,168,.28);border-radius:12px;color:rgba(78,176,216,.85);font-family:var(--kr);font-size:12px;font-weight:700;cursor:pointer;text-align:left;width:100%;">
@@ -9130,6 +9149,98 @@ async function _doChangePw(){
 }
 
 /* 로그아웃 — 이 탭의 세션만 지우고 로그인 화면으로 */
+/* ── 앱 업데이트 감지 & 실행 ── */
+let _pendingSWReg = null; // 대기 중인 새 SW
+
+function _initAppUpdateDetector() {
+  if (!('serviceWorker' in navigator)) return;
+
+  // 이미 대기 중인 SW가 있으면 즉시 업데이트 알림
+  navigator.serviceWorker.getRegistration('./firebase-messaging-sw.js').then(reg => {
+    if (!reg) return;
+    if (reg.waiting) {
+      _pendingSWReg = reg;
+      _showUpdateReady();
+      return;
+    }
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
+      if (!newSW) return;
+      newSW.addEventListener('statechange', () => {
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          _pendingSWReg = reg;
+          _showUpdateReady();
+        }
+      });
+    });
+  });
+
+  // 캐시 SW도 동일하게 감지
+  navigator.serviceWorker.getRegistration('./sw.js').then(reg => {
+    if (!reg) return;
+    if (reg.waiting) { _pendingSWReg = _pendingSWReg || reg; _showUpdateReady(); return; }
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
+      if (!newSW) return;
+      newSW.addEventListener('statechange', () => {
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          _pendingSWReg = _pendingSWReg || reg;
+          _showUpdateReady();
+        }
+      });
+    });
+  });
+
+  // 다른 탭에서 SW가 교체되면 이 탭도 리로드
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    _showUpdateComplete();
+    setTimeout(() => location.reload(true), 1200);
+  });
+}
+
+function _showUpdateReady() {
+  const txt   = document.getElementById('appUpdateStatusTxt');
+  const badge = document.getElementById('appUpdateBadge');
+  const btn   = document.getElementById('appUpdateBtn');
+  if (txt)   txt.textContent  = '새 버전이 있습니다!';
+  if (badge) badge.style.display = 'block';
+  if (btn)   btn.style.display   = 'block';
+}
+
+function _showUpdateComplete() {
+  const txt   = document.getElementById('appUpdateStatusTxt');
+  const badge = document.getElementById('appUpdateBadge');
+  const btn   = document.getElementById('appUpdateBtn');
+  if (txt) {
+    txt.textContent = '✅ 업데이트 완료! 재시작 중...';
+    txt.style.color = 'rgba(127,191,106,.9)';
+  }
+  if (badge) badge.style.display = 'none';
+  if (btn)   btn.style.display   = 'none';
+}
+
+async function _doAppUpdate() {
+  const btn = document.getElementById('appUpdateBtn');
+  if (btn) { btn.textContent = '업데이트 중...'; btn.disabled = true; }
+
+  // 대기 중 SW에 skipWaiting 메시지
+  if (_pendingSWReg && _pendingSWReg.waiting) {
+    _pendingSWReg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    // controllerchange 이벤트가 위에서 리로드 처리
+    return;
+  }
+
+  // 대기 SW가 없으면 캐시만 직접 비우고 리로드
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+  }
+  const regs = await navigator.serviceWorker.getRegistrations();
+  await Promise.all(regs.map(r => r.unregister()));
+  _showUpdateComplete();
+  setTimeout(() => location.reload(true), 800);
+}
+
 function _doLogout(){
   if(!confirm('로그아웃 하시겠습니까?')) return;
   sessionStorage.removeItem('sessionUid');

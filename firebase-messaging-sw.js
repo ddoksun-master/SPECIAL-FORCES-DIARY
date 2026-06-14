@@ -18,6 +18,11 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+/* ── 앱에서 업데이트 요청 수신 ── */
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 /* ── 백그라운드 FCM 수신 → OS 알림 표시 ── */
 messaging.onBackgroundMessage(payload => {
   const d = payload.data || {};
