@@ -25,5 +25,10 @@ self.addEventListener('fetch', e => {
   e.respondWith(caches.match(e.request).then(c => c || fetch(e.request)));
 });
 
+/* ── 앱에서 업데이트 요청 수신 ── */
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 /* notificationclick 은 firebase-messaging-sw.js 가 단독 처리
    (여기 중복 등록하면 두 SW가 동시에 반응해 포커스가 튀는 현상 발생) */
