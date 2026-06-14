@@ -26,8 +26,9 @@ self.addEventListener('message', e => {
 /* ── 백그라운드 FCM 수신 → OS 알림 표시 ── */
 messaging.onBackgroundMessage(payload => {
   const d = payload.data || {};
+  /* fcmOptions.link 가 있으면 그걸, 없으면 기본 URL */
+  const notifUrl = payload.fcmOptions?.link || d.link || './index.html';
 
-  /* image / person 스타일 필드를 명시적으로 제거해 S 동그라미 아바타 차단 */
   return self.registration.showNotification(d.title || '작전수첩', {
     body:      d.body  || '',
     icon:      './icons/icon-192.png',
@@ -36,19 +37,30 @@ messaging.onBackgroundMessage(payload => {
     tag:       d.tag   || 'jjakjeon',
     renotify:  true,
     vibrate:   [200, 100, 200],
-    data:      { url: './index.html' }
+    data:      { url: notifUrl }   /* notificationclick 에서 사용 */
   });
 });
 
-/* ── 알림 탭 → 앱 포커스 ── */
+/* ── 알림 탭 → 앱 포커스 + 딥링크 ── */
 self.addEventListener('notificationclick', e => {
   e.notification.close();
+  /* data.url 에 ?tab=history 등 딥링크가 실려올 수 있음 */
+  const targetUrl = (e.notification.data && e.notification.data.url)
+    || './index.html';
+
   e.waitUntil(
-    clients.matchAll({ type:'window', includeUncontrolled:true }).then(list => {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      /* 이미 열린 앱 창이 있으면 포커스 후 딥링크 메시지 전달 */
       for (const c of list) {
-        if (c.url.includes('index.html') || c.url.endsWith('/')) return c.focus();
+        if (c.url.includes('index.html') || c.url.endsWith('/')) {
+          c.focus();
+          /* 앱에 탭 이동 메시지 전달 */
+          c.postMessage({ type: 'NAVIGATE_TAB', url: targetUrl });
+          return;
+        }
       }
-      return clients.openWindow('./index.html');
+      /* 앱이 닫혀있으면 딥링크 URL로 새로 열기 */
+      return clients.openWindow(targetUrl);
     })
   );
 });

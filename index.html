@@ -2677,6 +2677,18 @@ document.addEventListener('DOMContentLoaded',()=>{
   /* SW 업데이트 감지기 — 로그인 전에도 항상 실행 */
   _initAppUpdateDetector();
 
+  /* ── SW → 앱: 탭 이동 메시지 수신 (앱이 열려있을 때 알림 탭 시) ── */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data && e.data.type === 'NAVIGATE_TAB') {
+        _handleDeepLink(e.data.url);
+      }
+    });
+  }
+
+  /* ── URL 파라미터로 탭 이동 (앱이 닫혀있다가 알림으로 열릴 때) ── */
+  _handleDeepLink(location.href);
+
   setTimeout(async ()=>{
     /* Firebase 우선 초기화 */
     try{
@@ -9149,6 +9161,35 @@ async function _doChangePw(){
 }
 
 /* 로그아웃 — 이 탭의 세션만 지우고 로그인 화면으로 */
+/* ── 딥링크 처리: ?tab=history 등 URL 파라미터로 탭 이동 ── */
+function _handleDeepLink(url) {
+  try {
+    const u = new URL(url, location.href);
+    const tab = u.searchParams.get('tab');
+    if (!tab) return;
+    /* URL에서 파라미터 제거 (뒤로가기 시 재실행 방지) */
+    const clean = location.pathname + location.search.replace(/[?&]tab=[^&]*/g, '').replace(/^&/, '?') + location.hash;
+    history.replaceState(null, '', clean || location.pathname);
+    /* 탭 전환 — 로그인 완료 후 DOM이 준비됐을 때 실행 */
+    const _doSwitch = () => {
+      const tabMap = {
+        history: { name: 'history', idx: 1 },
+        team:    { name: 'team',    idx: 2 },
+        stats:   { name: 'stats',   idx: 3 },
+        shop:    { name: 'shop',    idx: 4 },
+      };
+      const t = tabMap[tab];
+      if (!t) return;
+      const navItems = document.querySelectorAll('.nav-item');
+      if (navItems && navItems[t.idx]) {
+        switchPanel(t.name, navItems[t.idx]);
+      }
+    };
+    /* 로그인 완료 후 실행되도록 약간 지연 */
+    setTimeout(_doSwitch, 900);
+  } catch (_) {}
+}
+
 /* ── 앱 업데이트 감지 & 실행 ── */
 let _pendingSWReg = null; // 대기 중인 새 SW
 
