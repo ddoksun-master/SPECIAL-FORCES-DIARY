@@ -10679,7 +10679,7 @@ function _renderHistInner(){
             </div>
           </div>
         </div>
-        ${q.certPhotoUrl?`<div style="margin-top:6px;cursor:pointer;" onclick="window.open('${q.certPhotoUrl}','_blank')"><img src="${q.certPhotoUrl}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid rgba(82,212,164,.25);"/></div>`:''}
+        ${q.certPhotoUrl?`<div style="margin-top:6px;cursor:pointer;" onclick="_showFullscreenPhoto('${q.certPhotoUrl}')"><img src="${q.certPhotoUrl}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid rgba(82,212,164,.25);"/></div>`:''}
         ${hasRecEmpathy?`<div style="margin-top:5px;padding:6px 8px;background:rgba(42,144,128,.08);border:1px solid rgba(42,144,128,.20);border-radius:7px;font-family:var(--kr);font-size:9px;color:rgba(42,144,128,.85);font-weight:600;">💬 ${q.empathyFromNick||'파트너'}: "${q.empathyMsg}"</div>`:''}
       </div>`;
     });
@@ -10720,7 +10720,7 @@ function _renderHistInner(){
             <button class="hist-cert-view-btn" data-date="${date}" data-qi="${qi}" style="flex:1;padding:8px 6px;background:rgba(47,74,54,.12);border:1.5px solid rgba(47,74,54,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(30,45,36,.85);cursor:pointer;text-align:center;">📋 인증보기</button>
           </div>
         </div>
-        ${q.certPhotoUrl?`<div style="margin-top:6px;cursor:pointer;" onclick="window.open('${q.certPhotoUrl}','_blank')"><img src="${q.certPhotoUrl}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid rgba(82,212,164,.25);"/></div>`:''}
+        ${q.certPhotoUrl?`<div style="margin-top:6px;cursor:pointer;" onclick="_showFullscreenPhoto('${q.certPhotoUrl}')"><img src="${q.certPhotoUrl}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid rgba(82,212,164,.25);"/></div>`:''}
         ${hasRecEmpathy?`<div style="margin-top:5px;padding:6px 8px;background:rgba(42,144,128,.08);border:1px solid rgba(42,144,128,.20);border-radius:7px;font-family:var(--kr);font-size:9px;color:rgba(42,144,128,.85);font-weight:600;">💬 ${q.empathyFromNick||'파트너'}: "${q.empathyMsg}"</div>`:''}
       </div>`;
     });
@@ -10774,13 +10774,14 @@ function _renderHistInner(){
                 ${empDone?`<span style="font-family:var(--kr);font-size:9px;font-weight:600;color:rgba(200,168,75,.85);">👊 수고했어 +1p 완료</span>`:''}
               </div>
             </div>
-            <div style="display:flex;gap:5px;flex-shrink:0;margin-left:8px;">
+            <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;margin-left:8px;">
               ${empDone
                 ? `<div style="padding:7px 10px;background:rgba(200,168,75,.12);border:1.5px solid rgba(200,168,75,.30);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:#7A5C1E;white-space:nowrap;">👊 완료</div>`
                 : isDone
                   ? `<button class="hist-opp-emp-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="padding:7px 10px;background:rgba(106,78,158,.20);border:1.5px solid rgba(150,100,220,.60);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:#fff;cursor:pointer;white-space:nowrap;">👊 수고했어</button>`
                   : `<div style="padding:7px 10px;background:rgba(61,72,64,.08);border:1.5px solid rgba(61,72,64,.20);border-radius:9px;font-family:var(--kr);font-size:9px;color:rgba(61,72,64,.45);white-space:nowrap;">인증 후 가능</div>`
               }
+              <button class="hist-partner-cert-view-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="padding:6px 10px;background:rgba(106,78,158,.10);border:1.5px solid rgba(106,78,158,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(150,100,220,.85);cursor:pointer;white-space:nowrap;">🔍 인증보기</button>
             </div>
           </div>
           ${empDone&&q.sentEmpathyMsg?`<div style="margin-top:5px;padding:6px 8px;background:rgba(200,168,75,.08);border:1px solid rgba(200,168,75,.20);border-radius:7px;font-family:var(--kr);font-size:9px;color:rgba(180,140,40,.85);font-weight:600;">💬 내 공감: "${q.sentEmpathyMsg}"</div>`:''}
@@ -10808,12 +10809,15 @@ function _renderHistInner(){
               ${empDone?`<span style="font-family:var(--kr);font-size:9px;font-weight:600;color:rgba(200,168,75,.85);">👊 수고했어 +1p 완료</span>`:''}
             </div>
           </div>
-          ${empDone
-            ? `<div style="margin-left:8px;padding:7px 10px;background:rgba(200,168,75,.12);border:1.5px solid rgba(200,168,75,.30);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:#7A5C1E;white-space:nowrap;flex-shrink:0;">👊 완료</div>`
-            : isDone
-              ? `<button class="hist-opp-emp-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="margin-left:8px;padding:7px 10px;background:rgba(106,78,158,.20);border:1.5px solid rgba(150,100,220,.60);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;">👊 수고했어</button>`
-              : `<div style="margin-left:8px;padding:7px 10px;background:rgba(61,72,64,.08);border:1.5px solid rgba(61,72,64,.20);border-radius:9px;font-family:var(--kr);font-size:9px;color:rgba(61,72,64,.45);white-space:nowrap;flex-shrink:0;">인증 후 가능</div>`
-          }
+          <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;margin-left:8px;">
+            ${empDone
+              ? `<div style="padding:7px 10px;background:rgba(200,168,75,.12);border:1.5px solid rgba(200,168,75,.30);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:#7A5C1E;white-space:nowrap;">👊 완료</div>`
+              : isDone
+                ? `<button class="hist-opp-emp-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="padding:7px 10px;background:rgba(106,78,158,.20);border:1.5px solid rgba(150,100,220,.60);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:#fff;cursor:pointer;white-space:nowrap;">👊 수고했어</button>`
+                : `<div style="padding:7px 10px;background:rgba(61,72,64,.08);border:1.5px solid rgba(61,72,64,.20);border-radius:9px;font-family:var(--kr);font-size:9px;color:rgba(61,72,64,.45);white-space:nowrap;">인증 후 가능</div>`
+            }
+            <button class="hist-partner-cert-view-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="padding:6px 10px;background:rgba(106,78,158,.10);border:1.5px solid rgba(106,78,158,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(150,100,220,.85);cursor:pointer;white-space:nowrap;">🔍 인증보기</button>
+          </div>
           </div>
           ${empDone&&q.sentEmpathyMsg?`<div style="margin-top:5px;padding:6px 8px;background:rgba(200,168,75,.08);border:1px solid rgba(200,168,75,.20);border-radius:7px;font-family:var(--kr);font-size:9px;color:rgba(180,140,40,.85);font-weight:600;">💬 내 공감: "${q.sentEmpathyMsg}"</div>`:''}
         </div>`;
@@ -10929,6 +10933,19 @@ function _renderHistInner(){
   });
 }
 
+/* ── 인증사진 전체화면 오버레이 (iOS Safari / Android 모두 동작) ── */
+function _showFullscreenPhoto(url) {
+  if (!url) return;
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.96);display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
+  ov.innerHTML = `
+    <button style="position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1;">✕</button>
+    <img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:6px;touch-action:pinch-zoom;" draggable="false"/>
+  `;
+  ov.addEventListener('click', e => { if (e.target === ov || e.target.tagName === 'BUTTON') ov.remove(); });
+  document.body.appendChild(ov);
+}
+
 /* ── 인증 상세 팝업 ── */
 function _showCertDetail(q,qi,date,isPartner,certKey,certBtnEl){
   const pName=(partnerData&&partnerData.nickname)||'파트너';
@@ -10955,8 +10972,8 @@ function _showCertDetail(q,qi,date,isPartner,certKey,certBtnEl){
       </div>`:`<div style="margin-bottom:12px;padding:12px;background:rgba(61,72,64,.08);border:1px solid rgba(61,72,64,.15);border-radius:12px;text-align:center;color:rgba(255,255,255,.75);font-family:var(--kr);font-size:11px;">미인증 상태입니다</div>`}
       ${q.certPhotoUrl?`<div style="margin-bottom:12px;">
         <div style="font-family:var(--orb);font-size:9px;color:rgba(82,212,164,.88);letter-spacing:1px;margin-bottom:8px;">📷 인증 사진</div>
-        <img src="${q.certPhotoUrl}" style="width:100%;max-height:280px;object-fit:cover;border-radius:12px;border:1.5px solid rgba(82,212,164,.3);cursor:pointer;" onclick="window.open('${q.certPhotoUrl}','_blank')" title="탭하면 원본 보기"/>
-        <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.75);text-align:center;margin-top:5px;">탭하면 원본 크기로 보기</div>
+        <img src="${q.certPhotoUrl}" style="width:100%;max-height:280px;object-fit:cover;border-radius:12px;border:1.5px solid rgba(82,212,164,.3);cursor:pointer;" onclick="_showFullscreenPhoto('${q.certPhotoUrl}')" title="탭하면 전체화면 보기"/>
+        <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.75);text-align:center;margin-top:5px;">탭하면 전체화면으로 보기</div>
       </div>`:''}
       ${!isPartner&&q.empathyMsg?`<div style="margin-bottom:12px;padding:10px 12px;background:rgba(42,144,128,.12);border:1.5px solid rgba(42,144,128,.30);border-radius:10px;">
         <div style="font-family:var(--kr);font-size:9px;color:rgba(82,212,164,.65);font-weight:700;margin-bottom:3px;">💬 ${q.empathyFromNick||'파트너'}의 공감 메시지</div>
