@@ -18,8 +18,9 @@ const { getMessaging }   = require('firebase-admin/messaging');
 initializeApp();
 
 /* ── 공통 push 발송 ── */
-async function sendPush(token, { title, body, tag }, uid) {
+async function sendPush(token, { title, body, tag, link }, uid) {
   if (!token) return;
+  const targetLink = link || 'https://special-forces-diary.vercel.app/index.html';
   try {
     await getMessaging().send({
       token,
@@ -31,7 +32,7 @@ async function sendPush(token, { title, body, tag }, uid) {
           tag:      tag || 'jjakjeon',
           renotify: true,
         },
-        fcmOptions: { link: 'https://special-forces-diary.vercel.app/index.html' }
+        fcmOptions: { link: targetLink }
       }
     });
   } catch (e) {
@@ -143,11 +144,12 @@ exports.notifyCoopEvent = onValueCreated(
     if (!token) return;
 
     if (n.type === 'empathy_request') {
-      /* 파트너 인증 완료 → "수고했어" 요청 */
+      /* 파트너 인증 완료 → "수고했어" 요청 → 작전기록 탭으로 딥링크 */
       await sendPush(token, {
-        title: `🎖 ${n.fromNick || '파트너'} 인증 완료!`,
-        body:  `"${n.questName || '작전'}" 완료 — 수고했어를 보내주세요 💜`,
-        tag:   'cert-' + key,
+        title:   `🎖 ${n.fromNick || '파트너'} 인증 완료!`,
+        body:    `"${n.questName || '작전'}" 완료 — 수고했어를 보내주세요 💜`,
+        tag:     'cert-' + key,
+        link:    'https://special-forces-diary.vercel.app/index.html?tab=history',
       }, uid);
 
     } else if (n.type === 'cheer_request') {
