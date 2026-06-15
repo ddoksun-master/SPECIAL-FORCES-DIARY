@@ -1225,7 +1225,12 @@ async function toggleNotifSetting(key, el) {
 }
 
 function _notifLabel(key) {
-  return { deadline:'마감 임박', reserve:'예약 활성화' }[key] || key;
+  return {
+    deadline:   '마감 임박',
+    reserve:    '예약 활성화',
+    mission:    '작전 현황',
+    motivation: '동기부여',
+  }[key] || key;
 }
 
 /* ── 알림 권한 확인 / 재요청 버튼 핸들러 ── */
@@ -1288,19 +1293,52 @@ async function _checkAndRequestNotifPerm() {
 /* ── 설정 UI 초기화 (팀작전 패널 진입 시 호출) ── */
 async function renderNotifSettings() {
   if (!MY_UID || !_fbDb) return;
-  for (const key of ['deadline','reserve']) {
+  for (const key of ['deadline','reserve','mission','motivation']) {
     const el = document.getElementById('notifToggle_' + key);
     if (!el) continue;
     const snap = await _fbGet(`users/${MY_UID}/notifSettings/${key}`);
     const on = !snap.exists() || snap.val() !== false;
     el.textContent = on ? 'ON' : 'OFF';
-    el.style.background = on ? 'rgba(90,158,72,.25)' : 'rgba(80,40,40,.3)';
-    el.style.color = on ? 'rgba(127,191,106,.9)' : 'rgba(200,80,80,.8)';
-    el.style.borderColor = on ? 'rgba(90,158,72,.4)' : 'rgba(200,80,80,.3)';
+    el.style.background   = on ? 'rgba(90,158,72,.25)'  : 'rgba(80,40,40,.3)';
+    el.style.color        = on ? 'rgba(127,191,106,.9)' : 'rgba(200,80,80,.8)';
+    el.style.borderColor  = on ? 'rgba(90,158,72,.4)'   : 'rgba(200,80,80,.3)';
   }
+  /* 뱃지 카운트 표시 갱신 */
+  _renderBadgeCount();
 }
 
 /* ── 테스터 상수 (DOMContentLoaded보다 앞에 선언 필요) ── */
+/* ══════════════════════════════════════════════
+   앱 뱃지 카운트 (카테고리C 실시간 이벤트 전용)
+   ══════════════════════════════════════════════ */
+async function _renderBadgeCount() {
+  if (!MY_UID || !_fbDb) return;
+  const snap = await _fbGet(`users/${MY_UID}/badgeCount`);
+  const count = snap.exists() ? (snap.val() || 0) : 0;
+  /* OS 앱 아이콘 뱃지 */
+  if ('setAppBadge' in navigator) {
+    if (count > 0) navigator.setAppBadge(count).catch(()=>{});
+    else           navigator.clearAppBadge().catch(()=>{});
+  }
+  /* 설정 UI 내 뱃지 표시 */
+  const el = document.getElementById('badgeCountDisplay');
+  if (el) el.textContent = count > 0 ? `🔴 ${count}` : '없음';
+}
+
+async function _clearBadge() {
+  if (!MY_UID || !_fbDb) return;
+  await _fbSet(`users/${MY_UID}/badgeCount`, 0);
+  if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(()=>{});
+  const el = document.getElementById('badgeCountDisplay');
+  if (el) el.textContent = '없음';
+  showToast('🔕 뱃지 초기화 완료');
+}
+
+/* 앱 포커스 시 뱃지 자동 초기화 */
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') _clearBadge();
+});
+
 const TESTER_UIDS={A:'tester_uid_A',B:'tester_uid_B'};
 const TESTER_NAMES={A:'테스터A',B:'테스터B'};
 let _testerKey=localStorage.getItem('testerKey')||null;
@@ -6045,36 +6083,83 @@ document.addEventListener('DOMContentLoaded',()=>{
         </button>
         <!-- 접히는 내용 -->
         <div id="notifSectionBody" style="display:none;padding:0 14px 14px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:8px;">
-            <div>
-              <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">⏰ 작전 마감 임박</div>
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">매일 22:00 · 미완료 작전 있을 때</div>
+
+          <!-- ── 카테고리 C: 실시간 이벤트 ── -->
+          <div style="font-family:var(--orb);font-size:9px;letter-spacing:1.5px;color:rgba(78,176,216,.6);margin:10px 0 6px;padding-left:2px;">CATEGORY C · 실시간 이벤트</div>
+          <div style="background:rgba(46,127,168,.06);border:1px solid rgba(46,127,168,.18);border-radius:12px;padding:10px 12px;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div>
+                <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">🎖 파트너 인증 완료</div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">실시간 · 파트너 인증 시 즉시 · 뱃지 +1</div>
+              </div>
+              <span style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;border:1px solid rgba(46,127,168,.4);background:rgba(46,127,168,.18);color:rgba(78,176,216,.85);letter-spacing:.5px;">항상</span>
             </div>
-            <button id="notifToggle_deadline" onclick="toggleNotifSetting('deadline',this)"
-              style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;cursor:pointer;border:1px solid rgba(90,158,72,.4);background:rgba(90,158,72,.25);color:rgba(127,191,106,.9);letter-spacing:.5px;transition:all .2s;">ON</button>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:8px;">
-            <div>
-              <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">🌅 예약 작전 활성화</div>
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">매일 06:00 · 예약 작전 있을 때</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div>
+                <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">📣 응원 메시지 요청</div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">실시간 · 응원 요청 시 즉시 · 뱃지 +1</div>
+              </div>
+              <span style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;border:1px solid rgba(46,127,168,.4);background:rgba(46,127,168,.18);color:rgba(78,176,216,.85);letter-spacing:.5px;">항상</span>
             </div>
-            <button id="notifToggle_reserve" onclick="toggleNotifSetting('reserve',this)"
-              style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;cursor:pointer;border:1px solid rgba(90,158,72,.4);background:rgba(90,158,72,.25);color:rgba(127,191,106,.9);letter-spacing:.5px;transition:all .2s;">ON</button>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:8px;">
-            <div>
-              <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">🎖 파트너 인증 완료</div>
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">실시간 · 파트너 인증 시 즉시</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div>
+                <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">⏰ 작전 마감 임박</div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">매일 22:00 · 미완료 작전 있을 때 · 뱃지 +1</div>
+              </div>
+              <button id="notifToggle_deadline" onclick="toggleNotifSetting('deadline',this)"
+                style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;cursor:pointer;border:1px solid rgba(90,158,72,.4);background:rgba(90,158,72,.25);color:rgba(127,191,106,.9);letter-spacing:.5px;transition:all .2s;">ON</button>
             </div>
-            <span style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;border:1px solid rgba(46,127,168,.4);background:rgba(46,127,168,.18);color:rgba(78,176,216,.85);letter-spacing:.5px;">항상</span>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:12px;">
-            <div>
-              <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">📣 응원 메시지 요청</div>
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">실시간 · 응원 요청 시 즉시</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">🌅 예약 작전 활성화</div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">매일 06:00 · 예약 작전 있을 때 · 뱃지 +1</div>
+              </div>
+              <button id="notifToggle_reserve" onclick="toggleNotifSetting('reserve',this)"
+                style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;cursor:pointer;border:1px solid rgba(90,158,72,.4);background:rgba(90,158,72,.25);color:rgba(127,191,106,.9);letter-spacing:.5px;transition:all .2s;">ON</button>
             </div>
-            <span style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;border:1px solid rgba(46,127,168,.4);background:rgba(46,127,168,.18);color:rgba(78,176,216,.85);letter-spacing:.5px;">항상</span>
+            <!-- 뱃지 카운트 표시 -->
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(46,127,168,.15);display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(255,255,255,.7);">앱 아이콘 뱃지</div>
+                <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;">현재: <span id="badgeCountDisplay">없음</span></div>
+              </div>
+              <button onclick="_clearBadge()" style="padding:6px 12px;border-radius:20px;font-family:var(--kr);font-size:10px;font-weight:700;cursor:pointer;border:1px solid rgba(200,80,80,.3);background:rgba(80,40,40,.2);color:rgba(200,100,100,.8);">초기화</button>
+            </div>
           </div>
+
+          <!-- ── 카테고리 A: 작전 현황 ── -->
+          <div style="font-family:var(--orb);font-size:9px;letter-spacing:1.5px;color:rgba(127,191,106,.6);margin:4px 0 6px;padding-left:2px;">CATEGORY A · 작전 현황</div>
+          <div style="background:rgba(47,74,54,.08);border:1px solid rgba(47,74,54,.25);border-radius:12px;padding:10px 12px;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div>
+                <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">🪖 작전 현황 알림</div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">07 · 09 · 12 · 15 · 19시 · 작전 상태별 동적 메시지</div>
+              </div>
+              <button id="notifToggle_mission" onclick="toggleNotifSetting('mission',this)"
+                style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;cursor:pointer;border:1px solid rgba(90,158,72,.4);background:rgba(90,158,72,.25);color:rgba(127,191,106,.9);letter-spacing:.5px;transition:all .2s;">ON</button>
+            </div>
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.3);line-height:1.7;">
+              작전 없음 → 등록 안내 · 인증 가능 → 즉시 인증 유도<br>
+              인증 시간 전 → 가능 시각 안내 · 전부 완료 → 수고 메시지
+            </div>
+          </div>
+
+          <!-- ── 카테고리 B: 동기부여 ── -->
+          <div style="font-family:var(--orb);font-size:9px;letter-spacing:1.5px;color:rgba(200,160,80,.6);margin:4px 0 6px;padding-left:2px;">CATEGORY B · 동기부여</div>
+          <div style="background:rgba(107,90,58,.08);border:1px solid rgba(107,90,58,.25);border-radius:12px;padding:10px 12px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div>
+                <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(255,255,255,.88);">💡 동기부여 알림</div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:2px;">11 · 13 · 17 · 21시 · 교훈·응원 문구 랜덤 발송</div>
+              </div>
+              <button id="notifToggle_motivation" onclick="toggleNotifSetting('motivation',this)"
+                style="padding:6px 14px;border-radius:20px;font-family:var(--orb);font-size:10px;font-weight:900;cursor:pointer;border:1px solid rgba(90,158,72,.4);background:rgba(90,158,72,.25);color:rgba(127,191,106,.9);letter-spacing:.5px;transition:all .2s;">ON</button>
+            </div>
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.3);line-height:1.7;">
+              20가지 동기부여 문구 중 매 시간 랜덤 선택 발송
+            </div>
+          </div>
+
           <div id="notifPermStatus" style="display:none;margin-bottom:10px;padding:10px 12px;border-radius:10px;font-family:var(--kr);font-size:10px;"></div>
           <button onclick="_checkAndRequestNotifPerm()" style="width:100%;padding:10px;background:rgba(47,74,54,.3);border:1px solid rgba(47,74,54,.5);border-radius:10px;color:rgba(127,191,106,.75);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;">🔔 알림 권한 확인 / 재요청</button>
         </div>
@@ -7990,7 +8075,6 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
         registeredAt:_t04ms,
         certAvailableAt:_t04ms+(60*60*1000), /* 05:00 */
         reserved:true,
-        reservedAt:_t04ms,        /* ← notifyReserve Cloud Function이 읽는 필드 (버그 수정) */
         reservedFromDate:selDate,
         cheerMsg:null,
       };
@@ -9697,10 +9781,8 @@ async function submitCert(){
   _grantCertPoints(_savedCertMode);
   renderCal&&renderCal();
   renderHist&&renderHist();
-  /* 파트너에게 수고했어 요청 알림 전송
-     ※ 협동작전은 certifyCoopQuest() 내부에서 이미 호출하므로 solo만 전송
-        (이중 호출 → race condition → 아이폰 알림 누락 버그 수정) */
-  if(!isCoop) _sendEmpathyRequestNotif(qi);
+  /* 파트너에게 수고했어 요청 알림 전송 */
+  _sendEmpathyRequestNotif(qi);
 }
 
 /* ── 협동포인트 로컬 합산 ── */
