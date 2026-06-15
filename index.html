@@ -1334,9 +1334,16 @@ async function _clearBadge() {
   showToast('🔕 뱃지 초기화 완료');
 }
 
-/* 앱 포커스 시 뱃지 자동 초기화 */
+/* 앱 포커스 시 뱃지 자동 초기화 (뱃지가 있을 때만, 3초 후) */
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') _clearBadge();
+  if (document.visibilityState === 'visible') {
+    setTimeout(async () => {
+      if (!MY_UID || !_fbDb) return;
+      const snap = await _fbGet(`users/${MY_UID}/badgeCount`);
+      const count = snap.exists() ? (snap.val() || 0) : 0;
+      if (count > 0) _clearBadge();
+    }, 3000);
+  }
 });
 
 const TESTER_UIDS={A:'tester_uid_A',B:'tester_uid_B'};
@@ -5763,6 +5770,22 @@ document.addEventListener('DOMContentLoaded',()=>{
             <div id="tclkDateDisplay" style="font-family:var(--orb);font-size:9px;color:rgba(255,255,255,.4);margin-top:4px;letter-spacing:1px;"></div>
           </div>
 
+          <!-- 직접 시간 설정 -->
+          <div style="margin-bottom:14px;">
+            <div style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.7);letter-spacing:1.5px;margin-bottom:8px;">SET EXACT TIME</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+              <input id="tclkInputH" type="number" min="0" max="23" placeholder="HH"
+                style="flex:1;padding:10px 6px;background:rgba(255,255,255,.07);border:1.5px solid rgba(200,168,75,.3);border-radius:8px;color:#fff;font-family:var(--orb);font-size:16px;font-weight:700;text-align:center;outline:none;width:0;"/>
+              <span style="color:rgba(200,168,75,.7);font-family:var(--orb);font-size:18px;font-weight:700;">:</span>
+              <input id="tclkInputM" type="number" min="0" max="59" placeholder="MM"
+                style="flex:1;padding:10px 6px;background:rgba(255,255,255,.07);border:1.5px solid rgba(200,168,75,.3);border-radius:8px;color:#fff;font-family:var(--orb);font-size:16px;font-weight:700;text-align:center;outline:none;width:0;"/>
+              <span style="color:rgba(200,168,75,.7);font-family:var(--orb);font-size:18px;font-weight:700;">:</span>
+              <input id="tclkInputS" type="number" min="0" max="59" placeholder="SS"
+                style="flex:1;padding:10px 6px;background:rgba(255,255,255,.07);border:1.5px solid rgba(200,168,75,.3);border-radius:8px;color:#fff;font-family:var(--orb);font-size:16px;font-weight:700;text-align:center;outline:none;width:0;"/>
+            </div>
+            <button onclick="setVirtualTimeExact()" style="width:100%;padding:10px;background:rgba(200,168,75,.18);border:1.5px solid rgba(200,168,75,.45);border-radius:10px;color:rgba(200,168,75,.95);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;">⏱ 이 시각으로 설정</button>
+          </div>
+
           <!-- 시간 조작 버튼 -->
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;">
             <button onclick="shiftVirtualTime(-60)" style="padding:11px 4px;background:rgba(200,50,50,.18);border:1px solid rgba(200,50,50,.35);border-radius:8px;color:rgba(255,120,120,.9);font-family:var(--orb);font-size:10px;font-weight:700;cursor:pointer;">-1h</button>
@@ -9832,6 +9855,48 @@ function _updateTclkDisplay(){
     return `<span>⏳ OP-${String(i+1).padStart(3,'0')} ${q.name} — ${Math.ceil(remain/60000)}분 후</span>`;
   }).filter(Boolean);
   document.getElementById('tclkQuestStatus').innerHTML = lines.length ? lines.join('<br>') : '<span style="opacity:.35;">등록된 작전 없음</span>';
+}
+
+function setVirtualTimeExact(){
+  const h = parseInt(document.getElementById('tclkInputH').value);
+  const m = parseInt(document.getElementById('tclkInputM').value);
+  const s = parseInt(document.getElementById('tclkInputS').value||'0');
+  if(isNaN(h)||isNaN(m)||h<0||h>23||m<0||m>59){
+    showToast('⚠ 시(0~23), 분(0~59)을 올바르게 입력하세요'); return;
+  }
+  const now = new Date(Date.now());
+  const target = new Date(now);
+  target.setHours(h, m, isNaN(s)?0:Math.min(s,59), 0);
+  _virtualTimeOffset = target.getTime() - Date.now();
+  document.getElementById('tclkInputH').value='';
+  document.getElementById('tclkInputM').value='';
+  document.getElementById('tclkInputS').value='';
+  _updateTclkDisplay();
+  /* 날짜 변경 감지 */
+  const _vDate = dateStr(new Date(_virtualNow()));
+  if(_vDate !== selDate){
+    selDate = _vDate;
+    if(!allData[selDate]) allData[selDate]=[];
+    quests = allData[selDate];
+    if(_fbDb && MY_UID){
+      _fbDb.ref(_questPath(MY_UID, selDate)).once('value', snap=>{
+        const data = snap.exists() ? (snap.val()||[]) : [];
+        allData[selDate] = data;
+        quests = data;
+        renderQ();
+        updateHUD&&updateHUD();
+      });
+    }
+    _subscribedPartnerPath = '';
+    if(typeof subscribePartnerOps==='function') subscribePartnerOps();
+    if(typeof subscribeMyOps==='function') subscribeMyOps();
+    renderDayTabs&&renderDayTabs();
+    renderCal&&renderCal();
+    showToast('📅 날짜 변경: '+selDate);
+  }
+  showToast(`⏱ 가상 시간 → ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(isNaN(s)?0:s).padStart(2,'0')}`);
+  renderQ();
+  renderCal&&renderCal();
 }
 
 function shiftVirtualTime(minutes){
