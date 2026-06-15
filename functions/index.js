@@ -113,7 +113,7 @@ exports.notifyReserve = onSchedule(
         const qSnap = await db.ref(`users/${uid}/quests/${today}`).get();
         if (!qSnap.exists()) return;
         const quests = qSnap.val() || [];
-        const reserved = quests.filter(q => q && q.reservedAt && !q.completed && !q.failed);
+        const reserved = quests.filter(q => q && q.reserved && !q.completed && !q.failed);
         if (reserved.length === 0) return;
         await sendPush(token, {
           title: '🌅 예약 작전 활성화!',
