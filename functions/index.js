@@ -7,9 +7,6 @@
  *     알림이 오다말다 하는 race condition 해소
  * - sendPush 실패 시 토큰 만료(registration-token-not-registered) 감지 →
  *   자동으로 DB에서 해당 토큰 삭제 (좀비 토큰 방지)
- * - [수정] webpush.notification → webpush.data 로 변경
- *   → SW onBackgroundMessage 가 data 페이로드만 수신하므로
- *     notification 방식은 OS가 직접 처리 → SW 무시 → 알림 안 뜨는 버그 수정
  */
 
 const { onValueCreated } = require('firebase-functions/v2/database');
@@ -28,19 +25,18 @@ async function sendPush(token, { title, body, tag, link }, uid) {
     await getMessaging().send({
       token,
       webpush: {
-        headers: { Urgency: 'high' },
-        data: {                        // ← notification 대신 data로 변경 (SW가 직접 처리)
+        notification: {
           title,
           body,
-          tag:  tag || 'jjakjeon',
-          link: targetLink,
+          icon:     'https://special-forces-diary.vercel.app/icons/icon-192.png',
+          tag:      tag || 'jjakjeon',
+          renotify: true,
         },
         fcmOptions: { link: targetLink }
       }
     });
   } catch (e) {
     console.error('sendPush error:', e.message);
-    /* 만료/무효 토큰 → DB에서 제거해 다음 발송 시도 막기 */
     if (
       uid &&
       (e.code === 'messaging/registration-token-not-registered' ||
@@ -129,11 +125,6 @@ exports.notifyReserve = onSchedule(
   }
 );
 
-/* ── 실시간 — 협동 알림 통합 핸들러 ──────────────────────────────────
-   기존 notifyCertDone + notifyCheerRequest 를 하나로 합침.
-   같은 경로에 트리거 2개가 걸리면 Firebase가 동시에 두 함수를 실행하여
-   race condition → 알림 누락/중복 발생. 하나로 통합하면 완전히 해소됨.
-   ────────────────────────────────────────────────────────────────── */
 exports.notifyCoopEvent = onValueCreated(
   { ref: 'coopNotif/{toUid}/{key}', region: 'asia-southeast1' },
   async (event) => {
@@ -147,7 +138,6 @@ exports.notifyCoopEvent = onValueCreated(
     if (!token) return;
 
     if (n.type === 'empathy_request') {
-      /* 파트너 인증 완료 → "수고했어" 요청 → 작전기록 탭으로 딥링크 */
       await sendPush(token, {
         title:   `🎖 ${n.fromNick || '파트너'} 인증 완료!`,
         body:    `"${n.questName || '작전'}" 완료 — 수고했어를 보내주세요 💜`,
@@ -156,15 +146,11 @@ exports.notifyCoopEvent = onValueCreated(
       }, uid);
 
     } else if (n.type === 'cheer_request') {
-      /* 응원 요청 */
       await sendPush(token, {
         title: `📣 ${n.fromNick || '파트너'} 응원 요청`,
         body:  `"${n.questName || '작전'}" — 응원 메시지를 보내주세요 💬`,
         tag:   'cheer-' + key,
       }, uid);
-
     }
-    /* ops_register, coop_accepted, coop_lost 등은
-       앱 내 Firebase 리스너(index.html)가 처리하므로 여기선 skip */
   }
 );
