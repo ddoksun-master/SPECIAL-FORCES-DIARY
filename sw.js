@@ -3,7 +3,7 @@
    (FCM 백그라운드는 firebase-messaging-sw.js 가 처리)
    ================================================================ */
 
-const CACHE_NAME = 'jjakjeon-v2';
+const CACHE_NAME = 'jjakjeon-v3';
 const ASSETS = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
