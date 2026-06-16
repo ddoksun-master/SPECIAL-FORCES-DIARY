@@ -191,6 +191,10 @@ html,body{
 .dot-g{background:#4CAF72;box-shadow:0 0 8px #4CAF72;animation:blink 1.5s ease-in-out infinite;}
 .dot-r{background:var(--red);box-shadow:0 0 8px var(--red);animation:blink 1.5s ease-in-out infinite .3s;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes wakeupDrop{0%{transform:translateY(-60px);opacity:0}60%{transform:translateY(8px)}80%{transform:translateY(-4px)}100%{transform:translateY(0);opacity:1}}
+@keyframes wakeupCrateAppear{0%{transform:scale(.3) translateY(20px);opacity:0}70%{transform:scale(1.1) translateY(-4px)}100%{transform:scale(1) translateY(0);opacity:1}}
+@keyframes wakeupSparkle{0%,100%{opacity:0;transform:scale(.5) rotate(0deg)}50%{opacity:1;transform:scale(1.2) rotate(180deg)}}
+@keyframes wakeupGoldPulse{0%,100%{box-shadow:0 0 12px rgba(255,200,0,.4)}50%{box-shadow:0 0 28px rgba(255,200,0,.9),0 0 48px rgba(255,180,0,.4)}}
 
 /* 메인 HUD */
 .hud-main{
@@ -5886,6 +5890,81 @@ document.addEventListener('DOMContentLoaded',()=>{
 
       </div>
 
+      <!-- ★ 기상미션 섹션 -->
+      <div id="wakeupSection" style="margin-bottom:10px;display:none;">
+        <!-- 기상미션 카드 -->
+        <div id="wakeupCard" style="position:relative;border-radius:14px;overflow:hidden;padding:14px 14px 0;background:linear-gradient(145deg,rgba(255,248,220,.97),rgba(255,240,180,.95));border:1.5px solid rgba(220,170,40,.45);box-shadow:0 3px 16px rgba(200,140,0,.12);">
+          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,rgba(255,185,0,.8),transparent);"></div>
+          <!-- 헤더 행 -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <div style="font-size:18px;">☀️</div>
+              <div>
+                <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(160,100,0,.75);margin-bottom:1px;">WAKEUP MISSION</div>
+                <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:#3A2800;">기상 작전</div>
+              </div>
+            </div>
+            <div id="wakeupStatusBadge" style="font-family:var(--kr);font-size:9px;font-weight:800;padding:4px 10px;border-radius:20px;background:rgba(200,140,0,.12);color:rgba(160,100,0,.85);border:1px solid rgba(200,140,0,.30);">준비중</div>
+          </div>
+          <!-- 기상시간 + 보상 -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 12px;background:rgba(255,255,255,.55);border-radius:10px;border:1px solid rgba(200,150,0,.20);">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="font-family:var(--orb);font-size:22px;font-weight:900;color:#5A3800;" id="wakeupTimeDisplay">--:00</div>
+              <div>
+                <div style="font-family:var(--kr);font-size:10px;color:#8B6020;font-weight:700;" id="wakeupTimeLabel">기상시간 미설정</div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(139,96,32,.65);" id="wakeupWindowLabel">인증 가능시간: --:00~--:59</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:var(--orb);font-size:13px;font-weight:900;color:rgba(40,120,40,.9);">+2,000원</div>
+              <div style="font-family:var(--kr);font-size:8px;color:rgba(139,96,32,.6);">개인 독립 보상</div>
+            </div>
+          </div>
+          <!-- 상태 영역 -->
+          <div id="wakeupStatusArea" style="margin-bottom:10px;"></div>
+          <!-- 안내문구 (등록 직후 표시, 확인 누르면 접힘) -->
+          <div id="wakeupGuideBox" style="display:none;margin-bottom:10px;padding:11px 13px;background:rgba(255,230,100,.25);border:1.5px solid rgba(220,170,40,.45);border-radius:11px;">
+            <div style="font-family:var(--orb);font-size:8px;letter-spacing:2px;color:rgba(160,100,0,.75);margin-bottom:6px;">▸ MISSION GUIDE</div>
+            <div style="font-family:var(--kr);font-size:11px;color:#3A2800;line-height:1.7;font-weight:700;" id="wakeupGuideText"></div>
+            <button onclick="closeWakeupGuide()" style="margin-top:9px;width:100%;padding:9px;background:rgba(200,140,0,.18);border:1.5px solid rgba(200,140,0,.45);border-radius:9px;color:rgba(120,70,0,.9);font-family:var(--kr);font-size:11px;font-weight:800;cursor:pointer;">✅ 확인</button>
+          </div>
+          <!-- 버튼 행 -->
+          <div style="display:flex;gap:7px;padding-bottom:14px;" id="wakeupBtnRow"></div>
+        </div>
+      </div>
+
+      <!-- 기상미션 설정 팝업 -->
+      <div id="wakeupSetPopup" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeWakeupSetPopup();">
+        <div style="background:linear-gradient(160deg,#2A2010,#1E1808);border:1.5px solid rgba(220,170,40,.45);border-radius:20px;padding:26px 22px;max-width:340px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.85);">
+          <div style="font-family:var(--orb);font-size:9px;letter-spacing:2.5px;color:rgba(220,170,40,.8);margin-bottom:14px;text-align:center;">☀️ WAKEUP MISSION</div>
+          <div style="font-family:var(--kr);font-size:15px;font-weight:900;color:#F0E8D8;text-align:center;margin-bottom:6px;" id="wakeupSetTitle">기상 작전 등록</div>
+          <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.55);text-align:center;margin-bottom:20px;" id="wakeupSetSubtitle">기상시간을 선택하세요</div>
+          <!-- 시간 선택 -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;" id="wakeupTimeSelector">
+            <button onclick="selectWakeupHour(5)" data-h="5" style="padding:16px 6px;background:rgba(255,255,255,.06);border:2px solid rgba(220,170,40,.28);border-radius:12px;color:rgba(255,220,100,.75);font-family:var(--orb);font-size:18px;font-weight:900;cursor:pointer;transition:.2s;">05:00</button>
+            <button onclick="selectWakeupHour(6)" data-h="6" style="padding:16px 6px;background:rgba(255,255,255,.06);border:2px solid rgba(220,170,40,.28);border-radius:12px;color:rgba(255,220,100,.75);font-family:var(--orb);font-size:18px;font-weight:900;cursor:pointer;transition:.2s;">06:00</button>
+            <button onclick="selectWakeupHour(7)" data-h="7" style="padding:16px 6px;background:rgba(255,255,255,.06);border:2px solid rgba(220,170,40,.28);border-radius:12px;color:rgba(255,220,100,.75);font-family:var(--orb);font-size:18px;font-weight:900;cursor:pointer;transition:.2s;">07:00</button>
+          </div>
+          <div id="wakeupSetNote" style="display:none;font-family:var(--kr);font-size:10px;color:rgba(255,180,60,.75);text-align:center;margin-bottom:14px;padding:8px;background:rgba(255,150,0,.08);border:1px solid rgba(255,150,0,.2);border-radius:8px;line-height:1.6;"></div>
+          <button id="wakeupSetConfirmBtn" onclick="confirmWakeupSet()" disabled style="width:100%;padding:14px;background:rgba(200,140,0,.15);border:2px solid rgba(200,140,0,.30);border-radius:12px;color:rgba(200,140,0,.45);font-family:var(--kr);font-size:13px;font-weight:900;cursor:not-allowed;transition:.3s;" id="wakeupSetConfirmBtn">시간을 선택하세요</button>
+          <button onclick="closeWakeupSetPopup()" style="width:100%;padding:10px;background:transparent;border:none;color:rgba(255,255,255,.35);font-family:var(--kr);font-size:11px;cursor:pointer;margin-top:8px;">취소</button>
+        </div>
+      </div>
+
+      <!-- 기상 보급상자 팝업 (인증 완료 연출) -->
+      <div id="wakeupBoxPopup" style="display:none;position:fixed;inset:0;z-index:9900;background:rgba(0,0,0,.82);align-items:center;justify-content:center;padding:20px;" >
+        <div style="background:linear-gradient(160deg,#0A1A10,#050D08);border:2px solid rgba(82,212,164,.35);border-radius:22px;padding:28px 22px;max-width:340px;width:100%;box-shadow:0 24px 72px rgba(0,0,0,.9);text-align:center;position:relative;overflow:hidden;">
+          <div style="position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(135deg,rgba(82,212,164,.02) 0,rgba(82,212,164,.02) 1px,transparent 1px,transparent 16px);"></div>
+          <div style="font-family:var(--orb);font-size:8px;letter-spacing:3px;color:rgba(82,212,164,.7);margin-bottom:12px;position:relative;">◈ SUPPLY DROP COMPLETE</div>
+          <!-- 낙하산 애니메이션 -->
+          <div id="wakeupBoxParachute" style="font-size:40px;margin-bottom:4px;animation:wakeupDrop 1.2s ease-out forwards;position:relative;">🪂</div>
+          <div id="wakeupBoxCrate" style="font-size:38px;margin-bottom:16px;animation:wakeupCrateAppear .6s .8s ease-out both;position:relative;">📦</div>
+          <!-- 결과 -->
+          <div id="wakeupBoxResult" style="min-height:80px;margin-bottom:18px;position:relative;z-index:2;"></div>
+          <button onclick="closeWakeupBoxPopup()" style="width:100%;padding:13px;background:rgba(82,212,164,.18);border:2px solid rgba(82,212,164,.50);border-radius:12px;color:rgba(82,212,164,.95);font-family:var(--kr);font-size:13px;font-weight:900;cursor:pointer;">수령 완료!</button>
+        </div>
+      </div>
+
       <!-- 숨김 호환 — JS 참조 유지 -->
       <div id="addBarRow" style="display:none;">
         <div class="add-op-bar hidden" id="addOpBar" onclick="openOpsRegPopup()" style="flex:1;margin-bottom:0;">＋ 오늘의 작전 등록</div>
@@ -5914,78 +5993,9 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     </div><!-- end panelDiary -->
 
-    <!-- ====== 통계분석 패널 ====== -->
+    <!-- ====== PX(자금현황) 패널 ====== -->
     <div class="panel" id="panelStats">
-      <!-- 수익구조 요약 카드 -->
-      <div class="card" style="margin-top:10px;background:linear-gradient(145deg,rgba(20,14,2,.98),rgba(12,8,1,.99));border-color:rgba(200,168,75,.28);overflow:hidden;position:relative;">
-        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(200,168,75,.7),transparent);"></div>
-        <!-- 헤더 -->
-        <div style="padding:14px 16px 0;display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-          <div style="font-size:24px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">💰</div>
-          <div>
-            <div style="font-family:var(--orb);font-size:9px;letter-spacing:2.5px;color:rgba(200,168,75,.80);margin-bottom:2px;">REVENUE STRUCTURE</div>
-            <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#fff;">수익 구조 현황</div>
-          </div>
-          <div style="margin-left:auto;text-align:right;">
-            <div style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.80);letter-spacing:1px;margin-bottom:2px;">TOTAL</div>
-            <div id="statsTotalAll" style="font-family:var(--orb);font-size:20px;font-weight:900;color:rgba(255,215,100,.95);text-shadow:0 0 12px rgba(200,168,75,.4);">0원</div>
-          </div>
-        </div>
-
-        <div style="margin:0 14px 14px;">
-          <!-- 개인임무 누적 -->
-          <div style="background:rgba(90,158,72,.07);border:1px solid rgba(90,158,72,.20);border-radius:10px;padding:11px 12px;margin-bottom:8px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;">
-              <span style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.75);">🪖 개인임무 누적</span>
-              <span id="statsTotalMoney" style="font-family:var(--orb);font-size:14px;font-weight:700;color:var(--gold);">0원</span>
-            </div>
-            <div style="height:4px;background:rgba(70,55,12,.5);border-radius:2px;overflow:hidden;margin-bottom:5px;">
-              <div id="statsPersonalBar" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-dim));transition:width .5s;width:0%;"></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;">
-              <span style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.75);">0</span>
-              <span style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.75);">목표 100,000원</span>
-            </div>
-          </div>
-
-          <!-- 팀전 누적 -->
-          <div style="background:rgba(200,168,75,.06);border:1px solid rgba(200,168,75,.22);border-radius:10px;padding:11px 12px;margin-bottom:8px;">
-            <div style="display:none;"><span id="statsCodeUploadStatus"></span><span id="statsMyCode"></span></div>
-            <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.75);margin-bottom:4px;">⚔ 팀전 누적 보상</div>
-            <div id="statsTeamMoney" style="font-family:var(--orb);font-size:14px;font-weight:900;color:rgba(200,168,75,.9);">0원</div>
-            <div id="statsTeamRewardDetail"></div>
-          </div>
-
-          <!-- 달성률 -->
-          <div style="background:rgba(30,50,20,.5);border:1px solid rgba(200,168,75,.20);border-radius:10px;padding:11px 12px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <div>
-                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.55);">달성 가능 최대</div>
-                <div style="font-family:var(--orb);font-size:17px;font-weight:900;color:var(--gold);">300,000원</div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.45);">개인 최대 100,000</div>
-                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,100,100,.55);">특수 최대 100,000</div>
-                <div style="font-family:var(--kr);font-size:9px;color:rgba(251,191,36,.80);">스페셜 (50p·100p)</div>
-              </div>
-            </div>
-            <div style="height:1px;background:rgba(200,168,75,.10);margin-bottom:8px;"></div>
-            <div id="personalCapInfo" style="padding:8px 10px;background:rgba(10,25,12,.5);border:1px solid rgba(90,158,72,.15);border-radius:8px;margin-bottom:7px;transition:.3s;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-                <span style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.8);">📋 개인임무 가용 한도</span>
-                <span id="personalCapAmt" style="font-family:var(--orb);font-size:11px;font-weight:900;color:rgba(127,191,106,.9);">150,000원</span>
-              </div>
-              <div id="personalCapNote" style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.65);line-height:1.5;">특수임무 완료 후 한도 조정 (현재 0/3 완료)</div>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.88);">현재 달성률</span>
-              <span id="statsTotalPct" style="font-family:var(--orb);font-size:11px;font-weight:700;color:rgba(127,191,106,.9);">0%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ★ 보급상점 (자금현황으로 이동) -->
+      <!-- ★ 보급상점 -->
       <!-- 상점 헤더 카드 -->
       <div class="card" style="margin-top:8px;background:linear-gradient(145deg,rgba(30,20,4,.97),rgba(20,14,2,.98));border-color:rgba(200,168,75,.25);overflow:hidden;position:relative;">
         <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(200,168,75,.7),transparent);"></div>
@@ -6002,7 +6012,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         </div>
         <div style="margin:0 14px 14px;padding:10px 12px;background:rgba(200,168,75,.07);border:1px dashed rgba(200,168,75,.25);border-radius:10px;">
           <div style="font-family:var(--kr);font-size:9px;color:rgba(255,220,120,.75);line-height:1.7;">
-            <strong style="color:rgba(200,168,75,.95);">개인작전</strong> 5,000원×2 + <strong style="color:rgba(200,168,75,.95);">협동작전</strong> +5,000원 = <strong style="color:rgba(255,215,100,.95);">하루 최대 15,000원</strong><br>
+            <strong style="color:rgba(200,168,75,.95);">개인작전</strong> 5,000원×2 + <strong style="color:rgba(200,168,75,.95);">협동작전</strong> +3,000원 = <strong style="color:rgba(255,215,100,.95);">하루 최대 13,000원</strong><br>
             개인한도 <strong style="color:rgba(200,168,75,.95);">15만원</strong> · 특수임무 합계 10만 미만 시 초과분만큼 한도 확장<br>
             <span style="font-size:9px;color:rgba(255,255,255,.75);">✅ 체크 1P &nbsp;·&nbsp; 📝 메모 2P &nbsp;·&nbsp; 📷 사진 3P</span>
           </div>
@@ -6042,6 +6052,14 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div id="shopActivityInner"></div>
       </div>
       <div id="shopActivitySummary" style="display:none;"></div>
+
+      <!-- ★ 포인트 수령 이력 섹션 -->
+      <div class="card" style="margin-top:8px;background:linear-gradient(145deg,rgba(15,10,25,.97),rgba(10,6,18,.98));border-color:rgba(180,140,255,.18);overflow:hidden;position:relative;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(180,140,255,.5),transparent);"></div>
+        <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(180,140,255,.55);margin-bottom:10px;">POINT HISTORY</div>
+        <div style="font-family:var(--kr);font-size:13px;font-weight:800;color:rgba(255,255,255,.88);margin-bottom:14px;">⭐ 포인트 수령 이력</div>
+        <div id="pxPointHistoryInner" style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);text-align:center;padding:16px 0;">이력을 불러오는 중...</div>
+      </div>
 
     </div><!-- /panelStats -->
 
@@ -6093,6 +6111,68 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     <!-- ====== 사령부 패널 ====== -->
     <div class="panel" id="panelShop">
+
+      <!-- ★ 수익 구조 현황 (사령부로 이동) -->
+      <div class="card" style="margin-top:10px;background:linear-gradient(145deg,rgba(20,14,2,.98),rgba(12,8,1,.99));border-color:rgba(200,168,75,.28);overflow:hidden;position:relative;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(200,168,75,.7),transparent);"></div>
+        <div style="padding:14px 16px 0;display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <div style="font-size:24px;filter:drop-shadow(0 0 8px rgba(200,168,75,.4));">💰</div>
+          <div>
+            <div style="font-family:var(--orb);font-size:9px;letter-spacing:2.5px;color:rgba(200,168,75,.80);margin-bottom:2px;">REVENUE STRUCTURE</div>
+            <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#fff;">수익 구조 현황</div>
+          </div>
+          <div style="margin-left:auto;text-align:right;">
+            <div style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.80);letter-spacing:1px;margin-bottom:2px;">TOTAL</div>
+            <div id="statsTotalAll" style="font-family:var(--orb);font-size:20px;font-weight:900;color:rgba(255,215,100,.95);text-shadow:0 0 12px rgba(200,168,75,.4);">0원</div>
+          </div>
+        </div>
+        <div style="margin:0 14px 14px;">
+          <div style="background:rgba(90,158,72,.07);border:1px solid rgba(90,158,72,.20);border-radius:10px;padding:11px 12px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;">
+              <span style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.75);">🪖 개인임무 누적</span>
+              <span id="statsTotalMoney" style="font-family:var(--orb);font-size:14px;font-weight:700;color:var(--gold);">0원</span>
+            </div>
+            <div style="height:4px;background:rgba(70,55,12,.5);border-radius:2px;overflow:hidden;margin-bottom:5px;">
+              <div id="statsPersonalBar" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-dim));transition:width .5s;width:0%;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.75);">0</span>
+              <span style="font-family:var(--orb);font-size:9px;color:rgba(200,168,75,.75);">목표 100,000원</span>
+            </div>
+          </div>
+          <div style="background:rgba(200,168,75,.06);border:1px solid rgba(200,168,75,.22);border-radius:10px;padding:11px 12px;margin-bottom:8px;">
+            <div style="display:none;"><span id="statsCodeUploadStatus"></span><span id="statsMyCode"></span></div>
+            <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.75);margin-bottom:4px;">⚔ 팀전 누적 보상</div>
+            <div id="statsTeamMoney" style="font-family:var(--orb);font-size:14px;font-weight:900;color:rgba(200,168,75,.9);">0원</div>
+            <div id="statsTeamRewardDetail"></div>
+          </div>
+          <div style="background:rgba(30,50,20,.5);border:1px solid rgba(200,168,75,.20);border-radius:10px;padding:11px 12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.55);">달성 가능 최대</div>
+                <div style="font-family:var(--orb);font-size:17px;font-weight:900;color:var(--gold);">300,000원</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.45);">개인 최대 100,000</div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,100,100,.55);">특수 최대 100,000</div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(251,191,36,.80);">스페셜 (50p·100p)</div>
+              </div>
+            </div>
+            <div style="height:1px;background:rgba(200,168,75,.10);margin-bottom:8px;"></div>
+            <div id="personalCapInfo" style="padding:8px 10px;background:rgba(10,25,12,.5);border:1px solid rgba(90,158,72,.15);border-radius:8px;margin-bottom:7px;transition:.3s;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+                <span style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.8);">📋 개인임무 가용 한도</span>
+                <span id="personalCapAmt" style="font-family:var(--orb);font-size:11px;font-weight:900;color:rgba(127,191,106,.9);">150,000원</span>
+              </div>
+              <div id="personalCapNote" style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.65);line-height:1.5;">특수임무 완료 후 한도 조정 (현재 0/3 완료)</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-family:var(--kr);font-size:9px;color:rgba(127,191,106,.88);">현재 달성률</span>
+              <span id="statsTotalPct" style="font-family:var(--orb);font-size:11px;font-weight:700;color:rgba(127,191,106,.9);">0%</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- 알림 설정 -->
       <div class="card" style="margin-top:10px;background:linear-gradient(145deg,rgba(4,14,10,.97),rgba(2,10,7,.98));border-color:rgba(47,74,54,.30);padding:0;overflow:hidden;">
@@ -6635,8 +6715,8 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="nav-label">팀작전</div>
     </div>
     <div class="nav-item" onclick="switchPanel('stats',this)">
-      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></div>
-      <div class="nav-label">자금현황</div>
+      <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+      <div class="nav-label">PX</div>
     </div>
     <div class="nav-item" onclick="switchPanel('shop',this)">
       <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
@@ -7243,7 +7323,7 @@ function switchPanel(name,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('panel'+name[0].toUpperCase()+name.slice(1)).classList.add('active');
   if(el) el.classList.add('active');
-  if(name==='stats'){renderCal();renderStatsRevenueCard();renderStatsGemProposalGrid();initShopPanel();}
+  if(name==='stats'){renderCal();renderStatsRevenueCard();renderStatsGemProposalGrid();initShopPanel();renderPxPointHistory();}
   if(name==='history'){renderHist();renderCal();}
   if(name==='team'){
     if(window.renderConnectCard) renderConnectCard();
@@ -7260,7 +7340,7 @@ function switchPanel(name,el){
     /* 상대방 작전 섹션 갱신 */
     setTimeout(()=>{ if(typeof subscribePartnerOps==='function') subscribePartnerOps(); }, 80);
   }
-  if(name==='shop') initShopPanel();
+  if(name==='shop'){ initShopPanel(); renderStatsRevenueCard(); }
 }
 
 /* ── 요일 탭 ── */
@@ -7521,7 +7601,7 @@ function renderQ(){
         if(isCoop){
           const partnerCertified = q.partnerCertified || false;
           completedExtra = (partnerCertified && !q.bonusClaimed)
-            ? `<div style="margin-top:8px;"><button class="qbtn coop-bonus-btn" style="width:100%;font-size:11px;padding:10px 12px;background:rgba(180,90,20,.18);border:2px solid rgba(200,110,30,.60);color:rgba(220,110,30,.95);font-weight:800;">🎁 보상받기 +5,000원</button></div>`
+            ? `<div style="margin-top:8px;"><button class="qbtn coop-bonus-btn" style="width:100%;font-size:11px;padding:10px 12px;background:rgba(180,90,20,.18);border:2px solid rgba(200,110,30,.60);color:rgba(220,110,30,.95);font-weight:800;">🎁 보상받기 +3,000원</button></div>`
             : q.bonusClaimed ? `<div style="margin-top:8px;padding:8px 10px;background:rgba(127,191,106,.1);border:1px solid rgba(127,191,106,.3);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.8);text-align:center;font-weight:700;">✅ 협동 보너스 수령 완료</div>` : '';
         }
         /* 응원포인트 받기 버튼 — 완료 + 상대 응원 메시지 있을 때 */
@@ -7807,7 +7887,7 @@ function renderQ(){
       doneBtn.addEventListener('click',()=>{
         quests[oi].completed=false;quests[oi].certifiedAt=null;
         /* reward=0으로 처리된 것을 기본값으로 복구 (재인증 시 다시 한도 체크) */
-        if(!quests[oi].reward) quests[oi].reward = quests[oi].mode==='coop'&&quests[oi].bonusClaimed?10000:5000;
+        if(!quests[oi].reward) quests[oi].reward = quests[oi].mode==='coop'&&quests[oi].bonusClaimed?8000:5000;
         saveQ();renderQ();updateHUD();
         showCat(curCat,document.querySelector('.ctab.active'));
       });
@@ -8149,7 +8229,7 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
     });
   }
   const doneBtn=slotEl.querySelector('.qbtn.done');
-  if(doneBtn){doneBtn.addEventListener('click',e=>{e.stopPropagation();quests[oi].completed=false;quests[oi].certifiedAt=null;if(!quests[oi].reward) quests[oi].reward=quests[oi].mode==='coop'&&quests[oi].bonusClaimed?10000:5000;saveQ();renderQ();updateHUD();});}
+  if(doneBtn){doneBtn.addEventListener('click',e=>{e.stopPropagation();quests[oi].completed=false;quests[oi].certifiedAt=null;if(!quests[oi].reward) quests[oi].reward=quests[oi].mode==='coop'&&quests[oi].bonusClaimed?8000:5000;saveQ();renderQ();updateHUD();});}
   slotEl.querySelectorAll('.qdel-btn').forEach(btn=>{
     btn.addEventListener('click',e=>{
       e.stopPropagation();
@@ -8659,9 +8739,9 @@ async function claimCoopBonus(qi){
   if(q.bonusClaimed){showToast('이미 보너스를 받았습니다');return;}
   if(!q.completed||!q.partnerCertified){showToast('⚠ 둘 다 인증 완료 후 보너스를 받을 수 있습니다');return;}
   quests[qi].bonusClaimed=true;
-  quests[qi].reward=10000; /* 협동 보너스 포함 */
+  quests[qi].reward=8000; /* 협동 보너스 포함: 5000+3000 */
   saveQ();renderQ();updateHUD();
-  showToast('🎉 협동 성공! +5,000원 추가 (총 10,000원)');
+  showToast('🎉 협동 성공! +3,000원 추가 (총 8,000원)');
 }
 
 /* 응원 메시지 전송 */
@@ -12987,14 +13067,14 @@ const TM = {
        border:'rgba(52,211,153,.5)', glow:'rgba(52,211,153,.18)',
        bgCard:'rgba(2,44,32,.95)',   bgHeader:'linear-gradient(135deg,rgba(5,60,42,.9),rgba(2,35,25,.95))',
        topLine:'linear-gradient(90deg,transparent,rgba(52,211,153,.7),transparent)',
-       box:'rgba(52,211,153,.5)',  rewards:[30000,40000,50000,60000] },
+       box:'rgba(52,211,153,.5)',  rewards:[20000,30000,40000] },
   /* 특수임무2: 바이올렛 퍼플 — 7만원 달성 시 개방 */
   2: { th:70000,  label:'특수임무2', path:'tm_mission2', thType:'money',
        color:'rgba(167,139,250,1)',  colorDim:'rgba(139,92,246,1)',
        border:'rgba(167,139,250,.5)',glow:'rgba(167,139,250,.18)',
        bgCard:'rgba(30,8,60,.95)',   bgHeader:'linear-gradient(135deg,rgba(42,12,80,.9),rgba(25,6,50,.95))',
        topLine:'linear-gradient(90deg,transparent,rgba(167,139,250,.7),transparent)',
-       box:'rgba(167,139,250,.5)', rewards:[30000,40000,50000,60000] },
+       box:'rgba(167,139,250,.5)', rewards:[20000,30000,40000] },
   /* 스페셜임무A: 골드 — 협동포인트 20p 달성 시 개방 (A·B 동시 해금) */
   3: { th:20,    label:'스페셜임무A', path:'tm_special_a', thType:'coop',
        color:'rgba(251,191,36,1)',   colorDim:'rgba(245,158,11,1)',
@@ -15936,6 +16016,466 @@ function _sendKakaoShare(){
     });
   }catch(e){}
 }
+
+/* ══════════════════════════════════════════════════════════
+   기상미션 (WAKEUP MISSION) v1.0
+   Firebase 경로: wakeup/{uid}/time, modifiedAt, records/{date}
+   ══════════════════════════════════════════════════════════ */
+
+let _wakeupData = null;       /* 내 기상 설정 캐시 */
+let _wakeupPartnerData = null;/* 파트너 기상 설정 캐시 */
+let _wakeupTodayRecord = null;/* 오늘 인증 기록 캐시 */
+let _wakeupSetSelectedHour = null; /* 팝업 선택 중인 시간 */
+
+/* 포인트 범위 상수 */
+const WAKEUP_PT_RANGE = {5:[5,10], 6:[3,7], 7:[1,3]};
+
+/* ── 초기화 ── */
+async function initWakeupMission(){
+  if(!MY_UID || !_fbDb) return;
+  const sec = document.getElementById('wakeupSection');
+  if(!sec) return;
+  sec.style.display = 'block';
+  await _loadWakeupData();
+  renderWakeupCard();
+  /* 파트너 데이터도 로드 */
+  if(partnerData && partnerData.uid) _loadWakeupPartnerData();
+  /* 자정 지나면 오늘 기록 갱신 */
+  _wakeupTodayRecord = null;
+  await _loadWakeupTodayRecord();
+}
+
+/* ── Firebase 로드 ── */
+async function _loadWakeupData(){
+  if(!MY_UID || !_fbDb) return;
+  try{
+    const snap = await _fbGet(`wakeup/${MY_UID}`);
+    _wakeupData = snap.exists() ? snap.val() : null;
+  }catch(e){ _wakeupData = null; }
+}
+
+async function _loadWakeupPartnerData(){
+  if(!partnerData || !partnerData.uid || !_fbDb) return;
+  try{
+    const snap = await _fbGet(`wakeup/${partnerData.uid}`);
+    _wakeupPartnerData = snap.exists() ? snap.val() : null;
+  }catch(e){ _wakeupPartnerData = null; }
+}
+
+async function _loadWakeupTodayRecord(){
+  if(!MY_UID || !_fbDb) return;
+  const today = dateStr(new Date(_virtualNow()));
+  try{
+    const snap = await _fbGet(`wakeup/${MY_UID}/records/${today}`);
+    _wakeupTodayRecord = snap.exists() ? snap.val() : null;
+  }catch(e){ _wakeupTodayRecord = null; }
+}
+
+/* ── 카드 렌더 ── */
+function renderWakeupCard(){
+  const sec = document.getElementById('wakeupSection');
+  if(!sec) return;
+
+  const timeDisp = document.getElementById('wakeupTimeDisplay');
+  const timeLbl  = document.getElementById('wakeupTimeLabel');
+  const winLbl   = document.getElementById('wakeupWindowLabel');
+  const badge    = document.getElementById('wakeupStatusBadge');
+  const statusArea = document.getElementById('wakeupStatusArea');
+  const btnRow   = document.getElementById('wakeupBtnRow');
+  if(!timeDisp||!statusArea||!btnRow) return;
+
+  const now = _virtualNow();
+  const nowDate = new Date(now);
+  const h = nowDate.getHours();
+  const m = nowDate.getMinutes();
+
+  const hasSetting = _wakeupData && _wakeupData.time;
+  const wh = hasSetting ? _wakeupData.time : null; /* 설정된 기상시간 (5/6/7) */
+  const rec = _wakeupTodayRecord;
+  const isCertified = !!(rec && rec.success);
+  const isFailed = !isCertified && hasSetting && h > wh; /* 인증시간 지남 */
+
+  /* 시간 표시 */
+  if(wh){
+    timeDisp.textContent = String(wh).padStart(2,'0') + ':00';
+    timeLbl.textContent = `기상시간 ${wh}시`;
+    winLbl.textContent = `인증 가능: ${String(wh).padStart(2,'0')}:00 ~ ${String(wh).padStart(2,'0')}:59`;
+  } else {
+    timeDisp.textContent = '--:00';
+    timeLbl.textContent = '기상시간 미설정';
+    winLbl.textContent = '기상 작전을 등록하세요';
+  }
+
+  /* 배지 */
+  let badgeTxt = '준비중', badgeBg = 'rgba(200,140,0,.12)', badgeColor = 'rgba(160,100,0,.85)';
+  if(!hasSetting){ badgeTxt='미등록'; }
+  else if(isCertified){ badgeTxt='✅ 완료'; badgeBg='rgba(40,160,80,.18)'; badgeColor='rgba(40,160,80,.95)'; }
+  else if(isFailed){ badgeTxt='❌ 실패'; badgeBg='rgba(180,40,40,.15)'; badgeColor='rgba(220,80,80,.90)'; }
+  else if(hasSetting && h === wh){ badgeTxt='⏰ 인증시간!'; badgeBg='rgba(255,140,0,.22)'; badgeColor='rgba(220,100,0,.95)'; }
+  else if(hasSetting && h < wh){ badgeTxt='대기중'; }
+  badge.textContent = badgeTxt;
+  badge.style.background = badgeBg;
+  badge.style.color = badgeColor;
+
+  /* 상태 영역 — 파트너 인증 여부 */
+  let partnerStatusHtml = '';
+  if(_wakeupPartnerData && _wakeupPartnerData.time){
+    const pName = (partnerData && partnerData.nickname) || '파트너';
+    /* 파트너 오늘 기록은 별도 로드 필요하므로 비동기로 처리됨 */
+    partnerStatusHtml = `<div style="margin-bottom:8px;padding:7px 11px;background:rgba(100,150,255,.08);border:1px solid rgba(100,150,255,.22);border-radius:9px;font-family:var(--kr);font-size:10px;color:rgba(100,150,255,.85);font-weight:700;">${pName}: ${window._wakeupPartnerCertified ? '✅ 인증 완료' : '⏳ 대기중'}</div>`;
+  }
+
+  /* 응원 메시지 박스 */
+  let cheerBox = '';
+  if(_wakeupTodayRecord && _wakeupTodayRecord.cheerMsg && !isCertified){
+    const isMyCheer = _wakeupTodayRecord.cheerFromNick && (_wakeupTodayRecord.cheerFromNick === (myNickname||'나'));
+    if(!isMyCheer){
+      cheerBox = `<div style="margin-bottom:8px;padding:10px 12px;background:rgba(106,78,158,.18);border:2px solid rgba(106,78,158,.55);border-radius:11px;">
+        <div style="font-family:var(--kr);font-size:9px;color:#6B4A9A;font-weight:800;margin-bottom:4px;">💜 응원 메시지</div>
+        <div style="font-family:var(--kr);font-size:12px;color:#2A1A3E;font-weight:700;line-height:1.55;">${_wakeupTodayRecord.cheerMsg}</div>
+      </div>`;
+    }
+  }
+
+  statusArea.innerHTML = partnerStatusHtml + cheerBox;
+
+  /* 버튼 행 */
+  if(!hasSetting){
+    btnRow.innerHTML = `<button onclick="openWakeupSetPopup(false)" style="flex:1;padding:12px;background:linear-gradient(135deg,rgba(200,140,0,.22),rgba(160,100,0,.18));border:2px solid rgba(200,140,0,.50);border-radius:12px;color:rgba(180,110,0,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;">☀️ 기상 작전 등록</button>`;
+  } else if(isCertified){
+    const pts = rec.pointAwarded||0;
+    const earnedTxt = pts > 0 ? `+${pts}p 수령` : '오늘 포인트 없음';
+    btnRow.innerHTML = `
+      <div style="flex:1;padding:12px;background:rgba(40,160,80,.10);border:1.5px solid rgba(40,160,80,.30);border-radius:12px;text-align:center;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(40,160,80,.85);">✅ 인증 완료 · ${earnedTxt}</div>
+      <button onclick="openWakeupSetPopup(true)" style="padding:12px 14px;background:rgba(200,140,0,.10);border:1.5px solid rgba(200,140,0,.30);border-radius:12px;color:rgba(160,100,0,.75);font-family:var(--kr);font-size:11px;font-weight:800;cursor:pointer;">⚙️ 수정</button>`;
+  } else if(isFailed){
+    btnRow.innerHTML = `
+      <div style="flex:1;padding:12px;background:rgba(180,40,40,.08);border:1.5px solid rgba(180,40,40,.25);border-radius:12px;text-align:center;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(220,80,80,.75);">❌ 오늘 기상 실패 — 내일 다시 도전!</div>
+      <button onclick="openWakeupSetPopup(true)" style="padding:12px 14px;background:rgba(200,140,0,.10);border:1.5px solid rgba(200,140,0,.30);border-radius:12px;color:rgba(160,100,0,.75);font-family:var(--kr);font-size:11px;font-weight:800;cursor:pointer;">⚙️</button>`;
+  } else {
+    /* 대기중 or 인증시간 */
+    const canCert = hasSetting && h === wh;
+    const certBtnStyle = canCert
+      ? `padding:12px;background:linear-gradient(135deg,rgba(40,160,80,.30),rgba(20,120,60,.25));border:2px solid rgba(40,160,80,.65);border-radius:12px;color:rgba(40,160,80,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;`
+      : `padding:12px;background:rgba(61,72,64,.06);border:1.5px solid rgba(61,72,64,.18);border-radius:12px;color:#9CA49A;font-family:var(--kr);font-size:12px;font-weight:800;cursor:default;`;
+    const certBtnTxt = canCert ? '📸 기상 인증하기' : (h < wh ? `⏰ ${wh}시에 인증 가능` : `⏱ ${String(wh).padStart(2,'0')}:00 대기중`);
+    /* 응원요청 버튼 */
+    const hasCheerSent = _wakeupTodayRecord && _wakeupTodayRecord.cheerMsg;
+    const cheerBtnHtml = `<button onclick="sendWakeupCheer()" ${hasCheerSent?'disabled':''} style="padding:12px 10px;background:rgba(106,78,158,.${hasCheerSent?'06':'18'});border:1.5px solid rgba(106,78,158,.${hasCheerSent?'20':'45'});border-radius:12px;color:rgba(180,130,255,.${hasCheerSent?'40':'90'});font-family:var(--kr);font-size:11px;font-weight:800;cursor:${hasCheerSent?'default':'pointer'};">${hasCheerSent?'💜 응원함':'💜 응원 요청'}</button>`;
+    btnRow.innerHTML = `${cheerBtnHtml}<button onclick="${canCert?'certifyWakeup()':''}" style="flex:1;${certBtnStyle}">${certBtnTxt}</button><button onclick="openWakeupSetPopup(true)" style="padding:12px 10px;background:rgba(200,140,0,.10);border:1.5px solid rgba(200,140,0,.30);border-radius:12px;color:rgba(160,100,0,.75);font-family:var(--kr);font-size:11px;font-weight:800;cursor:pointer;">⚙️</button>`;
+  }
+}
+
+/* ── 기상 인증 ── */
+async function certifyWakeup(){
+  if(!MY_UID || !_fbDb) return;
+  const now = _virtualNow();
+  const nowDate = new Date(now);
+  const h = nowDate.getHours();
+  const today = dateStr(nowDate);
+  if(!_wakeupData || !_wakeupData.time){ showToast('기상 작전을 먼저 등록하세요'); return; }
+  const wh = _wakeupData.time;
+  if(h !== wh){ showToast(`⏰ ${wh}시에만 인증 가능합니다`); return; }
+  if(_wakeupTodayRecord && _wakeupTodayRecord.success){ showToast('이미 인증했습니다'); return; }
+
+  /* 파트너도 같이하기 중인지 확인 */
+  const withPartner = !!(partnerData && partnerData.uid && _wakeupPartnerData);
+
+  /* 포인트 계산 */
+  const [pMin, pMax] = WAKEUP_PT_RANGE[wh] || [1,3];
+  let pointAwarded = 0;
+  if(withPartner && window._wakeupPartnerCertified){
+    /* 둘 다 성공 → 반드시 지급 (꽝 없음) */
+    pointAwarded = pMin + Math.floor(Math.random() * (pMax - pMin + 1));
+  } else {
+    /* 혼자 → 꽝 있음 (약 33% 꽝) */
+    if(Math.random() > 0.33){
+      pointAwarded = pMin + Math.floor(Math.random() * (pMax - pMin + 1));
+    }
+  }
+
+  const record = {
+    certifiedAt: now,
+    success: true,
+    pointAwarded,
+    wakeupHour: wh
+  };
+
+  try{
+    await _fbSet(`wakeup/${MY_UID}/records/${today}`, record);
+    _wakeupTodayRecord = record;
+    /* 포인트 지급 */
+    if(pointAwarded > 0) await addPoints(pointAwarded);
+    /* 보상금 +2000원 지급 */
+    await _addWakeupMoney(2000);
+    /* wakeupAlarm 저장 (FCM용) */
+    await _fbSet(`users/${MY_UID}/wakeupAlarm`, wh);
+    /* 연출 팝업 */
+    showWakeupBoxPopup(pointAwarded, wh);
+    renderWakeupCard();
+    updateHUD();
+  }catch(e){ showToast('인증 저장 실패'); }
+}
+
+/* ── 보상금 지급 ── */
+async function _addWakeupMoney(amt){
+  if(!MY_UID || !_fbDb) return;
+  try{
+    const snap = await _fbGet(`users/${MY_UID}/money`);
+    const cur = snap.exists() ? (snap.val()||0) : 0;
+    await _fbSet(`users/${MY_UID}/money`, cur + amt);
+  }catch(e){}
+}
+
+/* ── 보급상자 팝업 ── */
+function showWakeupBoxPopup(pts, wh){
+  const popup = document.getElementById('wakeupBoxPopup');
+  const result = document.getElementById('wakeupBoxResult');
+  if(!popup || !result) return;
+
+  if(pts > 0){
+    /* 당첨 연출 */
+    result.innerHTML = `
+      <div style="animation:wakeupGoldPulse 1.5s infinite;background:linear-gradient(135deg,rgba(255,200,0,.18),rgba(255,150,0,.12));border:2px solid rgba(255,185,0,.6);border-radius:16px;padding:16px 12px;margin-bottom:6px;">
+        <div style="font-size:28px;margin-bottom:8px;">✨💰✨</div>
+        <div style="font-family:var(--orb);font-size:28px;font-weight:900;color:#FFD700;letter-spacing:2px;text-shadow:0 0 20px rgba(255,200,0,.8);">+${pts}p</div>
+        <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(255,220,100,.95);margin-top:6px;">보급 완료! PX 포인트 지급!</div>
+        <div style="font-family:var(--kr);font-size:10px;color:rgba(255,180,60,.75);margin-top:4px;">${wh}시 기상 보상 · +2,000원도 적립됐습니다</div>
+      </div>
+      <div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap;">
+        ${Array.from({length:6},()=>`<span style="font-size:20px;animation:wakeupSparkle ${(.8+Math.random()*.8).toFixed(1)}s ${(Math.random()*.5).toFixed(1)}s infinite;">⭐</span>`).join('')}
+      </div>`;
+  } else {
+    /* 꽝 연출 */
+    const encouragements = [
+      '오늘도 일어났다는 게 이미 승리! 💪', '내일은 포인트 터진다! 계속 도전!',
+      '꽝이어도 몸은 이미 깨어났다 ☀️', '포인트는 없지만 의지는 MAX! 🔥',
+      '기상 그 자체가 보상이다 🎖', '내일 상자에는 보물이 기다린다!'
+    ];
+    const msg = encouragements[Math.floor(Math.random()*encouragements.length)];
+    result.innerHTML = `
+      <div style="background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.12);border-radius:14px;padding:16px 12px;margin-bottom:6px;">
+        <div style="font-size:28px;margin-bottom:8px;">📭</div>
+        <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:rgba(255,255,255,.75);margin-bottom:8px;">오늘은 꽝!</div>
+        <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.55);line-height:1.65;">${msg}</div>
+        <div style="font-family:var(--kr);font-size:10px;color:rgba(82,212,164,.65);margin-top:8px;">+2,000원은 정상 적립됐습니다 ✅</div>
+      </div>`;
+  }
+  popup.style.display = 'flex';
+}
+
+function closeWakeupBoxPopup(){
+  const popup = document.getElementById('wakeupBoxPopup');
+  if(popup) popup.style.display = 'none';
+}
+
+/* ── 설정 팝업 ── */
+function openWakeupSetPopup(isEdit){
+  _wakeupSetSelectedHour = null;
+  const popup = document.getElementById('wakeupSetPopup');
+  const title = document.getElementById('wakeupSetTitle');
+  const subtitle = document.getElementById('wakeupSetSubtitle');
+  const noteEl = document.getElementById('wakeupSetNote');
+  const confirmBtn = document.getElementById('wakeupSetConfirmBtn');
+  if(!popup) return;
+
+  if(isEdit){
+    title.textContent = '기상시간 수정';
+    subtitle.textContent = '수정 후 1시간 이후부터 인증이 가능합니다';
+    noteEl.textContent = '⚠️ 수정 후 1시간 뒤부터 인증 가능합니다.';
+    noteEl.style.display = 'block';
+  } else {
+    title.textContent = '기상 작전 등록';
+    subtitle.textContent = '기상시간을 선택하세요';
+    noteEl.style.display = 'none';
+  }
+
+  /* 기존 선택 해제 */
+  document.querySelectorAll('#wakeupTimeSelector button').forEach(b=>{
+    b.style.background = 'rgba(255,255,255,.06)';
+    b.style.borderColor = 'rgba(220,170,40,.28)';
+    b.style.color = 'rgba(255,220,100,.75)';
+  });
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = '시간을 선택하세요';
+  confirmBtn.style.background = 'rgba(200,140,0,.15)';
+  confirmBtn.style.borderColor = 'rgba(200,140,0,.30)';
+  confirmBtn.style.color = 'rgba(200,140,0,.45)';
+  confirmBtn.style.cursor = 'not-allowed';
+
+  popup.style.display = 'flex';
+}
+
+function closeWakeupSetPopup(){
+  const popup = document.getElementById('wakeupSetPopup');
+  if(popup) popup.style.display = 'none';
+  _wakeupSetSelectedHour = null;
+}
+
+function selectWakeupHour(h){
+  _wakeupSetSelectedHour = h;
+  document.querySelectorAll('#wakeupTimeSelector button').forEach(b=>{
+    const bh = parseInt(b.dataset.h);
+    if(bh === h){
+      b.style.background = 'rgba(220,170,40,.28)';
+      b.style.borderColor = 'rgba(255,200,50,.75)';
+      b.style.color = '#FFD700';
+    } else {
+      b.style.background = 'rgba(255,255,255,.06)';
+      b.style.borderColor = 'rgba(220,170,40,.28)';
+      b.style.color = 'rgba(255,220,100,.75)';
+    }
+  });
+  const confirmBtn = document.getElementById('wakeupSetConfirmBtn');
+  if(confirmBtn){
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = `${h}시 기상 작전 등록`;
+    confirmBtn.style.background = 'linear-gradient(135deg,rgba(200,140,0,.35),rgba(160,100,0,.28))';
+    confirmBtn.style.borderColor = 'rgba(220,170,40,.70)';
+    confirmBtn.style.color = 'rgba(255,220,100,.95)';
+    confirmBtn.style.cursor = 'pointer';
+  }
+}
+
+async function confirmWakeupSet(){
+  if(!_wakeupSetSelectedHour || !MY_UID || !_fbDb) return;
+  const h = _wakeupSetSelectedHour;
+  const now = _virtualNow();
+  const isEdit = !!(_wakeupData && _wakeupData.time);
+  const data = {
+    time: h,
+    modifiedAt: now,
+    uid: MY_UID
+  };
+  try{
+    await _fbSet(`wakeup/${MY_UID}`, {...(_wakeupData||{}), ...data});
+    /* FCM wakeupAlarm 저장 */
+    await _fbSet(`users/${MY_UID}/wakeupAlarm`, h);
+    _wakeupData = {...(_wakeupData||{}), ...data};
+    closeWakeupSetPopup();
+    renderWakeupCard();
+    /* 안내문구 표시 */
+    showWakeupGuide(h, isEdit);
+    showToast(`☀️ ${h}시 기상 작전 ${isEdit?'수정':'등록'} 완료!`);
+  }catch(e){ showToast('저장 실패'); }
+}
+
+/* ── 안내문구 ── */
+function showWakeupGuide(h, isEdit){
+  const box = document.getElementById('wakeupGuideBox');
+  const txt = document.getElementById('wakeupGuideText');
+  if(!box || !txt) return;
+  const ptRange = WAKEUP_PT_RANGE[h] || [1,3];
+  txt.innerHTML = isEdit
+    ? `⚠️ 기상시간이 <b>${h}시</b>로 변경됐습니다.<br>수정 후 <b>1시간 이후</b>부터 인증이 가능합니다.<br>매일 ${h}:00~${h}:59 사이에 [기상 인증하기] 버튼을 눌러 인증하세요.<br>성공 시 <b>+2,000원</b> 및 PX 포인트 <b>${ptRange[0]}~${ptRange[1]}p</b> (랜덤·무작위 지급)`
+    : `☀️ <b>${h}시 기상 작전</b>이 등록됐습니다!<br>기상미션은 한 시간 이내에 인증이 완료되어야 합니다.<br>매일 ${h}:00~${h}:59 사이에 [기상 인증하기] 버튼을 눌러 인증하세요.<br>성공 시 <b>+2,000원</b> 및 PX 포인트 <b>${ptRange[0]}~${ptRange[1]}p</b> (랜덤·무작위 지급)`;
+  box.style.display = 'block';
+}
+
+function closeWakeupGuide(){
+  const box = document.getElementById('wakeupGuideBox');
+  if(box){ box.style.display = 'none'; }
+}
+
+/* ── 응원 요청 ── */
+async function sendWakeupCheer(){
+  if(!MY_UID || !partnerData || !partnerData.uid || !_fbDb){
+    showToast('파트너 연결 후 응원 요청이 가능합니다'); return;
+  }
+  const today = dateStr(new Date(_virtualNow()));
+  if(_wakeupTodayRecord && _wakeupTodayRecord.cheerMsg){ showToast('이미 응원 메시지가 있습니다'); return; }
+  try{
+    await _fbSet(`coopNotif/${partnerData.uid}/${MY_UID}_wu_${Date.now()}`,{
+      fromUid:MY_UID, fromNick:myNickname||'상대방',
+      questName:'기상 작전 ☀️', questDate:today,
+      type:'cheer_request', msg:'기상 작전 응원해주세요! ☀️💪', createdAt:Date.now()
+    });
+    showToast('💜 응원 요청을 보냈어요!');
+    renderWakeupCard();
+  }catch(e){ showToast('전송 실패'); }
+}
+
+/* ── 파트너 인증여부 실시간 감지 ── */
+function _listenWakeupPartner(){
+  if(!partnerData || !partnerData.uid || !_fbDb) return;
+  const today = dateStr(new Date(_virtualNow()));
+  _fbOn(`wakeup/${partnerData.uid}/records/${today}`, snap=>{
+    const val = snap.exists() ? snap.val() : null;
+    window._wakeupPartnerCertified = !!(val && val.success);
+    renderWakeupCard();
+  });
+}
+
+/* ── 매 분 체크 (인증 가능 시간 진입/이탈) ── */
+setInterval(()=>{
+  if(_wakeupData && _wakeupData.time) renderWakeupCard();
+}, 60000);
+
+/* ── initWakeupMission을 앱 초기화 흐름에 연결 ── */
+/* 기존 onAuthSuccess 또는 앱 로드 완료 후 호출되도록 후킹 */
+const _origAfterLogin = window._afterLoginInit || null;
+window._wakeupInitDone = false;
+
+function _hookWakeupInit(){
+  if(window._wakeupInitDone) return;
+  window._wakeupInitDone = true;
+  initWakeupMission().then(()=>{
+    _listenWakeupPartner();
+  });
+}
+
+/* MY_UID가 설정된 시점에 자동 실행되도록 폴링 */
+const _wakeupInitPoller = setInterval(()=>{
+  if(typeof MY_UID !== 'undefined' && MY_UID && typeof _fbDb !== 'undefined' && _fbDb){
+    clearInterval(_wakeupInitPoller);
+    setTimeout(_hookWakeupInit, 1200); /* 로그인 후 약간 지연 */
+  }
+}, 800);
+/* ══ PX 포인트 수령 이력 렌더 ══ */
+async function renderPxPointHistory(){
+  const inner = document.getElementById('pxPointHistoryInner');
+  if(!inner || !MY_UID || !_fbDb) return;
+  inner.innerHTML = '<div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.35);text-align:center;padding:16px 0;">불러오는 중...</div>';
+  try{
+    /* 기상미션 포인트 기록 수집 */
+    const wSnap = await _fbGet(`wakeup/${MY_UID}/records`);
+    const rows = [];
+    if(wSnap.exists()){
+      const recs = wSnap.val()||{};
+      Object.entries(recs).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,30).forEach(([date,rec])=>{
+        if(rec && rec.success && rec.pointAwarded > 0){
+          rows.push({date, type:`기상 작전 ☀️ (${rec.wakeupHour||'?'}시)`, pts: rec.pointAwarded});
+        }
+      });
+    }
+    /* 작전 포인트 (dayPoints) */
+    const dpSnap = await _fbGet(`users/${MY_UID}/dayPoints`);
+    if(dpSnap.exists()){
+      const dp = dpSnap.val()||{};
+      Object.entries(dp).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,20).forEach(([date,val])=>{
+        const pts = typeof val === 'object' ? (val.pts||0) : (val||0);
+        if(pts > 0) rows.push({date, type:'작전 응원포인트', pts});
+      });
+    }
+    rows.sort((a,b)=>b.date.localeCompare(a.date));
+    if(rows.length === 0){
+      inner.innerHTML = '<div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.28);text-align:center;padding:16px 0;">포인트 수령 이력이 없습니다</div>';
+      return;
+    }
+    inner.innerHTML = rows.map(r=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid rgba(180,140,255,.08);">
+        <div>
+          <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(255,255,255,.80);">${r.type}</div>
+          <div style="font-family:var(--orb);font-size:9px;color:rgba(180,140,255,.50);margin-top:2px;">${r.date}</div>
+        </div>
+        <div style="font-family:var(--orb);font-size:14px;font-weight:900;color:rgba(255,215,100,.90);">+${r.pts}p</div>
+      </div>`).join('');
+  }catch(e){
+    inner.innerHTML = '<div style="font-family:var(--kr);font-size:10px;color:rgba(255,80,80,.5);text-align:center;padding:16px 0;">불러오기 실패</div>';
+  }
+}
+
+/* ══ 기상미션 끝 ══ */
 </script>
 </body>
 </html>
