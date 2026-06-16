@@ -7985,6 +7985,7 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
   const opsCategory=q.category||'health';
   const catClass={health:'slot-easy',knowledge:'slot-hard',life:'slot-medium'}[opsCategory]||'slot-easy';
   const catLabel={health:'건강',knowledge:'지식',life:'생활'}[opsCategory]||opsCategory;
+  const catEmoji={health:'🏃',knowledge:'📚',life:'🏠'}[opsCategory]||'📋';
   const isCoop=q.mode==='coop';
   const code = q.qid ? q.qid.slice(0,12) : `OP-${String(oi+1).padStart(3,'0')}`;
 
