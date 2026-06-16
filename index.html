@@ -5946,7 +5946,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             <button onclick="selectWakeupHour(7)" data-h="7" style="padding:16px 6px;background:rgba(255,255,255,.06);border:2px solid rgba(220,170,40,.28);border-radius:12px;color:rgba(255,220,100,.75);font-family:var(--orb);font-size:18px;font-weight:900;cursor:pointer;transition:.2s;">07:00</button>
           </div>
           <div id="wakeupSetNote" style="display:none;font-family:var(--kr);font-size:10px;color:rgba(255,180,60,.75);text-align:center;margin-bottom:14px;padding:8px;background:rgba(255,150,0,.08);border:1px solid rgba(255,150,0,.2);border-radius:8px;line-height:1.6;"></div>
-          <button id="wakeupSetConfirmBtn" onclick="confirmWakeupSet()" disabled style="width:100%;padding:14px;background:rgba(200,140,0,.15);border:2px solid rgba(200,140,0,.30);border-radius:12px;color:rgba(200,140,0,.45);font-family:var(--kr);font-size:13px;font-weight:900;cursor:not-allowed;transition:.3s;" id="wakeupSetConfirmBtn">시간을 선택하세요</button>
+          <button id="wakeupSetConfirmBtn" onclick="confirmWakeupSet()" disabled style="width:100%;padding:14px;background:rgba(200,140,0,.15);border:2px solid rgba(200,140,0,.30);border-radius:12px;color:rgba(200,140,0,.45);font-family:var(--kr);font-size:13px;font-weight:900;cursor:not-allowed;transition:.3s;">시간을 선택하세요</button>
           <button onclick="closeWakeupSetPopup()" style="width:100%;padding:10px;background:transparent;border:none;color:rgba(255,255,255,.35);font-family:var(--kr);font-size:11px;cursor:pointer;margin-top:8px;">취소</button>
         </div>
       </div>
@@ -16357,7 +16357,7 @@ async function confirmWakeupSet(){
     /* 안내문구 표시 */
     showWakeupGuide(h, isEdit);
     showToast(`☀️ ${h}시 기상 작전 ${isEdit?'수정':'등록'} 완료!`);
-  }catch(e){ showToast('저장 실패'); }
+  }catch(e){ console.error('[wakeup] confirmWakeupSet error:', e); showToast('저장 실패'); }
 }
 
 /* ── 안내문구 ── */
