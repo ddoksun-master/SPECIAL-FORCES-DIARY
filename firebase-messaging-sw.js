@@ -52,7 +52,8 @@ const BADGE_EVENT_TYPES = [
   'partner_certified',
   'cheer_request',
   'mission_activated',
-  'deadline_warning'
+  'deadline_warning',
+  'wakeup_alarm'
 ];
 
 /* ── 백그라운드 메시지 수신 → 알림 표시 ── */
