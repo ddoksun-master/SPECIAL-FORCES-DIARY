@@ -13230,8 +13230,10 @@ function tmRender(qaData, n){
   const bothDone = !!(myAns && oppAns);
   const isSpecial = n===3||n===4; /* 스페셜임무A,B 모두 포함 */
 
-  /* 완료 */
-  if(bothDone && (isSpecial ? (qaData.completedDays||0)>=5 : window['tmRewardDone'+n])){
+  /* 완료 — rewardDone이 있으면 qaData 없어도 complete 표시 */
+  const rewardDoneFlag = !isSpecial && !!window['tmRewardDone'+n];
+  const specialDoneFlag = isSpecial && bothDone && !!(qaData && (qaData.completedDays||0)>=5);
+  if(rewardDoneFlag || specialDoneFlag){
     tmShowState('complete', n);
     const rl = document.getElementById('tmCompleteRewardLabel'+n);
     const db = document.getElementById('tmDetailBody'+n);
@@ -13245,12 +13247,12 @@ function tmRender(qaData, n){
       } else {
         db.innerHTML = `<div style="padding:10px 12px;background:rgba(10,25,20,.7);border:1px solid ${cfg.border};border-radius:10px;margin-bottom:8px;">
           <div style="font-family:var(--orb);font-size:9px;letter-spacing:1px;color:${cfg.color.replace('1)','.55)')};margin-bottom:4px;">Q. MISSION</div>
-          <div style="font-weight:700;color:#fff;">${qaData.question||''}</div>
+          <div style="font-weight:700;color:#fff;">${(qaData&&qaData.question)||''}</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:5px;">
-          <div style="padding:7px 11px;background:rgba(18,50,16,.7);border:1px solid rgba(90,158,72,.4);border-radius:8px;"><span style="font-size:9px;">✅</span> <strong style="color:rgba(200,240,180,.9);">${myAns}</strong></div>
-          <div style="padding:7px 11px;background:rgba(50,35,8,.6);border:1px solid rgba(200,168,75,.4);border-radius:8px;"><span style="font-size:9px;">✅</span> <strong style="color:rgba(240,200,100,.9);">${oppAns}</strong></div>
-        </div>`;
+        ${(myAns||oppAns)?`<div style="display:flex;flex-direction:column;gap:5px;">
+          ${myAns?`<div style="padding:7px 11px;background:rgba(18,50,16,.7);border:1px solid rgba(90,158,72,.4);border-radius:8px;"><span style="font-size:9px;">✅</span> <strong style="color:rgba(200,240,180,.9);">${myAns}</strong></div>`:''}
+          ${oppAns?`<div style="padding:7px 11px;background:rgba(50,35,8,.6);border:1px solid rgba(200,168,75,.4);border-radius:8px;"><span style="font-size:9px;">✅</span> <strong style="color:rgba(240,200,100,.9);">${oppAns}</strong></div>`:''}
+        </div>`:`<div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.4);text-align:center;padding:8px 0;">임무 완료 🎉</div>`}`;
       }
     }
     return;
@@ -13856,8 +13858,15 @@ async function _tmSaveRewardFinal(n, myIdx, oppIdx){
     await _fbUpdate(path,u).catch(()=>{});
   }
   renderStatsRevenueCard();
-  /* 카드 완료 상태로 갱신 */
-  setTimeout(()=>{ tmRender(null,n); }, 500);
+  /* 카드 완료 상태로 갱신 — Firebase 최신 데이터로 렌더해야 bothDone 유지됨 */
+  setTimeout(()=>{
+    const p = _tmPath(n);
+    if(p && FB_READY && _fbDb){
+      _fbGet(p).then(sn=>{ tmRender(sn.exists()?sn.val():null, n); }).catch(()=>{ tmRender(null,n); });
+    } else {
+      tmRender(null,n);
+    }
+  }, 500);
   /* 보상 금액은 보상확인 버튼에서만 확인 — 토스트 없음 */
 }
 
