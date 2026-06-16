@@ -301,3 +301,51 @@ exports.notifyDeadlineWarning = onSchedule(
     await Promise.allSettled(tasks);
   }
 );
+
+/* ============================================================
+   기상미션 FCM 알림 — 매일 5/6/7시 KST
+   Firebase 경로: users/{uid}/wakeupAlarm = 5 | 6 | 7 | null
+   ============================================================ */
+async function sendWakeupAlarmToHour(hour) {
+  const db      = getDatabase();
+  const hh      = String(hour).padStart(2, '0');
+  const title   = `☀️ ${hh}시 기상인증 시간입니다!`;
+  const body    = `지금 바로 [기상 인증하기]를 눌러주세요. 오늘도 화이팅! 💪`;
+
+  const usersSnap = await db.ref('users').get();
+  if (!usersSnap.exists()) return;
+
+  const tasks = [];
+  usersSnap.forEach(userSnap => {
+    tasks.push((async () => {
+      const uid  = userSnap.key;
+      const data = userSnap.val() || {};
+      if (data.wakeupAlarm !== hour) return;
+      if (!data.fcmToken) return;
+      await sendPush(data.fcmToken, {
+        title,
+        body,
+        eventType: 'wakeup_alarm',
+        category:  'C',
+        url:       APP_URL,
+      }, uid);
+    })());
+  });
+  await Promise.allSettled(tasks);
+  console.log(`[wakeupAlarm${hour}] 처리 완료`);
+}
+
+exports.wakeupAlarm5 = onSchedule(
+  { schedule: '0 5 * * *', timeZone: 'Asia/Seoul' },
+  async () => { await sendWakeupAlarmToHour(5); }
+);
+
+exports.wakeupAlarm6 = onSchedule(
+  { schedule: '0 6 * * *', timeZone: 'Asia/Seoul' },
+  async () => { await sendWakeupAlarmToHour(6); }
+);
+
+exports.wakeupAlarm7 = onSchedule(
+  { schedule: '0 7 * * *', timeZone: 'Asia/Seoul' },
+  async () => { await sendWakeupAlarmToHour(7); }
+);
