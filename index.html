@@ -16542,9 +16542,10 @@ async function _mrSubmitCert(){
   await _fbUpdate(_mrPath(selDate), update);
   /* 포인트 적립 */
   _grantCertPoints(_certMode);
-  /* 같이하기 coop quest가 있으면 certifyCoopQuest 처리 */
-  const _mrCoopQi = (quests||[]).findIndex(q=>q.mode==='coop'&&q.name&&q.name.includes('아침점호'));
-  if(_mrCoopQi>=0){ certifyCoopQuest(_mrCoopQi); }
+  /* 같이하기 coop이면 상대방 morningRoll에 partnerCertified:true 기록 */
+  if(_mrData && _mrData.together && _mrData.mode==='coop'){
+    try{ await _fbUpdate(`users/${_mrData.together}/morningRoll/${selDate}`, {partnerCertified:true}); }catch(e){}
+  }
   /* 돈 적립 +2000 */
   try{
     const _mrMoneyPath = `users/${MY_UID}/moneyLogs/${selDate}`;
