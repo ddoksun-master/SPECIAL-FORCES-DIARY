@@ -566,6 +566,21 @@ html,body{
 }
 .ops-slot-empty:active{filter:brightness(1.08);}
 
+/* 아침점호 슬롯 */
+.ops-slot-morning{
+  background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);
+  border-color:rgba(180,150,80,.45);
+}
+.ops-slot-morning:active{filter:brightness(.96);}
+.ops-slot-morning:hover{filter:brightness(1.04);}
+.slot-plus-ring-morning::before{border-color:rgba(160,120,40,.50);}
+.ops-slot-morning:hover .slot-plus-ring-morning::before{border-color:rgba(130,90,15,.80);}
+.slot-plus-icon-morning{color:#7A5C10;}
+.ops-slot-morning:hover .slot-plus-icon-morning{color:rgba(100,70,10,1);}
+.slot-deploy-title-morning{color:#3A2C08;}
+.slot-deploy-sub-morning{color:rgba(90,60,10,.55);}
+.slot-arrow-morning{color:#8A6C20;}
+
 /* 채워진 슬롯 */
 .ops-slot-filled{
   background:var(--card);
@@ -5888,13 +5903,14 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div class="slot-arrow">›</div>
         </div>
 
-        <!-- 슬롯 3 -->
-        <div id="opsSlot2" class="ops-slot ops-slot-empty" onclick="openOpsRegPopupForSlot(2)">
-          <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
+        <!-- 슬롯 3 — 아침점호 -->
+        <div id="opsSlot2" class="ops-slot ops-slot-empty ops-slot-morning" onclick="openOpsRegPopupForSlot(2)">
+          <div class="slot-plus-ring slot-plus-ring-morning"><span class="slot-plus-icon slot-plus-icon-morning">+</span></div>
           <div class="slot-deploy-info">
-            <div class="slot-deploy-title">작전투입 3</div>
+            <div class="slot-deploy-title slot-deploy-title-morning">아침점호</div>
+            <div class="slot-deploy-sub slot-deploy-sub-morning">MORNING ROLL CALL</div>
           </div>
-          <div class="slot-arrow">›</div>
+          <div class="slot-arrow slot-arrow-morning">›</div>
         </div>
 
       </div>
