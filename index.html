@@ -7459,6 +7459,9 @@ function renderQ(){
   let money=0,comp=0;
   const ord={hard:0,medium:1,easy:2};
   _renderBlackoutBanner(); /* 00~04시 배너 갱신 */
+  /* 기상미션 섹션: 오늘 탭일 때만 표시 */
+  const _wkSec = document.getElementById('wakeupSection');
+  if(_wkSec && window._wakeupInitDone){ _wkSec.style.display = (selDate === todayStr) ? 'block' : 'none'; }
   /* 지연된 알림 체크 — 04시 이후면 팝업 표시 */
   if(window._pendingDelayedNotifs&&window._pendingDelayedNotifs.length){
     const _now=_virtualNow();
@@ -16123,8 +16126,18 @@ function renderWakeupCard(){
   const isCertified = !!(rec && rec.success);
   const _todayDate = new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate());
   const _wakeup04ms = _todayDate.getTime() + 4*3600*1000;
+  /* 오늘 기상 인증 창 시작 ms (wh:00) */
+  const _certWindowStartMs = wh != null ? _todayDate.getTime() + wh * 3600 * 1000 : Infinity;
+  /* 활성화 전: 아직 04:00 이전 */
   const isWakeupPendingActivation = hasSetting && now < _wakeup04ms && !isCertified;
-  const isFailed = !isCertified && hasSetting && h > wh && !isWakeupPendingActivation;
+  /* 실패 조건:
+     - 인증 안 됨 & 설정 있음
+     - 오늘 인증 창(wh:00)이 이미 지남 (now >= certWindowStart + 1시간, 즉 h > wh)
+     - 04:00 활성화 이전 구간(isWakeupPendingActivation) 제외
+     - 단, 인증 창 자체가 오늘 아직 열리지 않은 경우(h < wh)는 실패 아님 → 대기중 */
+  const isFailed = !isCertified && hasSetting && now >= _certWindowStartMs + 3600000 && !isWakeupPendingActivation;
+  /* 내일 기상 예정 시간 텍스트 (실패 메시지용) */
+  const _tomorrowCertTxt = wh ? `내일 ${String(wh).padStart(2,'0')}:00 인증 가능` : '';
   const canCert = hasSetting && h === wh && !isCertified;
 
   /* ── 상태 계산 ── */
@@ -16185,7 +16198,7 @@ function renderWakeupCard(){
     </div>`;
   } else if(isFailed){
     actionBar = `<div style="margin-top:8px;display:flex;gap:6px;align-items:center;">
-      <div style="flex:1;padding:8px;background:rgba(180,40,40,.08);border:1px solid rgba(180,40,40,.22);border-radius:9px;text-align:center;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(220,80,80,.80);">❌ 오늘 기상 실패 — 내일 다시 도전!</div>
+      <div style="flex:1;padding:8px;background:rgba(180,40,40,.08);border:1px solid rgba(180,40,40,.22);border-radius:9px;text-align:center;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(220,80,80,.80);">❌ 오늘 기상 실패 — ${_tomorrowCertTxt} 다시 도전!</div>
       <button onclick="event.stopPropagation();openWakeupSetPopup(true)" style="padding:8px 10px;background:rgba(200,140,0,.10);border:1px solid rgba(200,140,0,.30);border-radius:9px;color:rgba(160,100,0,.80);font-family:var(--kr);font-size:10px;font-weight:800;cursor:pointer;">수정</button>
       <button onclick="event.stopPropagation();deleteWakeupMission()" style="padding:8px 8px;background:rgba(139,26,26,.10);border:1px solid rgba(139,26,26,.25);border-radius:9px;color:rgba(180,60,60,.75);font-family:var(--kr);font-size:10px;font-weight:800;cursor:pointer;">삭제</button>
     </div>`;
