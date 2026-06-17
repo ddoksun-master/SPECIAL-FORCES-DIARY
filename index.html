@@ -16428,13 +16428,15 @@ function _renderMorningSlot(){
     <div class="slot-op-body">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:2px;">
         <div style="font-family:var(--orb);font-size:8px;letter-spacing:1.5px;color:rgba(120,90,20,.70);">MORNING ROLL CALL</div>
-        ${statusBadge}
+        <div style="display:flex;align-items:center;gap:6px;">
+          ${statusBadge}
+          ${regTime ? `<div style="font-family:var(--orb);font-size:9px;color:#8A7040;font-weight:700;white-space:nowrap;text-align:right;line-height:1.4;">등록<br>${regTime}</div>` : ''}
+        </div>
       </div>
       <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#3A2C08;line-height:1.35;margin-bottom:${done && d.certifiedAt ? '3' : '5'}px;">☀️ 아침점호</div>
       ${done && d.certifiedAt ? `<div style="font-family:var(--kr);font-size:10px;color:rgba(47,74,54,.80);font-weight:700;margin-bottom:5px;">☀️ ${String(h).padStart(2,'0')}시 기상작전 &nbsp;·&nbsp; ${String(new Date(d.certifiedAt).getHours()).padStart(2,'0')}:${String(new Date(d.certifiedAt).getMinutes()).padStart(2,'0')} 인증완료</div>` : ''}
       ${btnArea}
     </div>
-    ${regTime ? `<div style="font-family:var(--orb);font-size:9px;color:#8A7040;padding-right:10px;font-weight:700;white-space:nowrap;align-self:flex-start;padding-top:12px;">등록<br>${regTime}</div>` : ''}
   `;
 
   /* 이벤트 바인딩 */
