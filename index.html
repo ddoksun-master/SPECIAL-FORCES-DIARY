@@ -5923,8 +5923,8 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div id="morningRegPopup" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeMorningRegPopup();">
         <div style="background:linear-gradient(160deg,#2A2208,#1E1A04);border:1.5px solid rgba(180,150,80,.50);border-radius:20px;padding:26px 22px;max-width:340px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.85);">
           <div style="font-family:var(--orb);font-size:9px;letter-spacing:2.5px;color:rgba(200,168,75,.8);margin-bottom:14px;text-align:center;">☀️ MORNING ROLL CALL</div>
-          <div style="font-family:var(--kr);font-size:15px;font-weight:900;color:#F9F1D2;text-align:center;margin-bottom:6px;">아침점호 등록</div>
-          <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.50);text-align:center;margin-bottom:22px;">기상 시간을 선택하세요</div>
+          <div id="morningRegTitle" style="font-family:var(--kr);font-size:15px;font-weight:900;color:#F9F1D2;text-align:center;margin-bottom:6px;">아침점호 등록</div>
+          <div id="morningRegSubtitleEl" style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.50);text-align:center;margin-bottom:22px;">기상 시간을 선택하세요</div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;" id="morningTimeSelector">
             <button onclick="selectMorningHour(5)" data-h="5" style="padding:16px 6px;background:rgba(255,255,255,.06);border:2px solid rgba(200,168,75,.28);border-radius:12px;color:rgba(249,241,210,.75);font-family:var(--orb);font-size:18px;font-weight:900;cursor:pointer;transition:.2s;">05:00</button>
             <button onclick="selectMorningHour(6)" data-h="6" style="padding:16px 6px;background:rgba(255,255,255,.06);border:2px solid rgba(200,168,75,.28);border-radius:12px;color:rgba(249,241,210,.75);font-family:var(--orb);font-size:18px;font-weight:900;cursor:pointer;transition:.2s;">06:00</button>
@@ -10523,7 +10523,6 @@ async function _handleCoopLost(n){
 
 /* ── 파트너 ops 구독 연결점 ── */
 /* renderConnectCard / renderTeamPanel 이후 subscribePartnerOps 호출 보장 */
-const _origRenderQ = window.renderQ;
 /* navDate 날짜 이동 시 파트너 구독 갱신 — DOMContentLoaded 후 패치 */
 document.addEventListener('DOMContentLoaded', ()=>{
   const _baseNavDate = window.navDate;
@@ -16109,7 +16108,18 @@ function _renderMorningSlot(){
         <button id="mrClaimBtn" style="width:100%;margin-top:${showCheer?'6':'0'}px;padding:12px;background:linear-gradient(135deg,#F5E020,#E8C800);border:2px solid #C8A800;border-radius:11px;color:#3A2E00;font-family:var(--kr);font-size:11px;font-weight:900;cursor:pointer;">⭐ 응원포인트 받기 ${pts}</button>
       </div>`;
     } else {
-      btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="width:100%;padding:11px;text-align:center;background:rgba(61,72,64,.08);border:1px solid rgba(61,72,64,.18);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:#3D4840;">✅ 받기완료</div></div>`;
+      const _mrNow2 = _virtualNow();
+        const _mr1159b = new Date(selDate+'T11:59:59').getTime();
+        const _mrTmr = (()=>{ const d=new Date(_mrNow2); d.setDate(d.getDate()+1); return dateStr(d); })();
+        const _mrResKey2 = `mrReserved_${MY_UID}_${_mrTmr}`;
+        const _mrAlreadyRes2 = _getFlag(_mrResKey2);
+        const _canReserve2 = (selDate===todayStr) && (_mrNow2<=_mr1159b) && !_mrAlreadyRes2;
+        const _reserveMrBtn = _mrAlreadyRes2
+          ? `<div style="width:100%;margin-top:6px;padding:9px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.20);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(42,77,181,.50);text-align:center;">📋 내일 아침점호 예약완료</div>`
+          : _canReserve2
+            ? `<button id="mrTomorrowResBtn" style="width:100%;margin-top:6px;padding:9px;background:linear-gradient(135deg,rgba(42,77,181,.18),rgba(30,60,150,.22));border:1.5px solid rgba(42,77,181,.45);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(100,140,255,.95);cursor:pointer;">📋 내일 아침점호 예약하기</button>`
+            : '';
+        btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="width:100%;margin-top:${cheerBox?'6':'0'}px;padding:11px;text-align:center;background:rgba(61,72,64,.08);border:1px solid rgba(61,72,64,.18);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:#3D4840;">✅ 받기완료</div>${_reserveMrBtn}</div>`;
     }
   } else if(failed){
     btnArea = `<div style="margin-top:8px;padding:9px;background:rgba(180,40,40,.10);border:1px solid rgba(180,40,40,.30);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(200,60,60,.85);text-align:center;">❌ 오늘 아침점호 실패 — 내일 다시 도전!</div>`;
@@ -16154,6 +16164,20 @@ function _renderMorningSlot(){
 
   const claimBtnEl = slotEl.querySelector('#mrClaimBtn');
   if(claimBtnEl) claimBtnEl.addEventListener('click', e=>{ e.stopPropagation(); _mrClaimPoints(); });
+
+  const mrTmrResBtn = slotEl.querySelector('#mrTomorrowResBtn');
+  if(mrTmrResBtn) mrTmrResBtn.addEventListener('click', async e=>{
+    e.stopPropagation();
+    const _mrNow3 = _virtualNow();
+    const _mrTmr2 = (()=>{ const d=new Date(_mrNow3); d.setDate(d.getDate()+1); return dateStr(d); })();
+    const _mrResKey3 = `mrReserved_${MY_UID}_${_mrTmr2}`;
+    if(_getFlag(_mrResKey3)){ showToast('이미 예약됐습니다'); return; }
+    /* 내일 이미 등록돼있는지 확인 */
+    const _existSnap = await _fbGet(_mrPath(_mrTmr2));
+    if(_existSnap.exists()){ showToast('내일 아침점호가 이미 등록돼 있습니다'); return; }
+    /* 기상시간 선택 팝업 열기 (내일 날짜 컨텍스트로) */
+    openMorningRegPopup();
+  });
 }
 
 /* ── 빈 슬롯 (미등록) ── */
@@ -16177,7 +16201,20 @@ function _mrEmptySlot(slotEl){
 /* ── 팝업 열기/닫기 ── */
 function openMorningRegPopup(){
   _mrSelectedHour = null;
-  /* 버튼 초기화 */
+  /* 내일 예약 여부 판단 (11:59 이후 + 오늘 날짜일 때) */
+  const _now = _virtualNow();
+  const _1159 = new Date(selDate+'T11:59:59').getTime();
+  const _isTodayView = selDate === todayStr;
+  const _isAfter1159 = _now > _1159;
+  const _tomorrowStr = (()=>{ const d=new Date(_now); d.setDate(d.getDate()+1); return dateStr(d); })();
+  const _isForTomorrow = _isTodayView && _isAfter1159;
+  /* 팝업 부제목 갱신 */
+  const subtitle = document.querySelector('#morningRegPopup [id="morningRegSubtitle"]') || document.querySelector('#morningRegPopup div:nth-child(4)');
+  const titleEl = document.getElementById('morningRegTitle');
+  if(titleEl) titleEl.textContent = _isForTomorrow ? '내일 아침점호 예약' : '아침점호 등록';
+  const subEl = document.getElementById('morningRegSubtitleEl');
+  if(subEl) subEl.textContent = _isForTomorrow ? `내일(${_tomorrowStr}) 기상 시간을 선택하세요` : '기상 시간을 선택하세요';
+  /* 확인 버튼 초기화 */
   document.querySelectorAll('#morningTimeSelector button').forEach(btn=>{
     btn.style.background = 'rgba(255,255,255,.06)';
     btn.style.borderColor = 'rgba(200,168,75,.28)';
@@ -16211,7 +16248,11 @@ function selectMorningHour(h){
   const confirmBtn = document.getElementById('morningRegConfirmBtn');
   if(confirmBtn){
     confirmBtn.disabled = false;
-    confirmBtn.textContent = `${h}시 아침점호 등록`;
+    const _now2 = _virtualNow();
+    const _1159b = new Date(selDate+'T11:59:59').getTime();
+    const _isRes = (selDate===todayStr) && (_now2>_1159b);
+    const _tmrStr = (()=>{ const d=new Date(_now2); d.setDate(d.getDate()+1); return dateStr(d); })();
+    confirmBtn.textContent = _isRes ? `${h}시 내일(${_tmrStr}) 예약` : `${h}시 아침점호 등록`;
     confirmBtn.style.background = 'linear-gradient(135deg,rgba(180,150,80,.35),rgba(140,110,40,.30))';
     confirmBtn.style.borderColor = 'rgba(200,168,75,.65)';
     confirmBtn.style.color = '#F9F1D2';
@@ -16225,31 +16266,41 @@ async function confirmMorningReg(){
   if(!MY_UID||!_fbDb){ showToast('로그인이 필요합니다'); return; }
   const h = _mrSelectedHour;
   const now = _virtualNow();
-  const certFrom = new Date(selDate+`T${String(h).padStart(2,'0')}:00:00`).getTime();
+  /* 11:59 이후 오늘 뷰이면 내일 날짜로 예약 */
+  const _1159 = new Date(selDate+'T11:59:59').getTime();
+  const _isForTomorrow = (selDate===todayStr) && (now>_1159);
+  const targetDate = _isForTomorrow
+    ? (()=>{ const d=new Date(now); d.setDate(d.getDate()+1); return dateStr(d); })()
+    : selDate;
+  /* 이미 등록돼있으면 차단 */
+  const existing = await _fbGet(_mrPath(targetDate));
+  if(existing.exists()){ showToast('이미 아침점호가 등록돼 있습니다'); return; }
+  const certFrom = new Date(targetDate+`T${String(h).padStart(2,'0')}:00:00`).getTime();
   const data = {
     hour: h,
     registeredAt: now,
     completed: false,
     stamped: false,
     certAvailableAt: certFrom,
+    reserved: _isForTomorrow,
     cheerMsg: null,
     cheerFromNick: null,
     certMode: null,
     certNote: null,
   };
-  await _fbSet(_mrPath(selDate), data);
+  await _fbSet(_mrPath(targetDate), data);
   /* 파트너 알림 */
   if(partnerData&&partnerData.uid){
     try{
       await _fbSet(`coopNotif/${partnerData.uid}/${MY_UID}_mr_${now}`,{
         fromUid:MY_UID, fromNick:myNickname||'나',
-        questName:`아침점호 ${h}시`, questDate:selDate,
+        questName:`아침점호 ${h}시`, questDate:targetDate,
         type:'ops_register', createdAt:now
       });
     }catch(e){}
   }
   closeMorningRegPopup();
-  showToast(`☀️ ${h}시 아침점호 등록 완료!`);
+  showToast(_isForTomorrow ? `📋 내일 ${h}시 아침점호 예약 완료!` : `☀️ ${h}시 아침점호 등록 완료!`);
 }
 
 /* ── 삭제 ── */
