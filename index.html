@@ -5919,6 +5919,22 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
 
 
+      <!-- ★ 아침점호 기상시간 선택 팝업 -->
+      <div id="morningRegPopup" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeMorningRegPopup();">
+        <div style="background:linear-gradient(160deg,#2A2208,#1E1A04);border:1.5px solid rgba(180,150,80,.50);border-radius:20px;padding:26px 22px;max-width:340px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.85);">
+          <div style="font-family:var(--orb);font-size:9px;letter-spacing:2.5px;color:rgba(200,168,75,.8);margin-bottom:14px;text-align:center;">☀️ MORNING ROLL CALL</div>
+          <div style="font-family:var(--kr);font-size:15px;font-weight:900;color:#F9F1D2;text-align:center;margin-bottom:6px;">아침점호 등록</div>
+          <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.50);text-align:center;margin-bottom:22px;">기상 시간을 선택하세요</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;" id="morningTimeSelector">
+            <button onclick="selectMorningHour(5)" data-h="5" style="padding:16px 6px;background:rgba(255,255,255,.06);border:2px solid rgba(200,168,75,.28);border-radius:12px;color:rgba(249,241,210,.75);font-family:var(--orb);font-size:18px;font-weight:900;cursor:pointer;transition:.2s;">05:00</button>
+            <button onclick="selectMorningHour(6)" data-h="6" style="padding:16px 6px;background:rgba(255,255,255,.06);border:2px solid rgba(200,168,75,.28);border-radius:12px;color:rgba(249,241,210,.75);font-family:var(--orb);font-size:18px;font-weight:900;cursor:pointer;transition:.2s;">06:00</button>
+            <button onclick="selectMorningHour(7)" data-h="7" style="padding:16px 6px;background:rgba(255,255,255,.06);border:2px solid rgba(200,168,75,.28);border-radius:12px;color:rgba(249,241,210,.75);font-family:var(--orb);font-size:18px;font-weight:900;cursor:pointer;transition:.2s;">07:00</button>
+          </div>
+          <button id="morningRegConfirmBtn" onclick="confirmMorningReg()" disabled style="width:100%;padding:14px;background:rgba(180,150,80,.15);border:2px solid rgba(180,150,80,.30);border-radius:12px;color:rgba(180,150,80,.45);font-family:var(--kr);font-size:13px;font-weight:900;cursor:not-allowed;transition:.3s;">시간을 선택하세요</button>
+          <button onclick="closeMorningRegPopup()" style="width:100%;padding:10px;background:transparent;border:none;color:rgba(255,255,255,.30);font-family:var(--kr);font-size:11px;cursor:pointer;margin-top:8px;">취소</button>
+        </div>
+      </div>
+
       <!-- 숨김 호환 — JS 참조 유지 -->
       <div id="addBarRow" style="display:none;">
         <div class="add-op-bar hidden" id="addOpBar" onclick="openOpsRegPopup()" style="flex:1;margin-bottom:0;">＋ 오늘의 작전 등록</div>
@@ -5966,7 +5982,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         </div>
         <div style="margin:0 14px 14px;padding:10px 12px;background:rgba(200,168,75,.07);border:1px dashed rgba(200,168,75,.25);border-radius:10px;">
           <div style="font-family:var(--kr);font-size:9px;color:rgba(255,220,120,.75);line-height:1.7;">
-            <strong style="color:rgba(200,168,75,.95);">개인작전</strong> 5,000원×3 + <strong style="color:rgba(200,168,75,.95);">협동작전</strong> +3,000원 = <strong style="color:rgba(255,215,100,.95);">하루 최대 18,000원</strong><br>
+            <strong style="color:rgba(200,168,75,.95);">개인작전</strong> 5,000원×2 + <strong style="color:rgba(200,168,75,.95);">협동작전</strong> +3,000원 = <strong style="color:rgba(255,215,100,.95);">하루 최대 13,000원</strong><br>
             개인한도 <strong style="color:rgba(200,168,75,.95);">15만원</strong> · 특수임무 합계 10만 미만 시 초과분만큼 한도 확장<br>
             <span style="font-size:9px;color:rgba(255,255,255,.75);">✅ 체크 1P &nbsp;·&nbsp; 📝 메모 2P &nbsp;·&nbsp; 📷 사진 3P</span>
           </div>
@@ -6804,7 +6820,7 @@ let _virtualTimeOffset = 0;
 function _virtualNow(){ return Date.now() + _virtualTimeOffset; }
 
 /* ── 상수 & 상태 ── */
-const MAX_Q=3; /* 하루 최대 작전 수 */
+const MAX_Q=2; /* 하루 최대 작전 수 — 슬롯0,1만 사용 (슬롯2=아침점호 별도) */
 const QUEST_MAX_REWARD_DAY=15000; /* 하루 최대 보상 */
 function dateStr(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;}
 const todayStr=dateStr(new Date());
@@ -7068,6 +7084,7 @@ function _completeLogin(uid, nick){
   initFirebase().then(()=>{
     _initQuestsFromFb();
     initFCM(uid); /* FCM 푸시 알림 초기화 */
+    initMorningRoll(uid); /* 아침점호 초기화 */
   });
   showToast('✅ '+nick+' 로 로그인됨');
 }
@@ -7908,10 +7925,11 @@ function renderQ(){
     const slotEl=document.getElementById('opsSlot'+si);
     if(slotEl) _emptySlot(slotEl,si,questCount);
   }
-  /* active(미완료 or stamped) 작전을 순서대로 슬롯에 배치 */
+  /* active(미완료 or stamped) 작전을 순서대로 슬롯에 배치 — 슬롯2(아침점호)는 건너뜀 */
   let _slotCursor=0;
   (quests||[]).forEach((q,oi)=>{
     if(q.completed && !q.stamped) return; /* 완료됐지만 stamped 아닌 것 제외 */
+    if(_slotCursor===2) _slotCursor++; /* 슬롯2는 아침점호 전용 — 건너뜀 */
     const slotEl=document.getElementById('opsSlot'+_slotCursor);
     if(!slotEl){_slotCursor++;return;}
     /* div는 이미 위에서 만들어졌으므로 list에서 찾아서 _fillSlot */
@@ -15987,6 +16005,375 @@ function _sendKakaoShare(){
     });
   }catch(e){}
 }
+/* ══════════════════════════════════════════════════════════
+   아침점호 (MORNING ROLL CALL) v1.0
+   Firebase 경로: users/{uid}/morningRoll/{date}
+   quests 배열과 완전 독립 — 슬롯2 전용
+   ══════════════════════════════════════════════════════════ */
+
+let _mrData = null;        /* 오늘 아침점호 데이터 캐시 */
+let _mrSelectedHour = null;/* 팝업 선택 시간 */
+let _mrLoaded = false;
+
+/* ── Firebase 경로 ── */
+function _mrPath(date){ return `users/${MY_UID}/morningRoll/${date||selDate}`; }
+
+/* ── 초기 로드 (로그인 후 호출) ── */
+async function initMorningRoll(uid){
+  if(!uid||!_fbDb) return;
+  /* 실시간 리스닝 — 날짜 변경 시 renderQ()에서 재로드 */
+  _fbDb.ref(_mrPath(selDate)).on('value', snap=>{
+    _mrData = snap.exists() ? snap.val() : null;
+    _mrLoaded = true;
+    _renderMorningSlot();
+  });
+}
+
+/* ── 날짜 변경 시 재구독 ── */
+let _mrCurrentDate = null;
+function reloadMorningRoll(){
+  if(!MY_UID||!_fbDb) return;
+  if(_mrCurrentDate === selDate) return;
+  /* 이전 리스너 해제 */
+  if(_mrCurrentDate) _fbDb.ref(_mrPath(_mrCurrentDate)).off('value');
+  _mrCurrentDate = selDate;
+  _mrData = null;
+  _mrLoaded = false;
+  _fbDb.ref(_mrPath(selDate)).on('value', snap=>{
+    _mrData = snap.exists() ? snap.val() : null;
+    _mrLoaded = true;
+    _renderMorningSlot();
+  });
+}
+
+/* ── 슬롯2 렌더링 ── */
+function _renderMorningSlot(){
+  const slotEl = document.getElementById('opsSlot2');
+  if(!slotEl) return;
+
+  if(!_mrData || !_mrData.hour){
+    /* 미등록 — 빈 슬롯 */
+    _mrEmptySlot(slotEl);
+    return;
+  }
+
+  const d = _mrData;
+  const h = d.hour;
+  const now = _virtualNow();
+  const certFrom = new Date(selDate+`T${String(h).padStart(2,'0')}:00:00`).getTime();
+  const certTo   = new Date(selDate+`T${String(h).padStart(2,'0')}:59:59`).getTime();
+  const day2359  = new Date(selDate+'T23:59:59').getTime();
+
+  const canCert   = now >= certFrom && now <= certTo && !d.completed;
+  const tooEarly  = now < certFrom && !d.completed;
+  const tooLate   = now > certTo   && !d.completed;
+  const failed    = now > day2359   && !d.completed;
+  const done      = !!d.completed;
+
+  /* 상태 배지 */
+  let statusBadge = '';
+  if(done)       statusBadge = `<span style="font-family:var(--kr);font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(47,74,54,.18);color:#2F4A36;border:1px solid rgba(47,74,54,.35);">✅ 완료</span>`;
+  else if(failed) statusBadge = `<span style="font-family:var(--kr);font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(139,26,26,.12);color:#8B1A1A;border:1px solid rgba(139,26,26,.28);">❌ 실패</span>`;
+  else if(canCert)statusBadge = `<span style="font-family:var(--orb);font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(42,144,128,.18);color:rgba(82,212,164,.95);border:1px solid rgba(42,144,128,.38);animation:blink 1.2s infinite;">● 인증가능</span>`;
+  else            statusBadge = `<span style="font-family:var(--kr);font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(180,150,80,.12);color:#8A6020;border:1px solid rgba(180,150,80,.30);">준비중</span>`;
+
+  /* 응원 메시지 */
+  const myNick = myNickname||'나';
+  const isMyCheer = d.cheerFromNick && d.cheerFromNick === myNick;
+  const showCheer = d.cheerMsg && !isMyCheer;
+  const cheerBox = showCheer
+    ? `<div style="margin-bottom:8px;padding:9px 11px;background:rgba(106,78,158,.18);border:2px solid rgba(106,78,158,.50);border-radius:10px;">
+        <div style="font-family:var(--kr);font-size:9px;color:#6B4A9A;font-weight:800;margin-bottom:4px;">💜 응원 메시지</div>
+        <div style="font-family:var(--kr);font-size:11px;color:#2A1A3E;font-weight:700;line-height:1.5;">${d.cheerMsg}</div>
+      </div>` : '';
+
+  /* 버튼 영역 */
+  let btnArea = '';
+  if(!done && !failed){
+    const certStyle = canCert
+      ? 'background:rgba(47,74,54,.22);border:2px solid rgba(47,74,54,.65);color:#1E2D24;font-weight:800;'
+      : 'background:rgba(61,72,64,.04);border:1.5px solid rgba(61,72,64,.14);color:#9CA49A;';
+    const certLabel = canCert ? '📸 인증하기' : (tooEarly ? `⏱ ${String(h).padStart(2,'0')}:00부터` : `⏱ 인증시간 종료`);
+    const cheerReqBtn = !d.cheerMsg
+      ? `<button id="mrCheerReqBtn" style="flex:1;padding:11px 8px;background:rgba(106,78,158,.15);border:1.5px solid rgba(106,78,158,.42);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(180,130,255,.90);cursor:pointer;">💜 응원 요청</button>`
+      : `<div style="flex:1;"></div>`;
+    const certBtn = `<button id="mrCertBtn" style="flex:1;padding:11px 8px;${certStyle}font-family:var(--kr);font-size:10px;font-weight:700;border-radius:10px;cursor:pointer;">${certLabel}</button>`;
+    btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="display:flex;gap:8px;">${cheerReqBtn}${certBtn}</div></div>`;
+  } else if(done){
+    /* 완료 — 받기 버튼 or 완료 배지 */
+    const claimedKey = `mrCheerClaimed_${MY_UID}_${selDate}`;
+    const claimed = _getFlag(claimedKey);
+    if(d.stamped && !claimed){
+      const pts = showCheer ? '+2p' : '+0p';
+      btnArea = `<div style="margin-top:8px;">${showCheer ? cheerBox : ''}
+        <button id="mrClaimBtn" style="width:100%;margin-top:${showCheer?'6':'0'}px;padding:12px;background:linear-gradient(135deg,#F5E020,#E8C800);border:2px solid #C8A800;border-radius:11px;color:#3A2E00;font-family:var(--kr);font-size:11px;font-weight:900;cursor:pointer;">⭐ 응원포인트 받기 ${pts}</button>
+      </div>`;
+    } else {
+      btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="width:100%;padding:11px;text-align:center;background:rgba(61,72,64,.08);border:1px solid rgba(61,72,64,.18);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:#3D4840;">✅ 받기완료</div></div>`;
+    }
+  } else if(failed){
+    btnArea = `<div style="margin-top:8px;padding:9px;background:rgba(180,40,40,.10);border:1px solid rgba(180,40,40,.30);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(200,60,60,.85);text-align:center;">❌ 오늘 아침점호 실패 — 내일 다시 도전!</div>`;
+  }
+
+  const regTime = d.registeredAt ? (()=>{const _d=new Date(d.registeredAt);return (_d.getMonth()+1)+'/'+_d.getDate()+' '+String(_d.getHours()).padStart(2,'0')+':'+String(_d.getMinutes()).padStart(2,'0');})() : '';
+
+  slotEl.className = 'ops-slot';
+  slotEl.style.cssText = 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;cursor:default;';
+  slotEl.onclick = null;
+  slotEl.innerHTML = `
+    <button class="slot-del-btn" id="mrDelBtn" title="삭제" style="color:#7A5C10;background:rgba(180,150,80,.12);border-color:rgba(180,150,80,.30);">✕</button>
+    <div class="slot-op-left">
+      <div class="slot-op-code" style="color:#8A7040;">MORN</div>
+    </div>
+    <div class="slot-op-body" style="padding:10px 8px 10px 4px;min-width:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:2px;">
+        <div style="font-family:var(--orb);font-size:8px;letter-spacing:1.5px;color:rgba(120,90,20,.70);">MORNING ROLL CALL</div>
+        ${statusBadge}
+      </div>
+      <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#3A2C08;line-height:1.35;margin-bottom:2px;">☀️ 아침점호</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+        <span style="font-family:var(--orb);font-size:12px;font-weight:900;color:#5A3800;">${String(h).padStart(2,'0')}:00</span>
+        <span style="font-family:var(--kr);font-size:9px;color:#8B6020;">기상시간 ${h}시</span>
+        <span style="font-family:var(--orb);font-size:9px;color:rgba(40,120,40,.85);">+2,000원</span>
+      </div>
+      <div style="font-family:var(--kr);font-size:9px;color:rgba(100,70,10,.55);">인증 가능: ${String(h).padStart(2,'0')}:00 ~ ${String(h).padStart(2,'0')}:59</div>
+      ${btnArea}
+    </div>
+    ${regTime ? `<div style="font-family:var(--orb);font-size:9px;color:#8A7040;padding-right:10px;font-weight:700;white-space:nowrap;align-self:flex-start;padding-top:12px;">등록<br>${regTime}</div>` : ''}
+  `;
+
+  /* 이벤트 바인딩 */
+  const delBtn = slotEl.querySelector('#mrDelBtn');
+  if(delBtn) delBtn.addEventListener('click', e=>{ e.stopPropagation(); if(confirm('아침점호를 삭제하시겠습니까?')) _mrDelete(); });
+
+  const certBtnEl = slotEl.querySelector('#mrCertBtn');
+  if(certBtnEl) certBtnEl.addEventListener('click', e=>{ e.stopPropagation(); _mrOpenCert(); });
+
+  const cheerBtnEl = slotEl.querySelector('#mrCheerReqBtn');
+  if(cheerBtnEl) cheerBtnEl.addEventListener('click', e=>{ e.stopPropagation(); _mrSendCheerReq(); });
+
+  const claimBtnEl = slotEl.querySelector('#mrClaimBtn');
+  if(claimBtnEl) claimBtnEl.addEventListener('click', e=>{ e.stopPropagation(); _mrClaimPoints(); });
+}
+
+/* ── 빈 슬롯 (미등록) ── */
+function _mrEmptySlot(slotEl){
+  slotEl.className = 'ops-slot';
+  slotEl.style.cssText = 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;';
+  slotEl.onclick = ()=>openMorningRegPopup();
+  slotEl.innerHTML = `
+    <div class="slot-plus-ring" style="position:relative;width:56px;height:72px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <span style="position:absolute;width:42px;height:42px;border:2px solid rgba(160,120,40,.50);border-radius:50%;"></span>
+      <span style="font-size:24px;font-weight:300;color:#7A5C10;position:relative;z-index:1;">+</span>
+    </div>
+    <div class="slot-deploy-info">
+      <div class="slot-deploy-title" style="color:#3A2C08;font-family:var(--title);font-size:16px;font-weight:900;">아침점호</div>
+      <div class="slot-deploy-sub" style="color:rgba(90,60,10,.60);font-family:var(--kr);font-size:10px;margin-top:4px;">MORNING ROLL CALL</div>
+    </div>
+    <div class="slot-arrow" style="color:#8A6C20;width:40px;height:72px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">›</div>
+  `;
+}
+
+/* ── 팝업 열기/닫기 ── */
+function openMorningRegPopup(){
+  _mrSelectedHour = null;
+  /* 버튼 초기화 */
+  document.querySelectorAll('#morningTimeSelector button').forEach(btn=>{
+    btn.style.background = 'rgba(255,255,255,.06)';
+    btn.style.borderColor = 'rgba(200,168,75,.28)';
+    btn.style.color = 'rgba(249,241,210,.75)';
+  });
+  const confirmBtn = document.getElementById('morningRegConfirmBtn');
+  if(confirmBtn){ confirmBtn.disabled=true; confirmBtn.textContent='시간을 선택하세요'; confirmBtn.style.color='rgba(180,150,80,.45)'; confirmBtn.style.cursor='not-allowed'; }
+  const popup = document.getElementById('morningRegPopup');
+  if(popup) popup.style.display='flex';
+}
+function closeMorningRegPopup(){
+  const popup = document.getElementById('morningRegPopup');
+  if(popup) popup.style.display='none';
+}
+
+/* ── 시간 선택 ── */
+function selectMorningHour(h){
+  _mrSelectedHour = h;
+  document.querySelectorAll('#morningTimeSelector button').forEach(btn=>{
+    const bh = parseInt(btn.dataset.h);
+    if(bh===h){
+      btn.style.background = 'rgba(200,168,75,.22)';
+      btn.style.borderColor = 'rgba(200,168,75,.80)';
+      btn.style.color = '#F9F1D2';
+    } else {
+      btn.style.background = 'rgba(255,255,255,.06)';
+      btn.style.borderColor = 'rgba(200,168,75,.28)';
+      btn.style.color = 'rgba(249,241,210,.75)';
+    }
+  });
+  const confirmBtn = document.getElementById('morningRegConfirmBtn');
+  if(confirmBtn){
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = `${h}시 아침점호 등록`;
+    confirmBtn.style.background = 'linear-gradient(135deg,rgba(180,150,80,.35),rgba(140,110,40,.30))';
+    confirmBtn.style.borderColor = 'rgba(200,168,75,.65)';
+    confirmBtn.style.color = '#F9F1D2';
+    confirmBtn.style.cursor = 'pointer';
+  }
+}
+
+/* ── 등록 확정 ── */
+async function confirmMorningReg(){
+  if(!_mrSelectedHour) return;
+  if(!MY_UID||!_fbDb){ showToast('로그인이 필요합니다'); return; }
+  const h = _mrSelectedHour;
+  const now = _virtualNow();
+  const certFrom = new Date(selDate+`T${String(h).padStart(2,'0')}:00:00`).getTime();
+  const data = {
+    hour: h,
+    registeredAt: now,
+    completed: false,
+    stamped: false,
+    certAvailableAt: certFrom,
+    cheerMsg: null,
+    cheerFromNick: null,
+    certMode: null,
+    certNote: null,
+  };
+  await _fbSet(_mrPath(selDate), data);
+  /* 파트너 알림 */
+  if(partnerData&&partnerData.uid){
+    try{
+      await _fbSet(`coopNotif/${partnerData.uid}/${MY_UID}_mr_${now}`,{
+        fromUid:MY_UID, fromNick:myNickname||'나',
+        questName:`아침점호 ${h}시`, questDate:selDate,
+        type:'ops_register', createdAt:now
+      });
+    }catch(e){}
+  }
+  closeMorningRegPopup();
+  showToast(`☀️ ${h}시 아침점호 등록 완료!`);
+}
+
+/* ── 삭제 ── */
+async function _mrDelete(){
+  if(!MY_UID||!_fbDb) return;
+  await _fbDb.ref(_mrPath(selDate)).remove();
+  _mrData = null;
+  showToast('아침점호가 삭제됐습니다');
+}
+
+/* ── 인증 팝업 열기 (기존 certPopup 재활용, morningRoll 전용 모드) ── */
+let _mrCertMode = false;
+function _mrOpenCert(){
+  if(_assertNotBlackout()) return;
+  if(!_mrData) return;
+  const h = _mrData.hour;
+  const now = _virtualNow();
+  const certFrom = new Date(selDate+`T${String(h).padStart(2,'0')}:00:00`).getTime();
+  if(now < certFrom){ showToast(`⏱ ${h}:00부터 인증 가능합니다`); return; }
+  const certTo = new Date(selDate+`T${String(h).padStart(2,'0')}:59:59`).getTime();
+  if(now > certTo){ showToast('⏱ 인증 가능 시간이 종료됐습니다'); return; }
+  _mrCertMode = true;
+  _certQuestIdx = -99; /* morningRoll 전용 sentinel */
+  document.getElementById('certQuestName').textContent = `아침점호 ${h}시`;
+  document.getElementById('certMemoInput') && (document.getElementById('certMemoInput').value='');
+  selectCertMode('check');
+  document.getElementById('certPopup').style.display='flex';
+}
+
+/* ── submitCert 후킹: morningRoll 처리 ── */
+const _origSubmitCert = window.submitCert;
+window.submitCert = async function(){
+  if(_certQuestIdx !== -99){ return _origSubmitCert(); }
+  /* morningRoll 인증 */
+  if(!_mrData||!MY_UID||!_fbDb) return;
+  const inp = document.getElementById('certMemoInput');
+  const certNote = inp?(inp.value||'').trim():'';
+  const now = _virtualNow();
+  let certPhotoUrl = null;
+  if(_certMode==='photo'){
+    const photoInput = document.getElementById('certPhotoInput');
+    if(photoInput&&photoInput.files[0]){
+      const submitBtn = document.querySelector('#certPopup button[onclick="submitCert()"]');
+      if(submitBtn){ submitBtn.disabled=true; submitBtn.textContent='📤 사진 업로드 중...'; }
+      try{ certPhotoUrl = await _uploadCertPhoto(photoInput.files[0], MY_UID, '아침점호'); }
+      catch(e){ showToast('❌ 사진 업로드 실패'); if(submitBtn){ submitBtn.disabled=false; submitBtn.textContent='✅ 제출'; } return; }
+    }
+  }
+  const update = { completed:true, stamped:true, certifiedAt:now, certMode:_certMode, certNote };
+  if(certPhotoUrl) update.certPhotoUrl = certPhotoUrl;
+  await _fbUpdate(_mrPath(selDate), update);
+  /* 포인트 적립 */
+  _grantCertPoints(_certMode);
+  /* 돈 적립 +2000 */
+  try{
+    const _mrMoneyPath = `users/${MY_UID}/moneyLogs/${selDate}`;
+    const _mrSnap = await _fbGet(_mrMoneyPath);
+    const _mrLogs = _mrSnap.exists()?(_mrSnap.val()||[]):[];
+    _mrLogs.push({ type:'아침점호 ☀️', amount:2000, earnedAt:now });
+    await _fbSet(_mrMoneyPath, _mrLogs);
+  }catch(e){}
+  const savedMode = _certMode;
+  closeCertPopup();
+  _mrCertMode = false;
+  showToast('☀️ 아침점호 인증 완료! +2,000원');
+  renderCal&&renderCal();
+  renderHist&&renderHist();
+  /* 파트너에게 수고했어 요청 */
+  if(partnerData&&partnerData.uid){
+    try{
+      await _fbSet(`coopNotif/${partnerData.uid}/${MY_UID}_mremp_${now}`,{
+        fromUid:MY_UID, fromNick:myNickname||'나',
+        questName:'아침점호 ☀️', questDate:selDate,
+        type:'cheer_request', createdAt:now
+      });
+    }catch(e){}
+  }
+};
+
+/* ── 응원 요청 ── */
+async function _mrSendCheerReq(){
+  if(!partnerData||!partnerData.uid){ showToast('💜 파트너 연결 후 응원 요청이 가능합니다'); return; }
+  if(_mrData&&_mrData.cheerMsg){ showToast('이미 응원 메시지가 있습니다'); return; }
+  try{
+    await _fbSet(`coopNotif/${partnerData.uid}/${MY_UID}_mrsr_${Date.now()}`,{
+      fromUid:MY_UID, fromNick:myNickname||'나',
+      questName:'아침점호 ☀️', questDate:selDate,
+      type:'cheer_request', msg:'아침점호 응원해주세요! ☀️💪', createdAt:Date.now()
+    });
+    showToast('💜 응원 요청을 보냈어요!');
+  }catch(e){ showToast('전송 실패, 다시 시도해주세요'); }
+}
+
+/* ── 응원포인트 받기 ── */
+async function _mrClaimPoints(){
+  const claimedKey = `mrCheerClaimed_${MY_UID}_${selDate}`;
+  if(_getFlag(claimedKey)){ showToast('이미 받기 완료됐습니다'); return; }
+  _setFlag(claimedKey);
+  const myNick = myNickname||'나';
+  const isMyCheer = _mrData&&_mrData.cheerFromNick&&_mrData.cheerFromNick===myNick;
+  const hasCheer = !!(_mrData&&_mrData.cheerMsg&&!isMyCheer);
+  if(hasCheer) await _addMyDayPt(selDate,2);
+  _renderMorningSlot();
+  showToast('✅ 받기완료!');
+}
+
+/* ── openOpsRegPopupForSlot 후킹: 슬롯2는 아침점호 팝업으로 ── */
+const _origOpenOpsRegPopupForSlot = window.openOpsRegPopupForSlot;
+window.openOpsRegPopupForSlot = function(si){
+  if(si===2){ openMorningRegPopup(); return; }
+  _origOpenOpsRegPopupForSlot(si);
+};
+
+/* ── renderQ 후 아침점호 슬롯 재렌더 (슬롯2가 quests로 덮이지 않게) ── */
+const _origRenderQ = window.renderQ;
+window.renderQ = function(){
+  _origRenderQ && _origRenderQ();
+  /* quests 슬롯 배치가 슬롯2를 건드렸을 수 있으므로 morningRoll 로 덮어씀 */
+  if(_mrLoaded) _renderMorningSlot();
+  else reloadMorningRoll();
+};
+
+/* ══ 아침점호 끝 ══ */
+
 </script>
 </body>
 </html>
