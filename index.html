@@ -11180,31 +11180,44 @@ function _renderHistInner(){
         </div>`;
         return;
       }
-      /* 아침점호는 인증시간 표시, 일반 작전은 인증보기 버튼 */
-      const _myMrCertAt = q._isMorning && q.certifiedAt;
-      const _myMrCertTime = _myMrCertAt
-        ? String(new Date(q.certifiedAt).getHours()).padStart(2,'0')+':'+String(new Date(q.certifiedAt).getMinutes()).padStart(2,'0')
-        : null;
+      if(q._isMorning){
+        /* 아침점호 — 상대 카드와 동일한 구조 */
+        const _myMrCertAt = q.certifiedAt;
+        const _myMrCertTime = _myMrCertAt
+          ? String(new Date(q.certifiedAt).getHours()).padStart(2,'0')+':'+String(new Date(q.certifiedAt).getMinutes()).padStart(2,'0')
+          : null;
+        const _myMrH = q.hour || '';
+        const _myMrFrom = String(_myMrH).padStart(2,'0')+':00';
+        const _myMrTo   = String(_myMrH).padStart(2,'0')+':59';
+        html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+            <span style="font-size:12px;">☀️</span>
+            <span style="font-family:var(--kr);font-size:12px;font-weight:900;color:#1A1F1C;">아침점호 ${_myMrH}시</span>
+            ${_myMrCertTime
+              ? `<span style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_myMrCertTime} 인증완료</span>`
+              : `<span style="font-family:var(--kr);font-size:10px;color:rgba(100,130,100,.65);font-weight:600;">(인증 ${_myMrFrom}~${_myMrTo})</span>`
+            }
+          </div>
+        </div>`;
+      } else {
       html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);">
         <div style="flex:1;min-width:0;">
           <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${isDone?'#2F4A36':'#1A1F1C'};display:flex;align-items:center;gap:5px;">
             <span style="font-size:12px;color:${isDone?'#2F4A36':'#9CA49A'};">${isDone?'✅':'○'}</span>${q.name}
           </div>
-          ${q._isMorning && _myMrCertTime
-            ? `<div style="margin-top:4px;font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_myMrCertTime} 인증완료</div>`
-            : `<div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
-                ${isDone?'<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(30,90,50,.85);">✅ 인증완료</span>':''}
-                <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${cheerClaimed?'#8B6C1A':hasCheer?'#6B4A9A':'#9CA49A'};">${cheerClaimed?'⭐ 응원 +2p 수령완료':hasCheer?'응원메시지 수신(미수령)':'응원 미완료'}</span>
-                ${hasRecEmpathy?'<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(42,144,128,.85);">💬 수고했어</span>':''}
-              </div>`
-          }
-          ${!q._isMorning ? `<div style="margin-top:7px;display:flex;gap:6px;">
+          <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
+            ${isDone?'<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(30,90,50,.85);">✅ 인증완료</span>':''}
+            <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${cheerClaimed?'#8B6C1A':hasCheer?'#6B4A9A':'#9CA49A'};">${cheerClaimed?'⭐ 응원 +2p 수령완료':hasCheer?'응원메시지 수신(미수령)':'응원 미완료'}</span>
+            ${hasRecEmpathy?'<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(42,144,128,.85);">💬 수고했어</span>':''}
+          </div>
+          <div style="margin-top:7px;display:flex;gap:6px;">
             <button class="hist-cert-view-btn" data-date="${date}" data-qi="${qi}" style="flex:1;padding:8px 6px;background:rgba(47,74,54,.12);border:1.5px solid rgba(47,74,54,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(30,45,36,.85);cursor:pointer;text-align:center;">📋 인증보기</button>
-          </div>` : ''}
+          </div>
         </div>
         ${q.certPhotoUrl?`<div style="margin-top:6px;cursor:pointer;" onclick="_showFullscreenPhoto('${q.certPhotoUrl}')"><img src="${q.certPhotoUrl}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid rgba(82,212,164,.25);"/></div>`:''}
         ${hasRecEmpathy?`<div style="margin-top:5px;padding:6px 8px;background:rgba(42,144,128,.08);border:1px solid rgba(42,144,128,.20);border-radius:7px;font-family:var(--kr);font-size:9px;color:rgba(42,144,128,.85);font-weight:600;">💬 ${q.empathyFromNick||'파트너'}: "${q.empathyMsg}"</div>`:''}
       </div>`;
+      }
     });
 
     if(myItems.length===0&&myCoopItems.length===0){
