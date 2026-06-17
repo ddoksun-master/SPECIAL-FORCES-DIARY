@@ -16477,6 +16477,33 @@ async function sendWakeupCheer(){
   }catch(e){ showToast('전송 실패'); }
 }
 
+/* ── 내 기록 실시간 감지 ── */
+let _wakeupMyRecordListener = null;
+let _wakeupListenDate = null;
+
+function _listenWakeupMyRecord(){
+  if(!MY_UID || !_fbDb) return;
+  const today = dateStr(new Date(_virtualNow()));
+  if(_wakeupListenDate === today) return; /* 이미 오늘 날짜 리스닝 중 */
+  _wakeupListenDate = today;
+  _fbOn(`wakeup/${MY_UID}/records/${today}`, snap=>{
+    _wakeupTodayRecord = snap.exists() ? snap.val() : null;
+    renderWakeupCard();
+  });
+  /* 설정값도 실시간 감지 */
+  _fbOn(`wakeup/${MY_UID}`, snap=>{
+    const val = snap.exists() ? snap.val() : null;
+    /* records 서브트리 제외하고 설정만 캐시 */
+    if(val){
+      const {records, ...settings} = val;
+      _wakeupData = Object.keys(settings).length ? settings : null;
+    } else {
+      _wakeupData = null;
+    }
+    renderWakeupCard();
+  });
+}
+
 /* ── 파트너 인증여부 실시간 감지 ── */
 function _listenWakeupPartner(){
   if(!partnerData || !partnerData.uid || !_fbDb) return;
@@ -16488,9 +16515,18 @@ function _listenWakeupPartner(){
   });
 }
 
-/* ── 매 분 체크 (인증 가능 시간 진입/이탈) ── */
+/* ── 매 분 체크 (인증 가능 시간 진입/이탈 + 날짜 갱신) ── */
 setInterval(()=>{
-  if(_wakeupData && _wakeupData.time) renderWakeupCard();
+  /* 날짜 바뀌면 리스너 재등록 */
+  const _today = dateStr(new Date(_virtualNow()));
+  if(_wakeupListenDate && _wakeupListenDate !== _today){
+    _wakeupTodayRecord = null;
+    window._wakeupPartnerCertified = false;
+    _wakeupListenDate = null;
+    _listenWakeupMyRecord();
+    _listenWakeupPartner();
+  }
+  renderWakeupCard();
 }, 60000);
 
 /* ── initWakeupMission을 앱 초기화 흐름에 연결 ── */
@@ -16502,6 +16538,7 @@ function _hookWakeupInit(){
   if(window._wakeupInitDone) return;
   window._wakeupInitDone = true;
   initWakeupMission().then(()=>{
+    _listenWakeupMyRecord();
     _listenWakeupPartner();
   });
 }
