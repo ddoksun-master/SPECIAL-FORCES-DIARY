@@ -9713,20 +9713,34 @@ async function acceptOpsTogether(){
 
   /* 아침점호 같이하기 — quests push 하지 않고 내 morningRoll에 together 기록 */
   if(n._isMorning){
+    const _mrTargetDate = n.questDate || selDate;
     try{
-      await _fbUpdate(`users/${MY_UID}/morningRoll/${n.questDate||selDate}`, {
+      await _fbUpdate(`users/${MY_UID}/morningRoll/${_mrTargetDate}`, {
         together: n.fromUid,
         togetherAcceptedAt: now,
         mode: 'coop',
       });
-    }catch(e){}
-    renderQ(); renderDayTabs(); updateHUD(); renderPartnerOps();
+    }catch(e){ showToast('❌ 아침점호 같이하기 실패'); return; }
+    /* 날짜가 현재 selDate면 즉시 _mrData 갱신 후 슬롯 재렌더 */
+    if(_mrTargetDate === selDate){
+      if(_mrData) {
+        _mrData.together = n.fromUid;
+        _mrData.togetherAcceptedAt = now;
+        _mrData.mode = 'coop';
+      }
+      _renderMorningSlot();
+    } else {
+      /* 다른 날짜면 캐시 무효화 후 reloadMorningRoll */
+      _mrCurrentDate = null;
+      reloadMorningRoll();
+    }
+    renderDayTabs(); updateHUD(); renderPartnerOps();
     /* coop_accepted 알림 */
     try{
       if(n.fromUid && _fbDb){
         await _fbSet(`coopNotif/${n.fromUid}/${MY_UID}_ca_${Date.now()}`,{
           fromUid:MY_UID, fromNick:myNickname||'나',
-          questName:n.questName||'', questDate:n.questDate||selDate,
+          questName:n.questName||'', questDate:_mrTargetDate,
           questIdx:-99, type:'coop_accepted', createdAt:Date.now()
         });
       }
@@ -10367,19 +10381,19 @@ function renderPartnerOps(){
     const div = document.createElement('div');
     /* 아침점호는 크림 계열, 일반 작전은 보라색/인디고 계열 */
     const cardBg = q._isMorning
-      ? (isCompleted ? 'rgba(180,150,80,.18)' : 'linear-gradient(135deg,#2A2208,#1E1A04)')
+      ? (isCompleted ? '#F3E3C1' : 'linear-gradient(135deg,#F9F1D2,#F3E3C1)')
       : (isCompleted ? 'rgba(40,30,70,.55)' : 'linear-gradient(135deg,#2A1E52,#1E1438)');
     const cardBorder = q._isMorning
-      ? (isCompleted ? 'rgba(180,150,80,.25)' : 'rgba(180,150,80,.50)')
+      ? (isCompleted ? 'rgba(180,150,80,.35)' : 'rgba(180,150,80,.55)')
       : (isCompleted ? 'rgba(155,120,212,.30)' : 'rgba(155,120,212,.55)');
     const cardLeftBorder = q._isMorning
-      ? '4px solid rgba(200,168,75,.70)'
+      ? '4px solid rgba(160,120,40,.65)'
       : (isCoop ? '4px solid rgba(82,212,164,.7)' : '4px solid rgba(155,120,212,.7)');
-    div.style.cssText = `padding:10px 12px;background:${cardBg};border:1.5px solid ${cardBorder};border-radius:13px;border-left:${cardLeftBorder};${isCompleted?'opacity:.65;':''}position:relative;`;
+    div.style.cssText = `padding:10px 12px;background:${cardBg};border:1.5px solid ${cardBorder};border-radius:13px;border-left:${cardLeftBorder};${isCompleted?'opacity:.75;':''}position:relative;`;
 
     /* 미션 타입 배지 */
     const typeBadge = q._isMorning
-      ? `<span style="padding:2px 8px;background:rgba(200,168,75,.18);border:1px solid rgba(200,168,75,.45);border-radius:8px;font-family:var(--orb);font-size:9px;color:rgba(249,241,210,.9);letter-spacing:.5px;font-weight:700;">아침점호</span>`
+      ? `<span style="padding:2px 8px;background:rgba(160,120,40,.18);border:1px solid rgba(160,120,40,.45);border-radius:8px;font-family:var(--orb);font-size:9px;color:rgba(80,55,10,.90);letter-spacing:.5px;font-weight:700;">아침점호</span>`
       : isCoop
         ? `<span style="padding:2px 8px;background:rgba(82,212,164,.18);border:1px solid rgba(82,212,164,.45);border-radius:8px;font-family:var(--orb);font-size:9px;color:rgba(82,212,164,.9);letter-spacing:.5px;font-weight:700;">협동</span>`
         : `<span style="padding:2px 8px;background:rgba(155,120,212,.18);border:1px solid rgba(155,120,212,.40);border-radius:8px;font-family:var(--orb);font-size:9px;color:rgba(200,168,255,.8);letter-spacing:.5px;font-weight:700;">개인</span>`;
