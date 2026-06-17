@@ -11191,7 +11191,7 @@ function _renderHistInner(){
             <span style="font-size:12px;color:${isDone?'#2F4A36':'#9CA49A'};">${isDone?'✅':'○'}</span>${q.name}
           </div>
           ${q._isMorning && _myMrCertTime
-            ? `<div style="margin-top:4px;font-family:var(--kr);font-size:10px;color:rgba(47,120,80,.85);font-weight:700;">☀️ ${String(q.hour||'').toString().padStart(2,'0')}시 기상작전 · ${_myMrCertTime} 인증완료</div>`
+            ? `<div style="margin-top:4px;font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_myMrCertTime} 인증완료</div>`
             : `<div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
                 ${isDone?'<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(30,90,50,.85);">✅ 인증완료</span>':''}
                 <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${cheerClaimed?'#8B6C1A':hasCheer?'#6B4A9A':'#9CA49A'};">${cheerClaimed?'⭐ 응원 +2p 수령완료':hasCheer?'응원메시지 수신(미수령)':'응원 미완료'}</span>
@@ -11248,18 +11248,16 @@ function _renderHistInner(){
         const _pmrFrom = String(_pmrH).padStart(2,'0')+':00';
         const _pmrTo   = String(_pmrH).padStart(2,'0')+':59';
         html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(255,165,80,.12);margin-bottom:4px;">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-            <span style="font-size:12px;">☀️</span>
-            <span style="font-family:var(--kr);font-size:12px;font-weight:900;color:${_pmrDone?'#2F4A36':'#1A1F1C'};">아침점호 ${_pmrH}시</span>
-            ${_pmrDone
-              ? `<span style="font-family:var(--kr);font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(47,74,54,.18);color:#2F4A36;border:1px solid rgba(47,74,54,.30);">✅ 완료</span>`
-              : `<span style="font-family:var(--kr);font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(180,150,80,.10);color:#8A6020;border:1px solid rgba(180,150,80,.25);">미완료</span>`
-            }
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+              <span style="font-size:12px;">☀️</span>
+              <span style="font-family:var(--kr);font-size:12px;font-weight:900;color:#1A1F1C;">아침점호 ${_pmrH}시</span>
+              ${_pmrDone && _pmrCertTime
+                ? `<span style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_pmrCertTime} 인증완료</span>`
+                : `<span style="font-family:var(--kr);font-size:10px;color:rgba(180,150,80,.65);font-weight:600;">(인증 ${_pmrFrom}~${_pmrTo})</span>`
+              }
+            </div>
           </div>
-          ${_pmrDone && _pmrCertTime
-            ? `<div style="font-family:var(--kr);font-size:10px;color:rgba(47,120,80,.85);font-weight:700;">☀️ ${String(_pmrH).padStart(2,'0')}시 기상작전 · ${_pmrCertTime} 인증완료</div>`
-            : `<div style="font-family:var(--kr);font-size:9px;color:rgba(180,150,80,.55);">인증시간 ${_pmrFrom}~${_pmrTo}</div>`
-          }
         </div>`;
       }
 
@@ -16352,7 +16350,7 @@ function _renderMorningSlot(){
 
   /* 상태 배지 */
   let statusBadge = '';
-  if(done)       statusBadge = `<span style="font-family:var(--kr);font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(47,74,54,.18);color:#2F4A36;border:1px solid rgba(47,74,54,.35);">✅ 완료</span>`;
+  if(done)       statusBadge = '';
   else if(failed) statusBadge = `<span style="font-family:var(--kr);font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(139,26,26,.12);color:#8B1A1A;border:1px solid rgba(139,26,26,.28);">❌ 실패</span>`;
   else if(canCert)statusBadge = `<span style="font-family:var(--orb);font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(42,144,128,.18);color:rgba(82,212,164,.95);border:1px solid rgba(42,144,128,.38);animation:blink 1.2s infinite;">● 인증가능</span>`;
   else            statusBadge = '';
@@ -16430,8 +16428,11 @@ function _renderMorningSlot(){
           ${regTime ? `<div style="font-family:var(--orb);font-size:9px;color:#8A7040;font-weight:700;white-space:nowrap;text-align:right;line-height:1.4;">등록<br>${regTime}</div>` : ''}
         </div>
       </div>
-      <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#3A2C08;line-height:1.35;margin-bottom:${done && d.certifiedAt ? '3' : '5'}px;">☀️ 아침점호</div>
-      ${done && d.certifiedAt ? `<div style="font-family:var(--kr);font-size:10px;color:rgba(47,74,54,.80);font-weight:700;margin-bottom:5px;">☀️ ${String(h).padStart(2,'0')}시 기상작전 &nbsp;·&nbsp; ${String(new Date(d.certifiedAt).getHours()).padStart(2,'0')}:${String(new Date(d.certifiedAt).getMinutes()).padStart(2,'0')} 인증완료</div>` : ''}
+      <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#3A2C08;line-height:1.35;margin-bottom:${done && d.certifiedAt ? '4' : '5'}px;">
+        ☀️ 아침점호 ${h}시
+        <span style="font-family:var(--kr);font-size:10px;font-weight:600;color:rgba(100,70,10,.55);margin-left:4px;">(인증 ${String(h).padStart(2,'0')}:00~${String(h).padStart(2,'0')}:59)</span>
+      </div>
+      ${done && d.certifiedAt ? `<div style="font-family:var(--kr);font-size:14px;font-weight:900;color:rgba(30,80,50,.90);margin-bottom:6px;letter-spacing:.2px;">✅ ${String(new Date(d.certifiedAt).getHours()).padStart(2,'0')}:${String(new Date(d.certifiedAt).getMinutes()).padStart(2,'0')} 인증완료</div>` : ''}
       ${btnArea}
     </div>
   `;
