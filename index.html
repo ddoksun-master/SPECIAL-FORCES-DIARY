@@ -16135,11 +16135,12 @@ function _renderWakeupSlot(){
   const wh = hasSetting ? _wakeupData.time : null;
   const rec = _wakeupTodayRecord;
   const isCertified = !!(rec && rec.success);
-  const _todayBase = new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate());
-  const _wakeup04ms = _todayBase.getTime() + 4*3600*1000;
-  const isPending = hasSetting && now < _wakeup04ms && !isCertified;
-  const isFailed = !isCertified && hasSetting && h > wh && !isPending;
-  const canCert = hasSetting && h === wh && !isCertified;
+  const todayStr2 = dateStr(nowDate);
+  const activeDate = _wakeupData && _wakeupData.activeDate;
+  /* activeDate가 오늘보다 미래면 예약 상태 */
+  const isPending = hasSetting && !isCertified && activeDate && activeDate > todayStr2;
+  const isFailed = !isCertified && hasSetting && !isPending && h > wh;
+  const canCert = hasSetting && !isPending && h === wh && !isCertified;
   const isDone = isCertified || isFailed;
 
   if(!hasSetting){
@@ -16542,9 +16543,16 @@ async function confirmWakeupSet(){
   const h = _wakeupSetSelectedHour;
   const now = _virtualNow();
   const isEdit = !!(_wakeupData && _wakeupData.time);
+  const nowDate2 = new Date(now);
+  const todayH = nowDate2.getHours();
+  /* 등록 시각이 기상시간 이후(당일 인증 불가)면 내일 날짜로 활성화 */
+  const _regToday = dateStr(nowDate2);
+  const _tomorrow = (()=>{ const d=new Date(nowDate2); d.setDate(d.getDate()+1); return dateStr(d); })();
+  const activeDate = todayH >= h ? _tomorrow : _regToday;
   const data = {
     time: h,
     modifiedAt: now,
+    activeDate,
     uid: MY_UID
   };
   try{
@@ -16624,15 +16632,17 @@ function _listenWakeupMyRecord(){
     _wakeupTodayRecord = snap.exists() ? snap.val() : null;
     renderWakeupCard();
   });
-  /* 설정(time) 필드만 감지 — records 포함 전체 노드 X */
-  _fbOn(`wakeup/${MY_UID}/time`, snap=>{
-    if(snap.exists()){
-      _wakeupData = _wakeupData || {};
-      _wakeupData.time = snap.val();
-    } else {
-      _wakeupData = null;
-    }
-    renderWakeupCard();
+  /* 설정 필드 실시간 감지 (records 제외) */
+  ['time','activeDate','modifiedAt','uid'].forEach(field=>{
+    _fbOn(`wakeup/${MY_UID}/${field}`, snap=>{
+      if(snap.exists()){
+        _wakeupData = _wakeupData || {};
+        _wakeupData[field] = snap.val();
+      } else if(field === 'time'){
+        _wakeupData = null;
+      }
+      renderWakeupCard();
+    });
   });
 }
 
