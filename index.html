@@ -5859,7 +5859,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div id="tplGrid" style="display:none;"></div>
       <div id="rulePopup" style="display:none;"></div>
 
-      <!-- ★ 작전 슬롯 2개 (작전투입 스타일) -->
+      <!-- ★ 작전 슬롯 3개 (작전투입 스타일) -->
       <!-- 야간잠금 배너 (작전투입 위) -->
       <div id="opsBlackoutBanner" style="display:none;margin-bottom:8px;padding:10px 14px;background:rgba(10,5,30,.92);border:1.5px solid rgba(99,60,180,.5);border-radius:12px;align-items:center;gap:10px;">
         <span style="font-size:14px;">🌙</span>
@@ -5884,6 +5884,15 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
           <div class="slot-deploy-info">
             <div class="slot-deploy-title">작전투입 2</div>
+          </div>
+          <div class="slot-arrow">›</div>
+        </div>
+
+        <!-- 슬롯 3 -->
+        <div id="opsSlot2" class="ops-slot ops-slot-empty" onclick="openOpsRegPopupForSlot(2)">
+          <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
+          <div class="slot-deploy-info">
+            <div class="slot-deploy-title">작전투입 3</div>
           </div>
           <div class="slot-arrow">›</div>
         </div>
@@ -5938,7 +5947,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         </div>
         <div style="margin:0 14px 14px;padding:10px 12px;background:rgba(200,168,75,.07);border:1px dashed rgba(200,168,75,.25);border-radius:10px;">
           <div style="font-family:var(--kr);font-size:9px;color:rgba(255,220,120,.75);line-height:1.7;">
-            <strong style="color:rgba(200,168,75,.95);">개인작전</strong> 5,000원×2 + <strong style="color:rgba(200,168,75,.95);">협동작전</strong> +3,000원 = <strong style="color:rgba(255,215,100,.95);">하루 최대 13,000원</strong><br>
+            <strong style="color:rgba(200,168,75,.95);">개인작전</strong> 5,000원×3 + <strong style="color:rgba(200,168,75,.95);">협동작전</strong> +3,000원 = <strong style="color:rgba(255,215,100,.95);">하루 최대 18,000원</strong><br>
             개인한도 <strong style="color:rgba(200,168,75,.95);">15만원</strong> · 특수임무 합계 10만 미만 시 초과분만큼 한도 확장<br>
             <span style="font-size:9px;color:rgba(255,255,255,.75);">✅ 체크 1P &nbsp;·&nbsp; 📝 메모 2P &nbsp;·&nbsp; 📷 사진 3P</span>
           </div>
@@ -6776,7 +6785,7 @@ let _virtualTimeOffset = 0;
 function _virtualNow(){ return Date.now() + _virtualTimeOffset; }
 
 /* ── 상수 & 상태 ── */
-const MAX_Q=2; /* 하루 최대 작전 수 */
+const MAX_Q=3; /* 하루 최대 작전 수 */
 const QUEST_MAX_REWARD_DAY=15000; /* 하루 최대 보상 */
 function dateStr(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;}
 const todayStr=dateStr(new Date());
