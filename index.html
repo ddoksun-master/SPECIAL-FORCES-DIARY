@@ -5892,44 +5892,41 @@ document.addEventListener('DOMContentLoaded',()=>{
 
       <!-- ★ 기상미션 섹션 -->
       <div id="wakeupSection" style="margin-bottom:10px;display:none;">
-        <!-- 기상미션 카드 -->
-        <div id="wakeupCard" style="position:relative;border-radius:14px;overflow:hidden;padding:14px 14px 0;background:linear-gradient(145deg,rgba(255,248,220,.97),rgba(255,240,180,.95));border:1.5px solid rgba(220,170,40,.45);box-shadow:0 3px 16px rgba(200,140,0,.12);">
-          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,rgba(255,185,0,.8),transparent);"></div>
-          <!-- 헤더 행 -->
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <div style="display:flex;align-items:center;gap:7px;">
-              <div style="font-size:18px;">☀️</div>
-              <div>
-                <div style="font-family:var(--orb);font-size:9px;letter-spacing:2px;color:rgba(160,100,0,.75);margin-bottom:1px;">WAKEUP MISSION</div>
-                <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:#3A2800;">기상 작전</div>
-              </div>
-            </div>
-            <div id="wakeupStatusBadge" style="font-family:var(--kr);font-size:9px;font-weight:800;padding:4px 10px;border-radius:20px;background:rgba(200,140,0,.12);color:rgba(160,100,0,.85);border:1px solid rgba(200,140,0,.30);">준비중</div>
+        <!-- 기상미션 카드 — ops-slot 동일 구조 -->
+        <div id="wakeupCard" class="ops-slot ops-slot-filled slot-medium" style="border-left:4px solid rgba(200,140,0,.7);cursor:default;position:relative;">
+          <!-- 삭제 버튼 (작전투입과 동일 위치) -->
+          <button class="slot-del-btn" onclick="event.stopPropagation();deleteWakeupMission()" title="삭제">✕</button>
+          <!-- 좌측 코드 컬럼 -->
+          <div class="slot-op-left">
+            <div class="slot-op-code">WAKE</div>
           </div>
-          <!-- 기상시간 + 보상 -->
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 12px;background:rgba(255,255,255,.55);border-radius:10px;border:1px solid rgba(200,150,0,.20);">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <div style="font-family:var(--orb);font-size:22px;font-weight:900;color:#5A3800;" id="wakeupTimeDisplay">--:00</div>
-              <div>
-                <div style="font-family:var(--kr);font-size:10px;color:#8B6020;font-weight:700;" id="wakeupTimeLabel">기상시간 미설정</div>
-                <div style="font-family:var(--kr);font-size:9px;color:rgba(139,96,32,.65);" id="wakeupWindowLabel">인증 가능시간: --:00~--:59</div>
-              </div>
+          <!-- 본문 -->
+          <div class="slot-op-body" style="padding:10px 8px 10px 4px;min-width:0;">
+            <!-- WAKEUP 레이블 + 상태 배지 -->
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:2px;">
+              <div style="font-family:var(--orb);font-size:8px;letter-spacing:1.5px;color:rgba(160,100,0,.70);">WAKEUP MISSION</div>
+              <div id="wakeupStatusBadge" style="font-family:var(--kr);font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(200,140,0,.12);color:rgba(160,100,0,.85);border:1px solid rgba(200,140,0,.30);white-space:nowrap;flex-shrink:0;">준비중</div>
             </div>
-            <div style="text-align:right;">
-              <div style="font-family:var(--orb);font-size:13px;font-weight:900;color:rgba(40,120,40,.9);">+2,000원</div>
-              <div style="font-family:var(--kr);font-size:8px;color:rgba(139,96,32,.6);">개인 독립 보상</div>
+            <!-- 미션명 -->
+            <div class="slot-op-name" style="font-size:14px;font-weight:900;line-height:1.35;margin-bottom:2px;">☀️ 기상 작전</div>
+            <!-- 시간 + 보상 (reason 자리) -->
+            <div class="slot-op-reason" style="margin-bottom:2px;">
+              <span id="wakeupTimeDisplay" style="font-family:var(--orb);font-size:11px;font-weight:900;color:#5A3800;">--:00</span>
+              <span style="font-family:var(--kr);font-size:9px;color:#8B6020;margin-left:5px;" id="wakeupTimeLabel">기상시간 미설정</span>
+              <span style="font-family:var(--orb);font-size:9px;color:rgba(40,120,40,.85);margin-left:8px;">+2,000원</span>
             </div>
+            <div style="font-family:var(--kr);font-size:9px;color:rgba(139,96,32,.65);margin-bottom:4px;" id="wakeupWindowLabel">인증 가능: --:00 ~ --:59</div>
+            <!-- 상태 영역 (파트너 인증상태, 응원메시지) -->
+            <div id="wakeupStatusArea"></div>
+            <!-- 안내문구 -->
+            <div id="wakeupGuideBox" style="display:none;margin-top:6px;padding:9px 11px;background:rgba(255,230,100,.22);border:1.5px solid rgba(220,170,40,.40);border-radius:9px;">
+              <div style="font-family:var(--orb);font-size:8px;letter-spacing:2px;color:rgba(160,100,0,.75);margin-bottom:4px;">▸ MISSION GUIDE</div>
+              <div style="font-family:var(--kr);font-size:10px;color:#3A2800;line-height:1.7;font-weight:700;" id="wakeupGuideText"></div>
+              <button onclick="closeWakeupGuide()" style="margin-top:7px;width:100%;padding:7px;background:rgba(200,140,0,.16);border:1.5px solid rgba(200,140,0,.40);border-radius:8px;color:rgba(120,70,0,.9);font-family:var(--kr);font-size:10px;font-weight:800;cursor:pointer;">✅ 확인</button>
+            </div>
+            <!-- 버튼 행 (응원요청 | 인증하기 | 수정⚙) -->
+            <div style="display:flex;gap:6px;margin-top:8px;padding-bottom:2px;" id="wakeupBtnRow"></div>
           </div>
-          <!-- 상태 영역 -->
-          <div id="wakeupStatusArea" style="margin-bottom:10px;"></div>
-          <!-- 안내문구 (등록 직후 표시, 확인 누르면 접힘) -->
-          <div id="wakeupGuideBox" style="display:none;margin-bottom:10px;padding:11px 13px;background:rgba(255,230,100,.25);border:1.5px solid rgba(220,170,40,.45);border-radius:11px;">
-            <div style="font-family:var(--orb);font-size:8px;letter-spacing:2px;color:rgba(160,100,0,.75);margin-bottom:6px;">▸ MISSION GUIDE</div>
-            <div style="font-family:var(--kr);font-size:11px;color:#3A2800;line-height:1.7;font-weight:700;" id="wakeupGuideText"></div>
-            <button onclick="closeWakeupGuide()" style="margin-top:9px;width:100%;padding:9px;background:rgba(200,140,0,.18);border:1.5px solid rgba(200,140,0,.45);border-radius:9px;color:rgba(120,70,0,.9);font-family:var(--kr);font-size:11px;font-weight:800;cursor:pointer;">✅ 확인</button>
-          </div>
-          <!-- 버튼 행 -->
-          <div style="display:flex;gap:7px;padding-bottom:14px;" id="wakeupBtnRow"></div>
         </div>
       </div>
 
@@ -7985,7 +7982,7 @@ function renderQ(){
 function _fillSlot(slotEl,qitemDiv,q,oi){
   const opsCategory=q.category||'health';
   const catClass={health:'slot-easy',knowledge:'slot-hard',life:'slot-medium'}[opsCategory]||'slot-easy';
-  const catLabel={health:'건강',knowledge:'지식',life:'생활'}[opsCategory]||opsCategory;
+  const catEmoji={health:'🏃',knowledge:'📚',life:'🏠'}[opsCategory]||'📋';
   const isCoop=q.mode==='coop';
   const code = q.qid ? q.qid.slice(0,12) : `OP-${String(oi+1).padStart(3,'0')}`;
 
@@ -8096,11 +8093,10 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
     <button class="slot-del-btn qdel-btn" title="삭제">✕</button>
     <div class="slot-op-left">
       <div class="slot-op-code">${code}</div>
-      <div class="slot-op-badge">${catLabel}</div>
     </div>
     <div class="slot-op-body" style="padding-top:10px;padding-bottom:10px;padding-right:8px;min-height:${_showStampNow?'72px':'auto'};">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:2px;">
-        <div class="slot-op-name" style="font-size:14px;font-weight:900;line-height:1.35;flex:1;min-width:0;word-break:keep-all;">${q.name}</div>
+        <div class="slot-op-name" style="font-size:14px;font-weight:900;line-height:1.35;flex:1;min-width:0;word-break:keep-all;">${catEmoji} ${q.name}</div>
         ${q.registeredAt?`<div style="font-family:var(--orb);font-size:10px;color:#6B7268;font-weight:700;white-space:nowrap;flex-shrink:0;line-height:1.35;padding-top:2px;">등록<br>${(()=>{const _d=new Date(q.registeredAt);return (_d.getMonth()+1)+'/'+_d.getDate()+' '+(_d.getHours()<10?'0':'')+_d.getHours()+':'+(_d.getMinutes()<10?'0':'')+_d.getMinutes();})()}</div>`:''}
       </div>
       ${q.reason?`<div class="slot-op-reason">💬 ${q.reason}</div>`:''}
@@ -16139,30 +16135,30 @@ function renderWakeupCard(){
 
   statusArea.innerHTML = partnerStatusHtml + cheerBox;
 
-  /* 버튼 행 */
+  /* 버튼 행 — 작전투입 슬롯과 동일 compact 스타일 */
   if(!hasSetting){
-    btnRow.innerHTML = `<button onclick="openWakeupSetPopup(false)" style="flex:1;padding:12px;background:linear-gradient(135deg,rgba(200,140,0,.22),rgba(160,100,0,.18));border:2px solid rgba(200,140,0,.50);border-radius:12px;color:rgba(180,110,0,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;">☀️ 기상 작전 등록</button>`;
+    btnRow.innerHTML = `<button onclick="openWakeupSetPopup(false)" style="flex:1;padding:9px 8px;background:linear-gradient(135deg,rgba(200,140,0,.22),rgba(160,100,0,.18));border:1.5px solid rgba(200,140,0,.50);border-radius:10px;color:rgba(180,110,0,.95);font-family:var(--kr);font-size:10px;font-weight:900;cursor:pointer;">☀️ 기상 작전 등록</button>`;
   } else if(isCertified){
     const pts = rec.pointAwarded||0;
     const earnedTxt = pts > 0 ? `+${pts}p 수령` : '오늘 포인트 없음';
     btnRow.innerHTML = `
-      <div style="flex:1;padding:12px;background:rgba(40,160,80,.10);border:1.5px solid rgba(40,160,80,.30);border-radius:12px;text-align:center;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(40,160,80,.85);">✅ 인증 완료 · ${earnedTxt}</div>
-      <button onclick="openWakeupSetPopup(true)" style="padding:12px 14px;background:rgba(200,140,0,.10);border:1.5px solid rgba(200,140,0,.30);border-radius:12px;color:rgba(160,100,0,.75);font-family:var(--kr);font-size:11px;font-weight:800;cursor:pointer;">⚙️ 수정</button>`;
+      <div style="flex:1;padding:9px 8px;background:rgba(40,160,80,.10);border:1px solid rgba(40,160,80,.25);border-radius:10px;text-align:center;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(40,160,80,.85);">✅ 인증 완료 · ${earnedTxt}</div>
+      <button onclick="openWakeupSetPopup(true)" style="padding:9px 10px;background:rgba(200,140,0,.10);border:1px solid rgba(200,140,0,.28);border-radius:10px;color:rgba(160,100,0,.80);font-family:var(--kr);font-size:10px;font-weight:800;cursor:pointer;">수정</button>`;
   } else if(isFailed){
     btnRow.innerHTML = `
-      <div style="flex:1;padding:12px;background:rgba(180,40,40,.08);border:1.5px solid rgba(180,40,40,.25);border-radius:12px;text-align:center;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(220,80,80,.75);">❌ 오늘 기상 실패 — 내일 다시 도전!</div>
-      <button onclick="openWakeupSetPopup(true)" style="padding:12px 14px;background:rgba(200,140,0,.10);border:1.5px solid rgba(200,140,0,.30);border-radius:12px;color:rgba(160,100,0,.75);font-family:var(--kr);font-size:11px;font-weight:800;cursor:pointer;">⚙️</button>`;
+      <div style="flex:1;padding:9px 8px;background:rgba(180,40,40,.08);border:1px solid rgba(180,40,40,.22);border-radius:10px;text-align:center;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(220,80,80,.80);">❌ 오늘 기상 실패 — 내일 다시 도전!</div>
+      <button onclick="openWakeupSetPopup(true)" style="padding:9px 10px;background:rgba(200,140,0,.10);border:1px solid rgba(200,140,0,.28);border-radius:10px;color:rgba(160,100,0,.80);font-family:var(--kr);font-size:10px;font-weight:800;cursor:pointer;">수정</button>`;
   } else {
     /* 대기중 or 인증시간 */
     const canCert = hasSetting && h === wh;
-    const certBtnStyle = canCert
-      ? `padding:12px;background:linear-gradient(135deg,rgba(40,160,80,.30),rgba(20,120,60,.25));border:2px solid rgba(40,160,80,.65);border-radius:12px;color:rgba(40,160,80,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;`
-      : `padding:12px;background:rgba(61,72,64,.06);border:1.5px solid rgba(61,72,64,.18);border-radius:12px;color:#9CA49A;font-family:var(--kr);font-size:12px;font-weight:800;cursor:default;`;
+    const _certStyleActive = 'background:rgba(47,74,54,.22);border:1.5px solid rgba(47,74,54,.60);color:#1E2D24;font-weight:800;cursor:pointer;';
+    const _certStyleWait   = 'background:rgba(61,72,64,.04);border:1px solid rgba(61,72,64,.14);color:#9CA49A;cursor:default;';
+    const certBtnStyle = canCert ? _certStyleActive : _certStyleWait;
     const certBtnTxt = canCert ? '📸 기상 인증하기' : (h < wh ? `⏰ ${wh}시에 인증 가능` : `⏱ ${String(wh).padStart(2,'0')}:00 대기중`);
     /* 응원요청 버튼 */
     const hasCheerSent = _wakeupTodayRecord && _wakeupTodayRecord.cheerMsg;
-    const cheerBtnHtml = `<button onclick="sendWakeupCheer()" ${hasCheerSent?'disabled':''} style="padding:12px 10px;background:rgba(106,78,158,.${hasCheerSent?'06':'18'});border:1.5px solid rgba(106,78,158,.${hasCheerSent?'20':'45'});border-radius:12px;color:rgba(180,130,255,.${hasCheerSent?'40':'90'});font-family:var(--kr);font-size:11px;font-weight:800;cursor:${hasCheerSent?'default':'pointer'};">${hasCheerSent?'💜 응원함':'💜 응원 요청'}</button>`;
-    btnRow.innerHTML = `${cheerBtnHtml}<button onclick="${canCert?'certifyWakeup()':''}" style="flex:1;${certBtnStyle}">${certBtnTxt}</button><button onclick="openWakeupSetPopup(true)" style="padding:12px 10px;background:rgba(200,140,0,.10);border:1.5px solid rgba(200,140,0,.30);border-radius:12px;color:rgba(160,100,0,.75);font-family:var(--kr);font-size:11px;font-weight:800;cursor:pointer;">⚙️</button>`;
+    const cheerBtnHtml = `<button onclick="sendWakeupCheer()" ${hasCheerSent?'disabled':''} style="padding:9px 8px;background:rgba(106,78,158,.${hasCheerSent?'06':'15'});border:1px solid rgba(106,78,158,.${hasCheerSent?'18':'40'});border-radius:10px;color:rgba(180,130,255,.${hasCheerSent?'35':'90'});font-family:var(--kr);font-size:10px;font-weight:800;cursor:${hasCheerSent?'default':'pointer'};">${hasCheerSent?'💜 응원함':'💜 응원 요청'}</button>`;
+    btnRow.innerHTML = `${cheerBtnHtml}<button onclick="${canCert?'certifyWakeup()':''}" style="flex:1;padding:9px 8px;${certBtnStyle}border-radius:10px;font-family:var(--kr);font-size:10px;">${certBtnTxt}</button><button onclick="openWakeupSetPopup(true)" style="padding:9px 10px;background:rgba(200,140,0,.10);border:1px solid rgba(200,140,0,.28);border-radius:10px;color:rgba(160,100,0,.80);font-family:var(--kr);font-size:10px;font-weight:800;cursor:pointer;">수정</button>`;
   }
 }
 
