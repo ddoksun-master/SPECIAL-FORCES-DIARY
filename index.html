@@ -7951,6 +7951,11 @@ function renderQ(){
     ds.innerHTML=`<div class="done-title">🎉 작전성공!</div><div class="done-sub">금일 작전을 모두 수행했습니다</div>`;
   }else{ds.style.display='none';}
   updateHUD();
+  /* 아침점호 슬롯 재렌더 */
+  if(typeof _mrLoaded!=='undefined'){
+    if(_mrLoaded) _renderMorningSlot();
+    else reloadMorningRoll();
+  }
 }
 
 /* ── 슬롯 채우기 ── */
@@ -8249,7 +8254,10 @@ function _emptySlot(slotEl,si,questCount){
     `;
   }
 }
-function openOpsRegPopupForSlot(si){ openOpsRegPopup(); }
+function openOpsRegPopupForSlot(si){
+  if(si===2){ openMorningRegPopup(); return; }
+  openOpsRegPopup();
+}
 function closeDone(){document.getElementById('doneScreen').style.display='none';}
 
 /* ── 한도 달성 안내 팝업 ── */
@@ -9798,6 +9806,8 @@ async function _uploadCertPhoto(file, uid, questName){
 }
 
 async function submitCert(){
+  /* 아침점호 인증 — sentinel 값으로 분기 */
+  if(_certQuestIdx===-99){ await _mrSubmitCert(); return; }
   const qi=_certQuestIdx;
   if(!quests||!quests[qi]) return;
   const inp=document.getElementById('certMemoInput');
@@ -16330,10 +16340,8 @@ function _mrOpenCert(){
   document.getElementById('certPopup').style.display='flex';
 }
 
-/* ── submitCert 후킹: morningRoll 처리 ── */
-const _origSubmitCert = window.submitCert;
-window.submitCert = async function(){
-  if(_certQuestIdx !== -99){ return _origSubmitCert(); }
+/* ── 아침점호 인증 처리 (_mrSubmitCert) ── */
+async function _mrSubmitCert(){
   /* morningRoll 인증 */
   if(!_mrData||!MY_UID||!_fbDb) return;
   const inp = document.getElementById('certMemoInput');
@@ -16406,22 +16414,6 @@ async function _mrClaimPoints(){
   _renderMorningSlot();
   showToast('✅ 받기완료!');
 }
-
-/* ── openOpsRegPopupForSlot 후킹: 슬롯2는 아침점호 팝업으로 ── */
-const _origOpenOpsRegPopupForSlot = window.openOpsRegPopupForSlot;
-window.openOpsRegPopupForSlot = function(si){
-  if(si===2){ openMorningRegPopup(); return; }
-  _origOpenOpsRegPopupForSlot(si);
-};
-
-/* ── renderQ 후 아침점호 슬롯 재렌더 (슬롯2가 quests로 덮이지 않게) ── */
-const _origRenderQ = window.renderQ;
-window.renderQ = function(){
-  _origRenderQ && _origRenderQ();
-  /* quests 슬롯 배치가 슬롯2를 건드렸을 수 있으므로 morningRoll 로 덮어씀 */
-  if(_mrLoaded) _renderMorningSlot();
-  else reloadMorningRoll();
-};
 
 /* ══ 아침점호 끝 ══ */
 
