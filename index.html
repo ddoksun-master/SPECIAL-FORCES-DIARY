@@ -2398,6 +2398,9 @@ function updateGemBoxes(){
   const vsOppNickEl=document.getElementById('vsOppNick');
   if(vsOppNickEl) vsOppNickEl.textContent=(partnerData&&partnerData.nickname)||'상대';
 
+const GEM_THRESHOLDS={1:0,2:0,3:0,4:0,special:0}; /* TM 자체 th로 관리 — gemBox 언락 제거 */
+const GEM_REWARDS={1:30000,2:70000,3:100000,4:150000,special:100000};
+
   /* 특수작전 1~4 */
   [1,2,3,4].forEach(n=>{
     const th=GEM_THRESHOLDS[n];
@@ -11387,8 +11390,7 @@ const saveTeam=()=>{
   if(_fbDb&&MY_UID) _fbSet(`users/${MY_UID}/teamData`, teamData);
 };
 /* 특수작전1~5: 2만/4만/6만/8만/10만 누적 달성 시 개방, 보상 10000 */
-const GEM_THRESHOLDS={1:0,2:0,3:0,4:0,special:0}; /* TM 자체 th로 관리 — gemBox 언락 제거 */
-const GEM_REWARDS={1:30000,2:70000,3:100000,4:150000,special:100000};
+/* GEM_THRESHOLDS moved to top */
 /* 스페셜: 5day × 2만원 = 10만원 */
 const SPECIAL_DAY_REWARD=20000;
 
