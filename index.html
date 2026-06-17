@@ -16079,13 +16079,11 @@ async function initWakeupMission(){
   const sec = document.getElementById('wakeupSection');
   if(!sec) return;
   sec.style.display = 'block';
-  await _loadWakeupData();
-  renderWakeupCard();
-  /* 파트너 데이터도 로드 */
-  if(partnerData && partnerData.uid) _loadWakeupPartnerData();
-  /* 자정 지나면 오늘 기록 갱신 */
   _wakeupTodayRecord = null;
+  await _loadWakeupData();
   await _loadWakeupTodayRecord();
+  if(partnerData && partnerData.uid) _loadWakeupPartnerData();
+  renderWakeupCard();
 }
 
 /* ── Firebase 로드 ── */
@@ -16106,7 +16104,12 @@ async function _loadWakeupPartnerData(){
   if(!partnerData || !partnerData.uid || !_fbDb) return;
   try{
     const snap = await _fbGet(`wakeup/${partnerData.uid}`);
-    _wakeupPartnerData = snap.exists() ? snap.val() : null;
+    if(snap.exists()){
+      const {records, ...settings} = snap.val()||{};
+      _wakeupPartnerData = Object.keys(settings).length ? settings : null;
+    } else {
+      _wakeupPartnerData = null;
+    }
   }catch(e){ _wakeupPartnerData = null; }
 }
 
@@ -16614,19 +16617,18 @@ let _wakeupListenDate = null;
 function _listenWakeupMyRecord(){
   if(!MY_UID || !_fbDb) return;
   const today = dateStr(new Date(_virtualNow()));
-  if(_wakeupListenDate === today) return; /* 이미 오늘 날짜 리스닝 중 */
+  if(_wakeupListenDate === today) return;
   _wakeupListenDate = today;
+  /* 오늘 인증 기록만 실시간 감지 */
   _fbOn(`wakeup/${MY_UID}/records/${today}`, snap=>{
     _wakeupTodayRecord = snap.exists() ? snap.val() : null;
     renderWakeupCard();
   });
-  /* 설정값도 실시간 감지 */
-  _fbOn(`wakeup/${MY_UID}`, snap=>{
-    const val = snap.exists() ? snap.val() : null;
-    /* records 서브트리 제외하고 설정만 캐시 */
-    if(val){
-      const {records, ...settings} = val;
-      _wakeupData = Object.keys(settings).length ? settings : null;
+  /* 설정(time) 필드만 감지 — records 포함 전체 노드 X */
+  _fbOn(`wakeup/${MY_UID}/time`, snap=>{
+    if(snap.exists()){
+      _wakeupData = _wakeupData || {};
+      _wakeupData.time = snap.val();
     } else {
       _wakeupData = null;
     }
