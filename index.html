@@ -8316,9 +8316,13 @@ function renderShopActivity(){
   const inner = document.getElementById('shopActivityInner');
   if(!inner) return;
   let totalCompleted=0, dayCount=0;
-  Object.entries(allData).forEach(([,items])=>{
+  Object.entries(allData).forEach(([date,items])=>{
     const comp = (items||[]).filter(q=>q.completed);
-    if(comp.length){ dayCount++; totalCompleted+=comp.length; }
+    /* 아침점호 완료 포함 */
+    const mrCache = (date===selDate) ? _mrData : (window['_mrHistCache_'+date]||null);
+    const mrDone = (mrCache && mrCache.completed) ? 1 : 0;
+    const total = comp.length + mrDone;
+    if(total){ dayCount++; totalCompleted+=total; }
   });
   const cap = calcRewardCap();
   const rawPersonal = Object.values(getCycleData()).reduce((sum,items)=>
@@ -9247,6 +9251,7 @@ async function _doDeleteData(){
       const _rmJobs = [
         _fbDb.ref('users/'+MY_UID+'/quests').remove(),
         _fbDb.ref('users/'+MY_UID+'/morningRoll').remove(),
+        _fbDb.ref('users/'+MY_UID+'/moneyLogs').remove(),
         _fbDb.ref('users/'+MY_UID+'/teamData').remove(),
         _fbDb.ref('users/'+MY_UID+'/flags').remove(),
         _fbDb.ref('users/'+MY_UID+'/cycleDay').remove(),
@@ -11550,9 +11555,24 @@ function calcTotalPersonalMoney(){
   const raw = Object.values(cycleData).reduce((sum,items)=>
     sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
   );
+  /* 아침점호 완료 보상 (+2,000원/일) — 사이클 범위 내 날짜만 */
+  const {start,end} = getCycleRange();
+  let mrRaw = 0;
+  if(typeof _mrData !== 'undefined'){
+    /* 오늘 아침점호 */
+    if(_mrData && _mrData.completed && selDate>=start && selDate<=end) mrRaw += 2000;
+    /* 과거 날짜 캐시 */
+    Object.keys(window).filter(k=>k.startsWith('_mrHistCache_')).forEach(k=>{
+      const d = k.replace('_mrHistCache_','');
+      if(d>=start && d<=end && d!==selDate){
+        const mr = window[k];
+        if(mr && mr.completed) mrRaw += 2000;
+      }
+    });
+  }
   /* 개인임무 상한 적용 */
   const cap = calcRewardCap();
-  return Math.min(raw, cap.personalCap);
+  return Math.min(raw + mrRaw, cap.personalCap);
 }
 
 /* renderTeamPanel — Firebase 모듈에서 window.renderTeamPanel로 재정의됨. fallback */
