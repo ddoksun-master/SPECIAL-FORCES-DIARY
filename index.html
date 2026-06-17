@@ -10360,17 +10360,17 @@ function renderPartnerOps(){
     const pWinLabel = `인증 가능: ${String(pWh).padStart(2,'0')}:00 ~ ${String(pWh).padStart(2,'0')}:59 · +2,000원 · PX ${pPtRange[0]}~${pPtRange[1]}p`;
     const wakeDiv = document.createElement('div');
     wakeDiv.className = 'ops-slot ops-slot-filled' + (pCertified||pFailed?' slot-done':'');
-    wakeDiv.style.cssText = `border-left:${pBorderLeft};cursor:default;background:linear-gradient(135deg,#2A1E52,#1E1438);border-color:rgba(155,120,212,.40);`;
+    wakeDiv.style.cssText = `border-left:${pBorderLeft};cursor:default;background:linear-gradient(135deg,rgba(255,240,180,.18),rgba(255,210,80,.08));border-color:rgba(220,170,40,.50);`;
     wakeDiv.innerHTML = `
       <div class="slot-op-left">
-        <div class="slot-op-code" style="color:rgba(200,168,255,.55);">WAKE</div>
+        <div class="slot-op-code" style="color:rgba(180,130,0,.65);">WAKE</div>
       </div>
       <div class="slot-op-body" style="padding:10px 8px 10px 4px;min-width:0;">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:2px;">
-          <div class="slot-op-name" style="font-size:14px;font-weight:900;line-height:1.35;flex:1;min-width:0;word-break:keep-all;color:rgba(230,215,255,.95);">☀️ ${String(pWh).padStart(2,'0')}:00 기상 작전</div>
+          <div class="slot-op-name" style="font-size:14px;font-weight:900;line-height:1.35;flex:1;min-width:0;word-break:keep-all;color:rgba(120,80,0,.95);">☀️ ${String(pWh).padStart(2,'0')}:00 기상 작전</div>
           <span style="font-family:var(--kr);font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:${pBadgeBg};color:${pBadgeColor};white-space:nowrap;flex-shrink:0;">${pBadgeTxt}</span>
         </div>
-        <div class="slot-op-reason" style="color:rgba(200,168,255,.50);">${pWinLabel}</div>
+        <div class="slot-op-reason" style="color:rgba(160,110,0,.60);">${pWinLabel}</div>
       </div>`;
     list.appendChild(wakeDiv);
   }
