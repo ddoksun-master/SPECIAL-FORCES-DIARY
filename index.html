@@ -9711,29 +9711,45 @@ async function acceptOpsTogether(){
     }
   } catch(e){}
 
-  /* 아침점호 같이하기 — quests push 하지 않고 내 morningRoll에 together 기록 */
+  /* 아침점호 같이하기 — 내 morningRoll에 together 기록 (없으면 상대 기상시간으로 새로 생성) */
   if(n._isMorning){
     const _mrTargetDate = n.questDate || selDate;
     try{
-      await _fbUpdate(`users/${MY_UID}/morningRoll/${_mrTargetDate}`, {
-        together: n.fromUid,
-        togetherAcceptedAt: now,
-        mode: 'coop',
-      });
-    }catch(e){ showToast('❌ 아침점호 같이하기 실패'); return; }
-    /* 날짜가 현재 selDate면 즉시 _mrData 갱신 후 슬롯 재렌더 */
-    if(_mrTargetDate === selDate){
-      if(_mrData) {
-        _mrData.together = n.fromUid;
-        _mrData.togetherAcceptedAt = now;
-        _mrData.mode = 'coop';
+      /* 내 morningRoll 존재 여부 확인 */
+      const _myMrSnap = await _fbGet(`users/${MY_UID}/morningRoll/${_mrTargetDate}`);
+      const _myMrExists = _myMrSnap.exists() && _myMrSnap.val() && _myMrSnap.val().hour;
+      if(_myMrExists){
+        /* 이미 등록돼있으면 together만 추가 */
+        await _fbUpdate(`users/${MY_UID}/morningRoll/${_mrTargetDate}`, {
+          together: n.fromUid,
+          togetherAcceptedAt: now,
+          mode: 'coop',
+        });
+      } else {
+        /* 미등록이면 상대 기상시간으로 내 morningRoll 신규 생성 */
+        const _pMrSnap = await _fbGet(`users/${n.fromUid}/morningRoll/${_mrTargetDate}`);
+        const _pMr = _pMrSnap.exists() ? _pMrSnap.val() : null;
+        const _hour = (_pMr && _pMr.hour) || 6; /* 상대 기상시간 기본값 6시 */
+        const _certFrom = new Date(`${_mrTargetDate}T${String(_hour).padStart(2,'0')}:00:00`).getTime();
+        await _fbSet(`users/${MY_UID}/morningRoll/${_mrTargetDate}`, {
+          hour: _hour,
+          registeredAt: now,
+          completed: false,
+          stamped: false,
+          certAvailableAt: _certFrom,
+          together: n.fromUid,
+          togetherAcceptedAt: now,
+          mode: 'coop',
+          cheerMsg: null,
+          cheerFromNick: null,
+          certMode: null,
+          certNote: null,
+        });
       }
-      _renderMorningSlot();
-    } else {
-      /* 다른 날짜면 캐시 무효화 후 reloadMorningRoll */
-      _mrCurrentDate = null;
-      reloadMorningRoll();
-    }
+    }catch(e){ showToast('❌ 아침점호 같이하기 실패'); return; }
+    /* Firebase 리스너가 _mrData를 자동 갱신하지만 즉시 반영을 위해 강제 리로드 */
+    _mrCurrentDate = null;
+    reloadMorningRoll();
     renderDayTabs(); updateHUD(); renderPartnerOps();
     /* coop_accepted 알림 */
     try{
