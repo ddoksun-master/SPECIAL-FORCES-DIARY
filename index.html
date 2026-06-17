@@ -9246,6 +9246,7 @@ async function _doDeleteData(){
     try{
       const _rmJobs = [
         _fbDb.ref('users/'+MY_UID+'/quests').remove(),
+        _fbDb.ref('users/'+MY_UID+'/morningRoll').remove(),
         _fbDb.ref('users/'+MY_UID+'/teamData').remove(),
         _fbDb.ref('users/'+MY_UID+'/flags').remove(),
         _fbDb.ref('users/'+MY_UID+'/cycleDay').remove(),
