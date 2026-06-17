@@ -5904,13 +5904,16 @@ document.addEventListener('DOMContentLoaded',()=>{
         </div>
 
         <!-- 슬롯 3 — 아침점호 -->
-        <div id="opsSlot2" class="ops-slot ops-slot-empty ops-slot-morning" onclick="openOpsRegPopupForSlot(2)">
-          <div class="slot-plus-ring slot-plus-ring-morning"><span class="slot-plus-icon slot-plus-icon-morning">+</span></div>
-          <div class="slot-deploy-info">
-            <div class="slot-deploy-title slot-deploy-title-morning">아침점호</div>
-            <div class="slot-deploy-sub slot-deploy-sub-morning">MORNING ROLL CALL</div>
+        <div id="opsSlot2" class="ops-slot" onclick="openOpsRegPopupForSlot(2)" style="background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border-color:rgba(180,150,80,.45);">
+          <div class="slot-plus-ring" style="position:relative;">
+            <span style="position:absolute;width:42px;height:42px;border:2px solid rgba(160,120,40,.50);border-radius:50%;"></span>
+            <span style="font-size:24px;font-weight:300;color:#7A5C10;position:relative;z-index:1;">+</span>
           </div>
-          <div class="slot-arrow slot-arrow-morning">›</div>
+          <div class="slot-deploy-info">
+            <div class="slot-deploy-title" style="color:#3A2C08;">아침점호</div>
+            <div class="slot-deploy-sub" style="color:rgba(90,60,10,.60);">MORNING ROLL CALL</div>
+          </div>
+          <div class="slot-arrow" style="color:#8A6C20;">›</div>
         </div>
 
       </div>
