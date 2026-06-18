@@ -9435,8 +9435,15 @@ async function _doAppUpdate() {
 
   // 대기 중 SW에 skipWaiting 메시지
   if (_pendingSWReg && _pendingSWReg.waiting) {
+    // controllerchange 발생 시 1회만 리로드 (무한 루프 방지)
+    let _reloadOnce = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (_reloadOnce) return;
+      _reloadOnce = true;
+      _showUpdateComplete();
+      setTimeout(() => location.reload(true), 800);
+    });
     _pendingSWReg.waiting.postMessage({ type: 'SKIP_WAITING' });
-    // controllerchange 이벤트가 위에서 리로드 처리
     return;
   }
 
