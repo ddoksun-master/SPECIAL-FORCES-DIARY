@@ -2,15 +2,20 @@
    firebase-messaging-sw.js  —  작전수첩 PWA  (통합 SW)
    역할: 캐시 + FCM 백그라운드 알림 + 뱃지 — 단일 SW
    sw.js 는 삭제해도 됩니다
+
+   ★ 배포할 때마다 아래 SW_VERSION 숫자만 올려주세요 ★
+   그러면 사용자에게 "업데이트" 버튼이 자동으로 뜹니다
    ============================================================ */
 
-/* ── 캐시 설정 (구 sw.js 기능 흡수) ── */
-const CACHE_NAME = 'jjakjeon-v5';
+/* ── 버전 — 배포 시 이것만 수정 ── */
+const SW_VERSION = 'v6';                        // ← 여기만 올리면 됩니다
+const CACHE_NAME = `jjakjeon-${SW_VERSION}`;
 const ASSETS     = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
+  // ★ skipWaiting() 제거 — 앱에서 버튼을 눌러야 교체됩니다
+  //   (이전: self.skipWaiting() 이 있어서 감지 불가였음)
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
