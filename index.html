@@ -14,16 +14,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="작전수첩"/>
   <meta name="theme-color" content="#1E2D24"/>
-  <!-- PWA: Service Worker 등록 — firebase-messaging-sw.js 단독 (캐시+FCM 통합) -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./firebase-messaging-sw.js', { scope: './' })
-          .then(r => console.log('[SW] 등록 완료:', r.scope))
-          .catch(e => console.warn('[SW] 등록 실패:', e));
-      });
-    }
-  </script>
+  <!-- PWA: Service Worker 등록은 initFCM()에서 단독 처리 -->
 
 <title>특전사 작전수첩</title>
 <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"/>
@@ -9414,11 +9405,7 @@ function _initAppUpdateDetector() {
 
   // sw.js 별도 감지 제거 — firebase-messaging-sw.js 단독으로 통합됨
 
-  // 다른 탭에서 SW가 교체되면 이 탭도 리로드
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    _showUpdateComplete();
-    setTimeout(() => location.reload(true), 1200);
-  });
+  // controllerchange 자동 리로드 제거 — 무한 리로드 루프 방지
 }
 
 function _showUpdateReady() {
@@ -10349,7 +10336,7 @@ function renderPartnerOps(){
       mode: 'solo',
       completed: !!mr.completed,
       stamped: !!mr.stamped,
-      reason: `인증 ${String(mr.hour).padStart(2,'0')}:00~${String(mr.hour).padStart(2,'0')}:59`,
+      reason: `기상시간 ${mr.hour}시 · 인증 ${String(mr.hour).padStart(2,'0')}:00~${String(mr.hour).padStart(2,'0')}:59`,
       cheerMsg: mr.cheerMsg||null,
       cheerFromNick: mr.cheerFromNick||null,
       _isMorning: true,
@@ -10429,14 +10416,12 @@ function renderPartnerOps(){
             ${typeBadge}
             ${isCompleted?'<span style="font-size:12px;">✅</span>':''}
           </div>
-          <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:${q._isMorning?(isCompleted?'rgba(255,165,80,.45)':'#FFD4A0'):(isCompleted?'rgba(200,168,255,.55)':'rgba(230,215,255,.95)')};line-height:1.3;word-break:keep-all;">
-            ${q.name}${q._isMorning && q.reason ? '<span style="font-family:var(--kr);font-size:9px;font-weight:600;color:rgba(255,175,90,.55);margin-left:5px;font-style:italic;">(' + q.reason + ')</span>' : ''}
-          </div>
+          <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:${q._isMorning?(isCompleted?'rgba(255,165,80,.45)':'#FFD4A0'):(isCompleted?'rgba(200,168,255,.55)':'rgba(230,215,255,.95)')};line-height:1.3;word-break:keep-all;">${q.name}</div>
         </div>
       </div>`;
 
-    if(!q._isMorning && q.reason){
-      html += `<div style="font-family:var(--kr);font-size:10px;color:rgba(200,168,255,.50);margin-bottom:9px;font-style:italic;">💬 ${q.reason}</div>`;
+    if(q.reason){
+      html += `<div style="font-family:var(--kr);font-size:10px;color:${q._isMorning?'rgba(255,175,90,.55)':'rgba(200,168,255,.50)'};margin-bottom:9px;font-style:italic;">💬 ${q.reason}</div>`;
     }
 
     /* 아침점호 / 협동카드: alreadyTogether — 응원은 myCheerSent로 분기, 같이진행중 고정 */
@@ -11074,7 +11059,6 @@ function _renderHistInner(){
     /* 상대방 퀘스트 — 오늘은 실시간, 과거는 Firebase에서 로드 */
     let partnerCoopItems=[];
     let partnerSoloItems=[];
-    let partnerMrItem=null; /* 상대 아침점호 */
     if(partnerData&&partnerData.uid){
       if(isToday&&_partnerQuests&&_partnerQuests.length>0){
         partnerCoopItems=_partnerQuests.filter(q=>q.mode==='coop');
@@ -11094,22 +11078,6 @@ function _renderHistInner(){
           return; /* ★ 로딩 중엔 이 날짜 entry 렌더 중단 */
         } else if(window[pCacheKey+'_loading']){
           return; /* ★ 이미 로딩 중이면 중복 entry 방지 */
-        }
-      }
-      /* 상대 아침점호 — 오늘은 _partnerMorningRoll, 과거는 별도 캐시 */
-      if(isToday && _partnerMorningRoll && _partnerMorningRoll.hour){
-        partnerMrItem = _partnerMorningRoll;
-      } else if(!isToday){
-        const pMrKey='_pMrHistCache_'+date;
-        if(window[pMrKey]){
-          partnerMrItem = window[pMrKey].hour ? window[pMrKey] : null;
-        } else if(_fbDb&&!window[pMrKey+'_loading']){
-          window[pMrKey+'_loading']=true;
-          _fbDb.ref('users/'+partnerData.uid+'/morningRoll/'+date).once('value',snap=>{
-            window[pMrKey]=snap.exists()&&snap.val()&&snap.val().hour ? snap.val() : {};
-            window[pMrKey+'_loading']=false;
-            setTimeout(()=>renderHist(),0);
-          });
         }
       }
     }
@@ -11180,35 +11148,15 @@ function _renderHistInner(){
         </div>`;
         return;
       }
-      if(q._isMorning){
-        /* 아침점호 — 상대 카드와 동일한 구조 */
-        const _myMrCertAt = q.certifiedAt;
-        const _myMrCertTime = _myMrCertAt
-          ? String(new Date(q.certifiedAt).getHours()).padStart(2,'0')+':'+String(new Date(q.certifiedAt).getMinutes()).padStart(2,'0')
-          : null;
-        const _myMrH = q.hour || '';
-        const _myMrFrom = String(_myMrH).padStart(2,'0')+':00';
-        const _myMrTo   = String(_myMrH).padStart(2,'0')+':59';
-        html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);margin-bottom:4px;">
-          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-            <span style="font-size:12px;">☀️</span>
-            <span style="font-family:var(--kr);font-size:12px;font-weight:900;color:#1A1F1C;">아침점호 ${_myMrH}시</span>
-            ${_myMrCertTime
-              ? `<span style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_myMrCertTime} 인증완료</span>`
-              : `<span style="font-family:var(--kr);font-size:10px;color:rgba(100,130,100,.65);font-weight:600;">(인증 ${_myMrFrom}~${_myMrTo})</span>`
-            }
-          </div>
-        </div>`;
-      } else {
       html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);">
         <div style="flex:1;min-width:0;">
           <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${isDone?'#2F4A36':'#1A1F1C'};display:flex;align-items:center;gap:5px;">
             <span style="font-size:12px;color:${isDone?'#2F4A36':'#9CA49A'};">${isDone?'✅':'○'}</span>${q.name}
           </div>
           <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
-            ${isDone?'<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(30,90,50,.85);">✅ 인증완료</span>':''}
+            ${isDone?`<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(30,90,50,.85);">✅ 인증완료</span>`:''}
             <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${cheerClaimed?'#8B6C1A':hasCheer?'#6B4A9A':'#9CA49A'};">${cheerClaimed?'⭐ 응원 +2p 수령완료':hasCheer?'응원메시지 수신(미수령)':'응원 미완료'}</span>
-            ${hasRecEmpathy?'<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(42,144,128,.85);">💬 수고했어</span>':''}
+            ${hasRecEmpathy?`<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(42,144,128,.85);">💬 수고했어</span>`:''}
           </div>
           <div style="margin-top:7px;display:flex;gap:6px;">
             <button class="hist-cert-view-btn" data-date="${date}" data-qi="${qi}" style="flex:1;padding:8px 6px;background:rgba(47,74,54,.12);border:1.5px solid rgba(47,74,54,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(30,45,36,.85);cursor:pointer;text-align:center;">📋 인증보기</button>
@@ -11217,7 +11165,6 @@ function _renderHistInner(){
         ${q.certPhotoUrl?`<div style="margin-top:6px;cursor:pointer;" onclick="_showFullscreenPhoto('${q.certPhotoUrl}')"><img src="${q.certPhotoUrl}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid rgba(82,212,164,.25);"/></div>`:''}
         ${hasRecEmpathy?`<div style="margin-top:5px;padding:6px 8px;background:rgba(42,144,128,.08);border:1px solid rgba(42,144,128,.20);border-radius:7px;font-family:var(--kr);font-size:9px;color:rgba(42,144,128,.85);font-weight:600;">💬 ${q.empathyFromNick||'파트너'}: "${q.empathyMsg}"</div>`:''}
       </div>`;
-      }
     });
 
     if(myItems.length===0&&myCoopItems.length===0){
@@ -11226,7 +11173,7 @@ function _renderHistInner(){
     html+=`</div></div>`; /* 내 카드 body + 전체 */
 
     /* ══ 상대 카드 (오늘만) ══ */
-    if(partnerCoopItems.length>0||partnerSoloItems.length>0||partnerMrItem){
+    if(partnerCoopItems.length>0||partnerSoloItems.length>0){
       /* 공감 필요한 미션 있는지 확인 → 있으면 펼침, 없으면 접힘 */
       const _needsEmpathy = [...partnerCoopItems, ...partnerSoloItems].some((q, _idx)=>{
         const isCoopQ = partnerCoopItems.includes(q);
@@ -11248,31 +11195,6 @@ function _renderHistInner(){
           <span id="oppCardChevron_${date}" style="font-size:12px;color:rgba(106,78,158,.7);transition:transform .25s;">${_chevron}</span>
         </div>
         <div id="oppCardBody_${date}" style="display:${_isCollapsed?'none':'block'};padding:12px;background:rgba(106,78,158,.05);border:2px solid rgba(106,78,158,.20);border-top:none;border-radius:0 0 14px 14px;">`;
-
-      /* ── 상대 아침점호 ── */
-      if(partnerMrItem){
-        const _pmr = partnerMrItem;
-        const _pmrH = _pmr.hour;
-        const _pmrDone = !!_pmr.completed;
-        const _pmrCertAt = _pmr.certifiedAt || null;
-        const _pmrCertTime = _pmrCertAt
-          ? String(new Date(_pmrCertAt).getHours()).padStart(2,'0')+':'+String(new Date(_pmrCertAt).getMinutes()).padStart(2,'0')
-          : null;
-        const _pmrFrom = String(_pmrH).padStart(2,'0')+':00';
-        const _pmrTo   = String(_pmrH).padStart(2,'0')+':59';
-        html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(255,165,80,.12);margin-bottom:4px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
-            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-              <span style="font-size:12px;">☀️</span>
-              <span style="font-family:var(--kr);font-size:12px;font-weight:900;color:#1A1F1C;">아침점호 ${_pmrH}시</span>
-              ${_pmrDone && _pmrCertTime
-                ? `<span style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_pmrCertTime} 인증완료</span>`
-                : `<span style="font-family:var(--kr);font-size:10px;color:rgba(180,150,80,.65);font-weight:600;">(인증 ${_pmrFrom}~${_pmrTo})</span>`
-              }
-            </div>
-          </div>
-        </div>`;
-      }
 
       /* 상대 협동 미션 */
       partnerCoopItems.forEach((q,_)=>{
@@ -16363,10 +16285,10 @@ function _renderMorningSlot(){
 
   /* 상태 배지 */
   let statusBadge = '';
-  if(done)       statusBadge = '';
+  if(done)       statusBadge = `<span style="font-family:var(--kr);font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(47,74,54,.18);color:#2F4A36;border:1px solid rgba(47,74,54,.35);">✅ 완료</span>`;
   else if(failed) statusBadge = `<span style="font-family:var(--kr);font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(139,26,26,.12);color:#8B1A1A;border:1px solid rgba(139,26,26,.28);">❌ 실패</span>`;
   else if(canCert)statusBadge = `<span style="font-family:var(--orb);font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(42,144,128,.18);color:rgba(82,212,164,.95);border:1px solid rgba(42,144,128,.38);animation:blink 1.2s infinite;">● 인증가능</span>`;
-  else            statusBadge = '';
+  else            statusBadge = `<span style="font-family:var(--kr);font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(180,150,80,.12);color:#8A6020;border:1px solid rgba(180,150,80,.30);">준비중</span>`;
 
   /* 응원 메시지 */
   const myNick = myNickname||'나';
@@ -16381,20 +16303,15 @@ function _renderMorningSlot(){
   /* 버튼 영역 */
   let btnArea = '';
   if(!done && !failed){
-    /* 인증시간 종료 후에는 응원요청·인증버튼 모두 숨김 */
-    if(tooLate){
-      btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="width:100%;padding:11px;text-align:center;background:rgba(61,72,64,.06);border:1.5px solid rgba(61,72,64,.16);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:#9CA49A;">⏱ 인증시간 종료</div></div>`;
-    } else {
-      const certStyle = canCert
-        ? 'background:rgba(47,74,54,.22);border:2px solid rgba(47,74,54,.65);color:#1E2D24;font-weight:800;'
-        : 'background:rgba(61,72,64,.04);border:1.5px solid rgba(61,72,64,.14);color:#9CA49A;';
-      const certLabel = canCert ? '📸 인증하기' : `⏱ ${String(h).padStart(2,'0')}:00부터`;
-      const cheerReqBtn = !d.cheerMsg
-        ? `<button id="mrCheerReqBtn" style="flex:1;padding:11px 8px;background:rgba(106,78,158,.15);border:1.5px solid rgba(106,78,158,.42);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(180,130,255,.90);cursor:pointer;">💜 응원 요청</button>`
-        : `<div style="flex:1;"></div>`;
-      const certBtn = `<button id="mrCertBtn" style="flex:1;padding:11px 8px;${certStyle}font-family:var(--kr);font-size:10px;font-weight:700;border-radius:10px;cursor:pointer;">${certLabel}</button>`;
-      btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="display:flex;gap:8px;">${cheerReqBtn}${certBtn}</div></div>`;
-    }
+    const certStyle = canCert
+      ? 'background:rgba(47,74,54,.22);border:2px solid rgba(47,74,54,.65);color:#1E2D24;font-weight:800;'
+      : 'background:rgba(61,72,64,.04);border:1.5px solid rgba(61,72,64,.14);color:#9CA49A;';
+    const certLabel = canCert ? '📸 인증하기' : (tooEarly ? `⏱ ${String(h).padStart(2,'0')}:00부터` : `⏱ 인증시간 종료`);
+    const cheerReqBtn = !d.cheerMsg
+      ? `<button id="mrCheerReqBtn" style="flex:1;padding:11px 8px;background:rgba(106,78,158,.15);border:1.5px solid rgba(106,78,158,.42);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(180,130,255,.90);cursor:pointer;">💜 응원 요청</button>`
+      : `<div style="flex:1;"></div>`;
+    const certBtn = `<button id="mrCertBtn" style="flex:1;padding:11px 8px;${certStyle}font-family:var(--kr);font-size:10px;font-weight:700;border-radius:10px;cursor:pointer;">${certLabel}</button>`;
+    btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="display:flex;gap:8px;">${cheerReqBtn}${certBtn}</div></div>`;
   } else if(done){
     /* 완료 — 받기 버튼 or 완료 배지 */
     const claimedKey = `mrCheerClaimed_${MY_UID}_${selDate}`;
@@ -16427,39 +16344,26 @@ function _renderMorningSlot(){
   slotEl.className = 'ops-slot';
   slotEl.style.cssText = 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;cursor:default;min-height:auto;';
   slotEl.onclick = null;
-  /* 활성화 전(tooEarly)이면 시간변경 버튼, 이후면 삭제 버튼 */
-  const topActionBtn = tooEarly
-    ? `<button class="slot-del-btn" id="mrChangeTimeBtn" title="시간변경" style="color:#5A7A10;background:rgba(100,160,40,.12);border-color:rgba(100,160,40,.35);font-size:9px;letter-spacing:0;">✏️</button>`
-    : `<button class="slot-del-btn" id="mrDelBtn" title="삭제" style="color:#7A5C10;background:rgba(180,150,80,.12);border-color:rgba(180,150,80,.30);">✕</button>`;
   slotEl.innerHTML = `
-    ${topActionBtn}
-    <div class="slot-op-body" style="padding-left:12px;">
+    <button class="slot-del-btn" id="mrDelBtn" title="삭제" style="color:#7A5C10;background:rgba(180,150,80,.12);border-color:rgba(180,150,80,.30);">✕</button>
+    <div class="slot-op-left">
+      <div class="slot-op-code" style="color:#8A7040;">MORN</div>
+    </div>
+    <div class="slot-op-body" style="padding:10px 8px 10px 4px;min-width:0;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:2px;">
         <div style="font-family:var(--orb);font-size:8px;letter-spacing:1.5px;color:rgba(120,90,20,.70);">MORNING ROLL CALL</div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          ${statusBadge}
-          ${regTime ? `<div style="font-family:var(--orb);font-size:9px;color:#8A7040;font-weight:700;white-space:nowrap;text-align:right;line-height:1.4;">등록<br>${regTime}</div>` : ''}
-        </div>
+        ${statusBadge}
       </div>
-      <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#3A2C08;line-height:1.35;margin-bottom:${done && d.certifiedAt ? '4' : '5'}px;">
-        ☀️ 아침점호 ${h}시
-        <span style="font-family:var(--kr);font-size:10px;font-weight:600;color:rgba(100,70,10,.55);margin-left:4px;">(인증 ${String(h).padStart(2,'0')}:00~${String(h).padStart(2,'0')}:59)</span>
-      </div>
-      ${done && d.certifiedAt ? `<div style="font-family:var(--kr);font-size:14px;font-weight:900;color:rgba(30,80,50,.90);margin-bottom:6px;letter-spacing:.2px;">✅ ${String(new Date(d.certifiedAt).getHours()).padStart(2,'0')}:${String(new Date(d.certifiedAt).getMinutes()).padStart(2,'0')} 인증완료</div>` : ''}
+      <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#3A2C08;line-height:1.35;margin-bottom:3px;">☀️ 아침점호</div>
+      <div style="font-family:var(--kr);font-size:9px;color:rgba(100,70,10,.65);margin-bottom:2px;">인증 가능: ${String(h).padStart(2,'0')}:00 ~ ${String(h).padStart(2,'0')}:59 &nbsp;·&nbsp; <span style="color:rgba(40,120,40,.85);">+2,000원</span></div>
       ${btnArea}
     </div>
+    ${regTime ? `<div style="font-family:var(--orb);font-size:9px;color:#8A7040;padding-right:10px;font-weight:700;white-space:nowrap;align-self:flex-start;padding-top:12px;">등록<br>${regTime}</div>` : ''}
   `;
 
   /* 이벤트 바인딩 */
   const delBtn = slotEl.querySelector('#mrDelBtn');
   if(delBtn) delBtn.addEventListener('click', e=>{ e.stopPropagation(); if(confirm('아침점호를 삭제하시겠습니까?')) _mrDelete(); });
-
-  const changeTimeBtn = slotEl.querySelector('#mrChangeTimeBtn');
-  if(changeTimeBtn) changeTimeBtn.addEventListener('click', e=>{
-    e.stopPropagation();
-    /* confirm 없이 바로 팝업으로 시간 변경 */
-    _mrDelete().then(()=>openMorningRegPopup());
-  });
 
   const certBtnEl = slotEl.querySelector('#mrCertBtn');
   if(certBtnEl) certBtnEl.addEventListener('click', e=>{ e.stopPropagation(); _mrOpenCert(); });
@@ -16627,22 +16531,36 @@ function _mrOpenCert(){
   if(now < certFrom){ showToast(`⏱ ${h}:00부터 인증 가능합니다`); return; }
   const certTo = new Date(selDate+`T${String(h).padStart(2,'0')}:59:59`).getTime();
   if(now > certTo){ showToast('⏱ 인증 가능 시간이 종료됐습니다'); return; }
-  /* 팝업 없이 바로 현재시간으로 인증 */
   _mrCertMode = true;
-  _certQuestIdx = -99;
-  _certMode = 'check';
-  _mrSubmitCert();
+  _certQuestIdx = -99; /* morningRoll 전용 sentinel */
+  document.getElementById('certQuestName').textContent = `아침점호 ${h}시`;
+  document.getElementById('certMemoInput') && (document.getElementById('certMemoInput').value='');
+  selectCertMode('check');
+  document.getElementById('certPopup').style.display='flex';
 }
 
 /* ── 아침점호 인증 처리 (_mrSubmitCert) ── */
 async function _mrSubmitCert(){
-  /* morningRoll 인증 — 팝업 없이 바로 현재시간 기록 */
+  /* morningRoll 인증 */
   if(!_mrData||!MY_UID||!_fbDb) return;
+  const inp = document.getElementById('certMemoInput');
+  const certNote = inp?(inp.value||'').trim():'';
   const now = _virtualNow();
-  const update = { completed:true, stamped:true, certifiedAt:now, certMode:'check', certNote:'' };
+  let certPhotoUrl = null;
+  if(_certMode==='photo'){
+    const photoInput = document.getElementById('certPhotoInput');
+    if(photoInput&&photoInput.files[0]){
+      const submitBtn = document.querySelector('#certPopup button[onclick="submitCert()"]');
+      if(submitBtn){ submitBtn.disabled=true; submitBtn.textContent='📤 사진 업로드 중...'; }
+      try{ certPhotoUrl = await _uploadCertPhoto(photoInput.files[0], MY_UID, '아침점호'); }
+      catch(e){ showToast('❌ 사진 업로드 실패'); if(submitBtn){ submitBtn.disabled=false; submitBtn.textContent='✅ 제출'; } return; }
+    }
+  }
+  const update = { completed:true, stamped:true, certifiedAt:now, certMode:_certMode, certNote };
+  if(certPhotoUrl) update.certPhotoUrl = certPhotoUrl;
   await _fbUpdate(_mrPath(selDate), update);
   /* 포인트 적립 */
-  _grantCertPoints('check');
+  _grantCertPoints(_certMode);
   /* 같이하기 coop이면 상대방 morningRoll에 partnerCertified:true 기록 */
   if(_mrData && _mrData.together && _mrData.mode==='coop'){
     try{ await _fbUpdate(`users/${_mrData.together}/morningRoll/${selDate}`, {partnerCertified:true}); }catch(e){}
@@ -16655,10 +16573,10 @@ async function _mrSubmitCert(){
     _mrLogs.push({ type:'아침점호 ☀️', amount:2000, earnedAt:now });
     await _fbSet(_mrMoneyPath, _mrLogs);
   }catch(e){}
+  const savedMode = _certMode;
+  closeCertPopup();
   _mrCertMode = false;
-  const _certH = _mrData.hour;
-  const _certT = (()=>{ const _d=new Date(now); return String(_d.getHours()).padStart(2,'0')+':'+String(_d.getMinutes()).padStart(2,'0'); })();
-  showToast(`☀️ ${_certH}시 기상작전 · ${_certT} 인증완료! +2,000원`);
+  showToast('☀️ 아침점호 인증 완료! +2,000원');
   renderCal&&renderCal();
   renderHist&&renderHist();
   /* 파트너에게 수고했어 요청 (empathy_request) */
