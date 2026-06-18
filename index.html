@@ -9389,42 +9389,38 @@ function _handleDeepLink(url) {
 /* ── 앱 업데이트 감지 & 실행 ── */
 let _pendingSWReg = null; // 대기 중인 새 SW
 
-/* ── GitHub 커밋 기반 업데이트 감지 설정
-   ⚠️ 아래 두 값을 실제 GitHub 레포 정보로 수정하세요
-   예) GITHUB_OWNER = 'yourname'
-       GITHUB_REPO  = 'special-forces-diary'
-       GITHUB_BRANCH = 'main'  (기본값)
+/* ── Vercel 배포 기반 업데이트 감지
+   Vercel에 새 배포 시 ETag(파일 해시)가 바뀌는 것을 감지
+   배포 URL: https://special-forces-diary.vercel.app
 ─────────────────────────────────────────── */
-const GITHUB_OWNER  = 'YOUR_GITHUB_USERNAME';   /* ← GitHub 사용자명 입력 */
-const GITHUB_REPO   = 'YOUR_REPO_NAME';          /* ← 레포 이름 입력 */
-const GITHUB_BRANCH = 'main';                    /* ← 브랜치 이름 (보통 main) */
-const _GH_SHA_KEY   = 'sfDiary_lastKnownCommit'; /* localStorage key */
+const _VERCEL_URL    = 'https://special-forces-diary.vercel.app/index.html';
+const _ETAG_STOR_KEY = 'sfDiary_lastETag'; /* localStorage key */
 
-/* GitHub API로 최신 커밋 SHA 조회 및 비교 */
-async function _checkGitHubUpdate() {
+/* Vercel ETag로 업데이트 여부 확인 */
+async function _checkGitHubUpdate() { /* 버튼 onclick 호환용 — Vercel 방식으로 동작 */
   const btn = document.getElementById('appGitCheckBtn');
   const txt = document.getElementById('appUpdateStatusTxt');
   if(btn){ btn.textContent = '확인 중...'; btn.disabled = true; }
-  if(txt) txt.textContent = 'GitHub 최신 버전 확인 중...';
+  if(txt) txt.textContent = '최신 버전 확인 중...';
   try {
-    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/commits/${GITHUB_BRANCH}`;
-    const res = await fetch(url, { headers: { 'Accept': 'application/vnd.github.v3+json' } });
-    if(!res.ok) throw new Error('GitHub API 오류: ' + res.status);
-    const data = await res.json();
-    const latestSha = data.sha;
-    const lastKnown = localStorage.getItem(_GH_SHA_KEY);
+    /* HEAD 요청으로 ETag만 가져오기 (본문 다운로드 없음) */
+    const res = await fetch(_VERCEL_URL, { method: 'HEAD', cache: 'no-store' });
+    if(!res.ok) throw new Error('서버 응답 오류: ' + res.status);
+    /* ETag 또는 Last-Modified 중 사용 가능한 것 사용 */
+    const etag = res.headers.get('etag') || res.headers.get('last-modified') || res.headers.get('x-vercel-cache');
+    if(!etag) throw new Error('버전 정보를 읽을 수 없습니다');
+    const lastKnown = localStorage.getItem(_ETAG_STOR_KEY);
     if(!lastKnown){
-      /* 첫 실행 — 현재 SHA를 기준으로 저장 */
-      localStorage.setItem(_GH_SHA_KEY, latestSha);
-      if(txt) txt.textContent = '✅ 최신 버전입니다 (기준 설정 완료)';
+      /* 첫 실행 — 현재 값을 기준으로 저장 */
+      localStorage.setItem(_ETAG_STOR_KEY, etag);
+      if(txt) txt.textContent = '✅ 최신 버전입니다';
       if(btn){ btn.textContent = '🔍 새 업데이트 확인'; btn.disabled = false; }
       return;
     }
-    if(latestSha !== lastKnown){
-      /* 새 커밋 감지 — 업데이트 알림 */
-      localStorage.setItem(_GH_SHA_KEY, latestSha);
+    if(etag !== lastKnown){
+      /* 새 배포 감지! */
+      localStorage.setItem(_ETAG_STOR_KEY, etag);
       _showUpdateReady();
-      /* 상단 배너도 표시 */
       const banner = document.getElementById('appUpdateTopBanner');
       if(banner) banner.style.display = 'block';
       if(btn){ btn.textContent = '🔍 새 업데이트 확인'; btn.disabled = false; }
@@ -9433,28 +9429,22 @@ async function _checkGitHubUpdate() {
       if(btn){ btn.textContent = '🔍 새 업데이트 확인'; btn.disabled = false; }
     }
   } catch(e) {
-    if(txt) txt.textContent = '⚠️ 확인 실패 (' + e.message + ')';
+    if(txt) txt.textContent = '⚠️ 확인 실패: ' + e.message;
     if(btn){ btn.textContent = '🔍 새 업데이트 확인'; btn.disabled = false; }
   }
 }
 
-/* 앱 시작 시 자동으로 GitHub 업데이트 체크 (백그라운드) */
+/* 앱 시작 시 자동 체크 (백그라운드) */
 async function _autoCheckGitHubUpdate() {
-  /* GITHUB_OWNER가 설정되지 않았으면 실행 안 함 */
-  if(GITHUB_OWNER === 'YOUR_GITHUB_USERNAME') return;
   try {
-    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/commits/${GITHUB_BRANCH}`;
-    const res = await fetch(url, { headers: { 'Accept': 'application/vnd.github.v3+json' } });
+    const res = await fetch(_VERCEL_URL, { method: 'HEAD', cache: 'no-store' });
     if(!res.ok) return;
-    const data = await res.json();
-    const latestSha = data.sha;
-    const lastKnown = localStorage.getItem(_GH_SHA_KEY);
-    if(!lastKnown){
-      localStorage.setItem(_GH_SHA_KEY, latestSha);
-      return;
-    }
-    if(latestSha !== lastKnown){
-      localStorage.setItem(_GH_SHA_KEY, latestSha);
+    const etag = res.headers.get('etag') || res.headers.get('last-modified') || res.headers.get('x-vercel-cache');
+    if(!etag) return;
+    const lastKnown = localStorage.getItem(_ETAG_STOR_KEY);
+    if(!lastKnown){ localStorage.setItem(_ETAG_STOR_KEY, etag); return; }
+    if(etag !== lastKnown){
+      localStorage.setItem(_ETAG_STOR_KEY, etag);
       _showUpdateReady();
       const banner = document.getElementById('appUpdateTopBanner');
       if(banner) banner.style.display = 'block';
