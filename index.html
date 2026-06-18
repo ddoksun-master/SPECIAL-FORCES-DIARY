@@ -1122,11 +1122,6 @@ html,body{
    Firebase Console → 프로젝트 설정 → 내 앱 → SDK 설정 및 구성
    아래 YOUR_* 값을 실제 값으로 교체하세요
    ============================================================ */
-/* ============================================================
-   APP VERSION — 배포 시 CACHE_NAME(SW파일)과 함께 이 값만 바꾸면 됩니다
-   ============================================================ */
-const APP_VERSION = 'v1.0';
-
 const FIREBASE_CONFIG = {
   apiKey:            "AIzaSyDG6QSmGSHsj7ASijKDeTRi5pzMvUPW3qE",
   authDomain:        "special-forces-diary.firebaseapp.com",
@@ -6276,10 +6271,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             <div style="padding:11px 14px;background:rgba(4,18,10,.5);">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
                 <div>
-                  <div style="display:flex;align-items:center;gap:8px;">
-                    <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(180,230,160,.85);">🔄 앱 업데이트</div>
-                    <div id="appVersionBadge" style="font-family:var(--orb);font-size:9px;font-weight:900;letter-spacing:.8px;color:rgba(130,200,130,.65);"></div>
-                  </div>
+                  <div style="font-family:var(--kr);font-size:12px;font-weight:700;color:rgba(180,230,160,.85);">🔄 앱 업데이트</div>
                   <div id="appUpdateStatusTxt" style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.38);margin-top:3px;">최신 버전 확인 중...</div>
                 </div>
                 <div id="appUpdateBadge" style="display:none;padding:3px 10px;border-radius:20px;font-family:var(--orb);font-size:9px;font-weight:900;letter-spacing:.8px;background:rgba(220,140,30,.18);border:1px solid rgba(220,140,30,.5);color:rgba(255,180,60,.9);">UPDATE</div>
@@ -9420,24 +9412,10 @@ function _showUpdateReady() {
   const txt   = document.getElementById('appUpdateStatusTxt');
   const badge = document.getElementById('appUpdateBadge');
   const btn   = document.getElementById('appUpdateBtn');
-  const ver   = document.getElementById('appVersionBadge');
-  const vStr  = typeof APP_VERSION !== 'undefined' ? APP_VERSION + ' ' : '';
-  if (txt)   txt.textContent     = vStr + '업데이트 준비완료!';
-  if (txt)   txt.style.color     = 'rgba(255,180,60,.9)';
+  if (txt)   txt.textContent  = '새 버전이 있습니다!';
   if (badge) badge.style.display = 'block';
   if (btn)   btn.style.display   = 'block';
-  if (ver)   ver.textContent     = typeof APP_VERSION !== 'undefined' ? APP_VERSION : '';
 }
-
-/* 초기 버전 표시 — 로드 시 현재 버전 바로 노출 */
-document.addEventListener('DOMContentLoaded', () => {
-  const ver = document.getElementById('appVersionBadge');
-  const txt = document.getElementById('appUpdateStatusTxt');
-  if (typeof APP_VERSION !== 'undefined') {
-    if (ver) ver.textContent = APP_VERSION;
-    if (txt) txt.textContent = APP_VERSION + ' — 최신 버전';
-  }
-});
 
 function _showUpdateComplete() {
   const txt   = document.getElementById('appUpdateStatusTxt');
@@ -10695,6 +10673,7 @@ async function _notifyCoopLost(quest){
     fromUid: MY_UID,
     fromNick: myNickname||'상대방',
     questName: quest.name,
+    questDate: selDate,
     type: 'coop_lost',
     createdAt: Date.now(),
   });
@@ -10703,18 +10682,40 @@ async function _notifyCoopLost(quest){
 /* coop_lost 알림 처리 — 상대 측 작전을 solo로 되돌리기 */
 async function _handleCoopLost(n){
   if(!n.fromUid) return;
-  /* MY 퀘스트에서도 해당 이름의 coop 작전을 solo로 변경 */
-  if(quests && quests.length){
-    let changed=false;
-    quests.forEach((q,i)=>{
-      if(q.name===n.questName && q.mode==='coop' && q.together===n.fromUid){
-        quests[i].mode='solo';
-        quests[i].together=null;
-        quests[i].togetherAcceptedAt=null;
-        changed=true;
+  /* Firebase에서 최신 퀘스트 배열을 직접 읽어 solo로 변경 후 write
+     — 로컬 quests 배열만 수정 후 saveQ()를 하면 _subscribeQuests 리스너가
+       Firebase의 이전값(coop)으로 다시 덮어쓰는 race condition이 발생하므로
+       Firebase를 직접 업데이트하여 리스너가 새 값을 수신하도록 처리 */
+  if(!_fbDb || !MY_UID){ showToast('💔 ['+n.fromNick+'] ' + n.questName + ' — 협동작전이 해제되었습니다'); return; }
+  try{
+    const path = _questPath(MY_UID, n.questDate || selDate);
+    const snap = await _fbGet(path);
+    if(snap.exists()){
+      const arr = snap.val() || [];
+      let changed = false;
+      arr.forEach((q,i)=>{
+        if(q && q.name===n.questName && q.mode==='coop' && q.together===n.fromUid){
+          arr[i].mode = 'solo';
+          arr[i].together = null;
+          arr[i].togetherAcceptedAt = null;
+          changed = true;
+        }
+      });
+      if(changed){
+        await _fbDb.ref(path).set(arr);
+        /* _subscribeQuests 리스너가 새 값을 받아 quests/renderQ를 자동 갱신 */
       }
-    });
-    if(changed){ saveQ(); renderQ(); updateHUD(); }
+    }
+  }catch(e){
+    /* fallback: 로컬 수정 */
+    if(quests && quests.length){
+      quests.forEach((q,i)=>{
+        if(q.name===n.questName && q.mode==='coop' && q.together===n.fromUid){
+          quests[i].mode='solo'; quests[i].together=null; quests[i].togetherAcceptedAt=null;
+        }
+      });
+      saveQ(); renderQ(); updateHUD();
+    }
   }
   showToast('💔 ['+n.fromNick+'] ' + n.questName + ' — 협동작전이 해제되었습니다');
 }
