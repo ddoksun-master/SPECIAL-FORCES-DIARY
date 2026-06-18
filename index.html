@@ -2777,6 +2777,11 @@ document.addEventListener('DOMContentLoaded',()=>{
 <body>
 <div class="app-shell">
 
+  <!-- 앱 업데이트 배너 — GitHub 새 커밋 감지 시 상단에 표시 -->
+  <div id="appUpdateTopBanner" style="display:none;position:sticky;top:0;z-index:9998;background:linear-gradient(135deg,rgba(180,120,20,.97),rgba(140,90,10,.98));border-bottom:2px solid rgba(220,160,40,.7);padding:10px 16px;text-align:center;cursor:pointer;" onclick="document.querySelector('.nav-item[data-tab=panelHQ]') && document.querySelector('.nav-item[data-tab=panelHQ]').click(); setTimeout(()=>{ const s=document.getElementById('systemSectionBody'); const a=document.getElementById('systemSectionArrow'); if(s&&s.style.display==='none'){s.style.display='block'; if(a)a.style.transform='rotate(180deg)';} const el=document.getElementById('appUpdateSection'); if(el)el.scrollIntoView({behavior:'smooth',block:'center'}); },300);">
+    <span style="font-family:var(--kr);font-size:12px;font-weight:900;color:#FFF8E1;letter-spacing:.3px;">🔄 새 업데이트가 있습니다 — 탭하여 업데이트</span>
+  </div>
+
   <!-- HUD -->
   <div class="hud">
     <div class="hud-bar">
@@ -6276,6 +6281,10 @@ document.addEventListener('DOMContentLoaded',()=>{
                 </div>
                 <div id="appUpdateBadge" style="display:none;padding:3px 10px;border-radius:20px;font-family:var(--orb);font-size:9px;font-weight:900;letter-spacing:.8px;background:rgba(220,140,30,.18);border:1px solid rgba(220,140,30,.5);color:rgba(255,180,60,.9);">UPDATE</div>
               </div>
+              <!-- GitHub 새 업데이트 확인 버튼 -->
+              <button id="appGitCheckBtn" onclick="_checkGitHubUpdate()" style="width:100%;padding:9px 11px;margin-bottom:8px;background:rgba(30,45,36,.6);border:1px solid rgba(90,158,72,.30);border-radius:9px;color:rgba(140,200,120,.85);font-family:var(--kr);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.2px;">
+                🔍 새 업데이트 확인
+              </button>
               <button id="appUpdateBtn" onclick="_doAppUpdate()" style="display:none;width:100%;padding:11px;background:linear-gradient(135deg,rgba(47,74,54,.7),rgba(30,55,35,.8));border:1.5px solid rgba(90,158,72,.45);border-radius:10px;color:rgba(180,230,160,.95);font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;letter-spacing:.3px;">
                 업데이트 시작
               </button>
@@ -9380,6 +9389,79 @@ function _handleDeepLink(url) {
 /* ── 앱 업데이트 감지 & 실행 ── */
 let _pendingSWReg = null; // 대기 중인 새 SW
 
+/* ── GitHub 커밋 기반 업데이트 감지 설정
+   ⚠️ 아래 두 값을 실제 GitHub 레포 정보로 수정하세요
+   예) GITHUB_OWNER = 'yourname'
+       GITHUB_REPO  = 'special-forces-diary'
+       GITHUB_BRANCH = 'main'  (기본값)
+─────────────────────────────────────────── */
+const GITHUB_OWNER  = 'YOUR_GITHUB_USERNAME';   /* ← GitHub 사용자명 입력 */
+const GITHUB_REPO   = 'YOUR_REPO_NAME';          /* ← 레포 이름 입력 */
+const GITHUB_BRANCH = 'main';                    /* ← 브랜치 이름 (보통 main) */
+const _GH_SHA_KEY   = 'sfDiary_lastKnownCommit'; /* localStorage key */
+
+/* GitHub API로 최신 커밋 SHA 조회 및 비교 */
+async function _checkGitHubUpdate() {
+  const btn = document.getElementById('appGitCheckBtn');
+  const txt = document.getElementById('appUpdateStatusTxt');
+  if(btn){ btn.textContent = '확인 중...'; btn.disabled = true; }
+  if(txt) txt.textContent = 'GitHub 최신 버전 확인 중...';
+  try {
+    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/commits/${GITHUB_BRANCH}`;
+    const res = await fetch(url, { headers: { 'Accept': 'application/vnd.github.v3+json' } });
+    if(!res.ok) throw new Error('GitHub API 오류: ' + res.status);
+    const data = await res.json();
+    const latestSha = data.sha;
+    const lastKnown = localStorage.getItem(_GH_SHA_KEY);
+    if(!lastKnown){
+      /* 첫 실행 — 현재 SHA를 기준으로 저장 */
+      localStorage.setItem(_GH_SHA_KEY, latestSha);
+      if(txt) txt.textContent = '✅ 최신 버전입니다 (기준 설정 완료)';
+      if(btn){ btn.textContent = '🔍 새 업데이트 확인'; btn.disabled = false; }
+      return;
+    }
+    if(latestSha !== lastKnown){
+      /* 새 커밋 감지 — 업데이트 알림 */
+      localStorage.setItem(_GH_SHA_KEY, latestSha);
+      _showUpdateReady();
+      /* 상단 배너도 표시 */
+      const banner = document.getElementById('appUpdateTopBanner');
+      if(banner) banner.style.display = 'block';
+      if(btn){ btn.textContent = '🔍 새 업데이트 확인'; btn.disabled = false; }
+    } else {
+      if(txt) txt.textContent = '✅ 최신 버전입니다';
+      if(btn){ btn.textContent = '🔍 새 업데이트 확인'; btn.disabled = false; }
+    }
+  } catch(e) {
+    if(txt) txt.textContent = '⚠️ 확인 실패 (' + e.message + ')';
+    if(btn){ btn.textContent = '🔍 새 업데이트 확인'; btn.disabled = false; }
+  }
+}
+
+/* 앱 시작 시 자동으로 GitHub 업데이트 체크 (백그라운드) */
+async function _autoCheckGitHubUpdate() {
+  /* GITHUB_OWNER가 설정되지 않았으면 실행 안 함 */
+  if(GITHUB_OWNER === 'YOUR_GITHUB_USERNAME') return;
+  try {
+    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/commits/${GITHUB_BRANCH}`;
+    const res = await fetch(url, { headers: { 'Accept': 'application/vnd.github.v3+json' } });
+    if(!res.ok) return;
+    const data = await res.json();
+    const latestSha = data.sha;
+    const lastKnown = localStorage.getItem(_GH_SHA_KEY);
+    if(!lastKnown){
+      localStorage.setItem(_GH_SHA_KEY, latestSha);
+      return;
+    }
+    if(latestSha !== lastKnown){
+      localStorage.setItem(_GH_SHA_KEY, latestSha);
+      _showUpdateReady();
+      const banner = document.getElementById('appUpdateTopBanner');
+      if(banner) banner.style.display = 'block';
+    }
+  } catch(e) { /* 네트워크 오류 무시 */ }
+}
+
 function _initAppUpdateDetector() {
   if (!('serviceWorker' in navigator)) return;
 
@@ -9406,6 +9488,9 @@ function _initAppUpdateDetector() {
   // sw.js 별도 감지 제거 — firebase-messaging-sw.js 단독으로 통합됨
 
   // controllerchange 자동 리로드 제거 — 무한 리로드 루프 방지
+
+  // GitHub 자동 체크 (앱 시작 5초 후 — 네트워크 안정화 후 실행)
+  setTimeout(_autoCheckGitHubUpdate, 5000);
 }
 
 function _showUpdateReady() {
@@ -10334,9 +10419,10 @@ function renderPartnerOps(){
 
   const allOps = _partnerQuests||[];
 
-  /* 상대방 아침점호가 있으면 quests 앞에 추가 */
+  /* 상대방 아침점호가 있으면 quests 마지막에 추가 (작전등록 순서 무관하게 항상 맨 아래 고정) */
   const mr = _partnerMorningRoll;
   const allOpsWithMr = mr && mr.hour ? [
+    ...allOps,
     {
       name: `아침점호 ☀️ ${mr.hour}시`,
       category: 'morning',
@@ -10347,8 +10433,7 @@ function renderPartnerOps(){
       cheerMsg: mr.cheerMsg||null,
       cheerFromNick: mr.cheerFromNick||null,
       _isMorning: true,
-    },
-    ...allOps
+    }
   ] : allOps;
 
   if(!allOpsWithMr.length){
@@ -10433,16 +10518,9 @@ function renderPartnerOps(){
       html += `<div style="font-family:var(--kr);font-size:10px;color:rgba(200,168,255,.50);margin-bottom:9px;font-style:italic;">💬 ${q.reason}</div>`;
     }
 
-    /* 아침점호 / 협동카드: alreadyTogether — 응원은 myCheerSent로 분기, 같이진행중 고정 */
+    /* 아침점호: alreadyTogether — 버튼 없이 같이진행중 배지만 표시 */
     if(q._isMorning && alreadyTogether){
-      html += `<div style="display:flex;gap:6px;margin-top:4px;">`;
-      if(myCheerSent){
-        html += `<div style="flex:1;min-width:0;padding:9px 4px;background:rgba(61,72,64,.22);border:1.5px solid rgba(120,130,120,.40);border-radius:11px;text-align:center;font-family:var(--kr);font-size:10px;color:rgba(180,190,175,.75);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">💜 응원함</div>`;
-      } else {
-        html += `<button data-qi="${qi}" class="pops-cheer-btn" style="flex:1;padding:9px 6px;background:rgba(255,165,80,.18);border:1.5px solid rgba(255,165,80,.45);border-radius:11px;color:rgba(255,200,110,.95);font-family:var(--kr);font-size:11px;font-weight:800;cursor:pointer;">💜 응원하기</button>`;
-      }
-      html += `<div style="flex:1;min-width:0;padding:9px 4px;background:rgba(42,77,181,.10);border:1px solid rgba(42,77,181,.28);border-radius:11px;text-align:center;font-family:var(--kr);font-size:10px;color:rgba(100,150,255,.95);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🤝 같이진행중</div>`;
-      html += `</div>`;
+      html += `<div style="margin-top:4px;padding:8px 10px;background:rgba(42,77,181,.10);border:1px solid rgba(42,77,181,.28);border-radius:11px;text-align:center;font-family:var(--kr);font-size:10px;color:rgba(100,150,255,.95);font-weight:800;">🤝 같이 진행중</div>`;
     }
     /* 협동카드: alreadyTogether */
     else if(!q._isMorning && alreadyTogether){
@@ -10461,6 +10539,8 @@ function renderPartnerOps(){
     if(!isCompleted && !alreadyTogether){
       const myCount = (quests||[]).length;
       const atMax = myCount >= MAX_Q;
+      /* 아침점호: 응원하기/같이하기 버튼 표시 안 함 */
+      if(!q._isMorning){
       html += `<div style="display:flex;gap:6px;margin-top:4px;">`;
       /* 응원하기 버튼 */
       if(!myCheerSent){
@@ -10483,6 +10563,7 @@ function renderPartnerOps(){
         html += `<button data-qi="${qi}" class="pops-together-btn" style="flex:1;padding:9px 6px;background:rgba(82,212,164,.18);border:1.5px solid rgba(82,212,164,.50);border-radius:11px;color:rgba(82,212,164,.95);font-family:var(--kr);font-size:11px;font-weight:800;cursor:pointer;transition:.15s;">🤝 같이하기</button>`;
       }
       html += `</div>`;
+      } /* end if(!q._isMorning) */
     }
 
     div.innerHTML = html;
@@ -16314,7 +16395,7 @@ function _sendKakaoShare(){
   }catch(e){}
 }
 /* ══════════════════════════════════════════════════════════
-   아침점호 (MORNING ROLL CALL) v1.0
+   아침점호 (MORNING ROLL CALL) v1.1
    Firebase 경로: users/{uid}/morningRoll/{date}
    quests 배열과 완전 독립 — 슬롯2 전용
    ══════════════════════════════════════════════════════════ */
@@ -16406,11 +16487,9 @@ function _renderMorningSlot(){
         ? 'background:rgba(47,74,54,.22);border:2px solid rgba(47,74,54,.65);color:#1E2D24;font-weight:800;'
         : 'background:rgba(61,72,64,.04);border:1.5px solid rgba(61,72,64,.14);color:#9CA49A;';
       const certLabel = canCert ? '📸 인증하기' : `⏱ ${String(h).padStart(2,'0')}:00부터`;
-      const cheerReqBtn = !d.cheerMsg
-        ? `<button id="mrCheerReqBtn" style="flex:1;padding:11px 8px;background:rgba(106,78,158,.15);border:1.5px solid rgba(106,78,158,.42);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(180,130,255,.90);cursor:pointer;">💜 응원 요청</button>`
-        : `<div style="flex:1;"></div>`;
-      const certBtn = `<button id="mrCertBtn" style="flex:1;padding:11px 8px;${certStyle}font-family:var(--kr);font-size:10px;font-weight:700;border-radius:10px;cursor:pointer;">${certLabel}</button>`;
-      btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="display:flex;gap:8px;">${cheerReqBtn}${certBtn}</div></div>`;
+      /* 응원 요청 버튼 제거 — 아침점호에서는 응원요청 없음 */
+      const certBtn = `<button id="mrCertBtn" style="width:100%;padding:11px 8px;${certStyle}font-family:var(--kr);font-size:10px;font-weight:700;border-radius:10px;cursor:pointer;">${certLabel}</button>`;
+      btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="display:flex;gap:8px;">${certBtn}</div></div>`;
     }
   } else if(done){
     /* 완료 — 받기 버튼 or 완료 배지 */
@@ -16481,8 +16560,7 @@ function _renderMorningSlot(){
   const certBtnEl = slotEl.querySelector('#mrCertBtn');
   if(certBtnEl) certBtnEl.addEventListener('click', e=>{ e.stopPropagation(); _mrOpenCert(); });
 
-  const cheerBtnEl = slotEl.querySelector('#mrCheerReqBtn');
-  if(cheerBtnEl) cheerBtnEl.addEventListener('click', e=>{ e.stopPropagation(); _mrSendCheerReq(); });
+  /* mrCheerReqBtn 이벤트 제거 — 응원요청 버튼 없음 */
 
   const claimBtnEl = slotEl.querySelector('#mrClaimBtn');
   if(claimBtnEl) claimBtnEl.addEventListener('click', e=>{ e.stopPropagation(); _mrClaimPoints(); });
