@@ -14,16 +14,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="작전수첩"/>
   <meta name="theme-color" content="#1E2D24"/>
-  <!-- PWA: Service Worker 등록 — firebase-messaging-sw.js 단독 (캐시+FCM 통합) -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./firebase-messaging-sw.js', { scope: './' })
-          .then(r => console.log('[SW] 등록 완료:', r.scope))
-          .catch(e => console.warn('[SW] 등록 실패:', e));
-      });
-    }
-  </script>
+  <!-- PWA: Service Worker 등록은 initFCM()에서 단독 처리 -->
 
 <title>특전사 작전수첩</title>
 <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"/>
@@ -9414,11 +9405,7 @@ function _initAppUpdateDetector() {
 
   // sw.js 별도 감지 제거 — firebase-messaging-sw.js 단독으로 통합됨
 
-  // 다른 탭에서 SW가 교체되면 이 탭도 리로드
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    _showUpdateComplete();
-    setTimeout(() => location.reload(true), 1200);
-  });
+  // controllerchange 자동 리로드 제거 — 무한 리로드 루프 방지
 }
 
 function _showUpdateReady() {
