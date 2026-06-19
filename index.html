@@ -2384,55 +2384,47 @@ function updateGemBoxes(){
   const oppM=partnerData?partnerData.money:0;
   const activeN = window.teamData ? window.teamData.activeGemN : null;
 
-  /* 협동포인트 기준 */
-  /* 달성일 기준 현재 사이클 범위 내 포인트만 합산 */
-  const {start:_cpStart,end:_cpEnd}=getCycleRange();
-  const _myCP = Object.entries(_myDayPoints||{}).filter(([d])=>d>=_cpStart&&d<=_cpEnd).reduce((a,[,v])=>a+(v||0),0);
-  const _oppCP = Object.entries(_partnerDayPoints||{}).filter(([d])=>d>=_cpStart&&d<=_cpEnd).reduce((a,[,v])=>a+(v||0),0);
-
   /* 상대 금액 표시 항상 갱신 */
   const oppMoneyEl=document.getElementById('teamOppMoney');
   if(oppMoneyEl) oppMoneyEl.textContent=oppM.toLocaleString()+'원';
   const myMoneyEl=document.getElementById('teamMyMoney');
   if(myMoneyEl) myMoneyEl.textContent=myM.toLocaleString()+'원';
 
-  /* 협동포인트 표시 갱신 */
-  const myCoopPtsEl=document.getElementById('vsMyCoopPts');
-  if(myCoopPtsEl) myCoopPtsEl.textContent=_myCP+'P';
-  const oppCoopPtsEl=document.getElementById('vsOppCoopPts');
-  if(oppCoopPtsEl) oppCoopPtsEl.textContent=_oppCP+'P';
-
   /* 닉네임 레이블 갱신 */
   const myNickLbl=document.getElementById('vsMyNickLabel');
   if(myNickLbl) myNickLbl.textContent=myNickname||'나';
   const oppNickLbl=document.getElementById('vsOppNickLabel');
   if(oppNickLbl) oppNickLbl.textContent=(partnerData&&partnerData.nickname)||'상대';
-  /* 프로그레스바 위 닉네임도 갱신 */
   const vsMyNickEl=document.getElementById('vsMyNick');
   if(vsMyNickEl) vsMyNickEl.textContent=myNickname||'나';
   const vsOppNickEl=document.getElementById('vsOppNick');
   if(vsOppNickEl) vsOppNickEl.textContent=(partnerData&&partnerData.nickname)||'상대';
 
-  /* 특수작전 1~4 */
-  [1,2,3,4].forEach(n=>{
-    const th=GEM_THRESHOLDS[n];
-    const ok=_myCP>=th&&_oppCP>=th;
+  /* 특수작전 1~3 — money 기반 해금 */
+  [1,2,3].forEach(n=>{
+    const ok = _tmUnlocked(n);
+    const th = TM[n] ? TM[n].th : 0;
     const lk=document.getElementById('gemLock'+n);
     const bx=document.getElementById('gemBox'+n);
     const st=document.getElementById('gemOppStatus'+n);
     if(lk) lk.style.display=ok?'none':'flex';
     if(bx){
-      /* 진행중인 작전이면 강조 */
       const isActive = String(activeN)===String(n) && window.teamData&&window.teamData.todayMission;
       bx.style.borderColor=isActive?'rgba(127,191,106,.7)':ok?'rgba(200,168,75,.5)':'rgba(90,158,72,.2)';
       bx.style.boxShadow=isActive?'0 0 14px rgba(127,191,106,.25)':ok?'0 0 10px rgba(200,168,75,.15)':'none';
     }
 
-    /* ── 새 레이아웃: 달성 프로그레스 바 업데이트 ── */
+    /* 프로그레스 바 — money 기반 */
     const myBarEl  = document.getElementById('lockBar'+n+'My');
     const oppBarEl = document.getElementById('lockBar'+n+'Opp');
-    if(myBarEl)  myBarEl.style.width  = Math.min(100, Math.round(_myCP/th*100))+'%';
-    if(oppBarEl) oppBarEl.style.width = Math.min(100, Math.round(_oppCP/th*100))+'%';
+    if(n===3){
+      /* 스페셜임무A: 야구게임 해금 — 바 표시 불필요 */
+      if(myBarEl)  myBarEl.style.width = ok ? '100%' : '0%';
+      if(oppBarEl) oppBarEl.style.width = '0%';
+    } else {
+      if(myBarEl)  myBarEl.style.width  = th>0 ? Math.min(100, Math.round(myM/th*100))+'%' : '0%';
+      if(oppBarEl) oppBarEl.style.width = th>0 ? Math.min(100, Math.round(oppM/th*100))+'%' : '0%';
+    }
 
     /* ── gemActionArea: specialOpAccepted 시 열기 버튼 ── */
     const aa = document.getElementById('gemActionArea'+n);
@@ -5853,7 +5845,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div style="font-family:var(--title);font-size:13px;font-weight:900;color:rgba(200,168,255,.95);margin-bottom:6px;">💜 응원 메시지</div>
           <div id="cheerTargetName" style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.82);margin-bottom:14px;"></div>
           <textarea id="cheerMsgInput" placeholder="응원 메시지를 입력하세요" style="display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1.5px solid rgba(106,78,158,.35);border-radius:10px;padding:12px;color:#fff;font-size:11px;font-family:var(--kr);min-height:80px;resize:none;outline:none;margin-bottom:14px;"></textarea>
-          <button onclick="submitCheerMsg()" style="width:100%;padding:13px;background:rgba(106,78,158,.3);border:1.5px solid rgba(106,78,158,.6);border-radius:12px;color:rgba(200,168,255,.95);font-family:var(--kr);font-size:12px;font-weight:800;cursor:pointer;">전송 +2 협동포인트</button>
+          <button onclick="submitCheerMsg()" style="width:100%;padding:13px;background:rgba(106,78,158,.3);border:1.5px solid rgba(106,78,158,.6);border-radius:12px;color:rgba(200,168,255,.95);font-family:var(--kr);font-size:12px;font-weight:800;cursor:pointer;">전송 +1P 보급상점</button>
         </div>
       </div>
 
@@ -5960,7 +5952,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             </div>
           </div>
 
-          <!-- 닫기/예약 버튼 영역 -->
+          <!-- 닫기 버튼 영역 -->
           <div id="bbBottomArea" style="margin-top:10px;">
             <button id="bbCloseBtn" onclick="closeBaseballPopup()" style="width:100%;padding:10px;background:transparent;border:none;color:rgba(255,255,255,.28);font-family:var(--kr);font-size:11px;cursor:pointer;">닫기</button>
           </div>
@@ -6137,7 +6129,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             • 하루 최대 <strong style="color:rgba(200,220,160,.9);">2개</strong> 등록 가능 (슬롯 1·2)<br>
             • 완료 시 <strong style="color:rgba(200,220,160,.9);">5,000원</strong> 개인 확보자금 적립<br>
             • 인증 방식: ✅ 체크 · 📝 메모 · 📷 사진 (택 1)<br>
-            • 한도(15만원) 달성 후 인증 시 포인트: 체크 <strong style="color:rgba(255,215,100,.9);">1P</strong> · 메모 <strong style="color:rgba(255,215,100,.9);">2P</strong> · 사진 <strong style="color:rgba(255,215,100,.9);">3P</strong>
+            • 한도(15만원) 달성 후 인증 시 포인트: 메모 <strong style="color:rgba(255,215,100,.9);">1P</strong> · 사진 <strong style="color:rgba(255,215,100,.9);">1P</strong> (중복 가능)
           </div>
         </div>
         <!-- 협동작전 -->
@@ -6146,7 +6138,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.75);line-height:1.75;">
             • 하루 <strong style="color:rgba(140,185,255,.9);">1개</strong> 작전을 파트너와 함께 수행<br>
             • 둘 다 완료 시 <strong style="color:rgba(140,185,255,.9);">+3,000원</strong> 추가 협동 적립<br>
-            • 응원 메시지 주고받으면 인증 완료 후 <strong style="color:rgba(255,215,100,.9);">+2P</strong><br>
+            • 응원 메시지 전송 시 (상대 인증 완료 후) → <strong style="color:rgba(255,215,100,.9);">+1P</strong> 보급상점<br>
             • 하루 최대: 개인 10,000원 + 협동 3,000원 = <strong style="color:rgba(255,215,100,.9);">13,000원</strong>
           </div>
         </div>
@@ -6155,20 +6147,17 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div style="font-family:var(--kr);font-size:11px;font-weight:900;color:rgba(255,215,100,.95);margin-bottom:7px;">☀️ 아침점호 미션</div>
           <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.75);line-height:1.75;">
             • 기상 시간 등록 후, 해당 시간대(HH:00~HH:59)에 인증<br>
-            • 인증 완료 → 📦 <strong style="color:rgba(255,215,100,.9);">보급상자</strong> 팝업: 랜덤 포인트 즉시 지급<br>
-            &nbsp;&nbsp;· 5시 기상: 최대 <strong style="color:rgba(255,215,100,.9);">10P</strong> (꽝 있음)<br>
-            &nbsp;&nbsp;· 6시 기상: 최대 <strong style="color:rgba(255,215,100,.9);">5P</strong> (꽝 있음)<br>
-            &nbsp;&nbsp;· 7시 이후: 최대 <strong style="color:rgba(255,215,100,.9);">3P</strong> (꽝 있음)<br>
-            • 응원 메시지 있을 시 📦 받기 버튼 → <strong style="color:rgba(255,215,100,.9);">+2P</strong> 추가<br>
-            <span style="font-size:9px;color:rgba(255,255,255,.45);">※ 아침점호 포인트는 한도와 무관하게 즉시 적립</span>
+            • 인증 완료 → 🔐 <strong style="color:rgba(255,215,100,.9);">암호점호</strong> 야구게임 시작<br>
+            • 4자리 숫자 맞추기: 첫 4S → 스페셜임무A 해금 / 이후 4S → 5~10P 보급상점<br>
+            • 수고했어 전송 시 → <strong style="color:rgba(255,215,100,.9);">+1P</strong> 보급상점 (항상)<br>
           </div>
         </div>
         <!-- 포인트 활용 -->
         <div style="padding:11px 13px;background:rgba(120,50,200,.10);border:1px solid rgba(160,100,255,.28);border-radius:11px;">
           <div style="font-family:var(--kr);font-size:11px;font-weight:900;color:rgba(200,160,255,.95);margin-bottom:7px;">⭐ 포인트(P) 적립 &amp; 활용</div>
           <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.75);line-height:1.75;">
-            • 개인 확보자금 <strong style="color:rgba(200,160,255,.9);">15만원 달성</strong> 후 → 미션 인증 시 포인트 시작<br>
-            • 아침점호 보급상자는 <strong style="color:rgba(200,160,255,.9);">항상</strong> 즉시 적립<br>
+            • 개인 확보자금 <strong style="color:rgba(200,160,255,.9);">15만원 달성</strong> 후 → 인증(메모/사진) 시 포인트 추가<br>
+            • 응원메세지/수고했어 → <strong style="color:rgba(200,160,255,.9);">항상</strong> 즉시 +1P 적립<br>
             • 적립 포인트는 <strong style="color:rgba(200,160,255,.9);">보급상점</strong>에서 사용:<br>
             &nbsp;&nbsp;· 🎲 비밀상자 추가 오픈권 <strong style="color:rgba(255,215,100,.9);">40P</strong><br>
             &nbsp;&nbsp;· ⚡ 더블포인트 패스 <strong style="color:rgba(255,215,100,.9);">80P</strong> (다음 인증 2배)<br>
@@ -6211,7 +6200,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           </div>
           <div style="background:rgba(200,168,75,.06);border:1px solid rgba(200,168,75,.22);border-radius:10px;padding:11px 12px;margin-bottom:8px;">
             <div style="display:none;"><span id="statsCodeUploadStatus"></span><span id="statsMyCode"></span></div>
-            <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.75);margin-bottom:4px;">⚔ 팀전 누적 보상</div>
+            <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.75);margin-bottom:4px;">⚔ 특수·스페셜 임무보상</div>
             <div id="statsTeamMoney" style="font-family:var(--orb);font-size:14px;font-weight:900;color:rgba(200,168,75,.9);">0원</div>
             <div id="statsTeamRewardDetail"></div>
           </div>
@@ -6219,12 +6208,12 @@ document.addEventListener('DOMContentLoaded',()=>{
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
               <div>
                 <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.55);">달성 가능 최대</div>
-                <div style="font-family:var(--orb);font-size:17px;font-weight:900;color:var(--gold);">300,000원</div>
+                <div style="font-family:var(--orb);font-size:17px;font-weight:900;color:var(--gold);">260,000원</div>
               </div>
               <div style="text-align:right;">
-                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.45);">개인 최대 100,000</div>
-                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,100,100,.55);">특수 최대 100,000</div>
-                <div style="font-family:var(--kr);font-size:9px;color:rgba(251,191,36,.80);">스페셜 (50p·100p)</div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.45);">개인 최대 150,000</div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(255,100,100,.55);">특수 최대 80,000</div>
+                <div style="font-family:var(--kr);font-size:9px;color:rgba(251,191,36,.80);">스페셜A (2~4만원)</div>
               </div>
             </div>
             <div style="height:1px;background:rgba(200,168,75,.10);margin-bottom:8px;"></div>
@@ -6518,7 +6507,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div id="tmCard1" style="display:none;"></div>
         <div id="tmCard2" style="display:none;"></div>
         <div id="tmCard3" style="display:none;"></div>
-        <div id="tmCard4" style="display:none;"></div>
+        
       </div>
 
       <!-- ★ 특수임무 사령부 — 인라인 카드 UI (연결 후 표시) -->
@@ -7190,6 +7179,10 @@ function _completeLogin(uid, nick){
     _initQuestsFromFb();
     initFCM(uid); /* FCM 푸시 알림 초기화 */
     initMorningRoll(uid); /* 아침점호 초기화 */
+    /* 스페셜임무A 해금 플래그 로드 */
+    _fbGet(`users/${uid}/bbSpecialAUnlocked`).then(snap=>{
+      window._bbSpecialAUnlocked = !!(snap&&snap.exists()&&snap.val());
+    }).catch(()=>{});
   });
   showToast('✅ '+nick+' 로 로그인됨');
 }
@@ -7940,22 +7933,10 @@ function renderQ(){
         const _key=`cheerPointClaimed_${MY_UID}_${selDate}_${q.qid||oi}`;
         if(_getFlag(_key)){renderQ();return;}
         _setFlag(_key);
-        const _myNickH=myNickname||'나';
-        const _isMyCheerH=q.cheerFromNick&&(q.cheerFromNick===_myNickH);
-        const _hasCheerH=!!(q.cheerMsg&&!_isMyCheerH);
-        const _pts=_hasCheerH?2:0;
-        if(_pts>0){
-          await _addMyDayPt(selDate,_pts); /* 항상 작전기록에 적립 */
-          /* 개인누적금 15만 달성 후에는 보급상점에도 적립 */
-          const _ccap=calcRewardCap();
-          const _crawp=Object.values(getCycleData()).reduce((sum,items)=>sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||5000),0),0);
-          if(_crawp>=_ccap.personalCap) await addPoints(_pts);
-        }
         showToast('✅ 받기완료!');
         renderCal&&renderCal();
         renderHist&&renderHist();
         renderQ();
-      /* 파트너 섹션 자동 펼침 제거됨 */
       });
     }
     /* 철회 버튼 */
@@ -8525,22 +8506,29 @@ async function _grantCertPoints(certMode){
   if(partnerData&&partnerData.uid&&_fbDb){
     await new Promise(res=>{
       const _check=()=>{
-        const allSubDone=[1,2].every(n=>window['tmSub'+n]);
+        const allSubDone=[1,2,3].every(n=>window['tmSub'+n]);
         if(allSubDone){ res(); } else { setTimeout(_check,150); }
       };
       _check();
     });
   }
+  /* 체크 모드는 포인트 없음 */
+  if(certMode==='check') return;
+
   const cap = calcRewardCap();
   const rawPersonal = Object.values(getCycleData()).reduce((sum,items)=>
     sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||5000),0),0
   );
-  if(rawPersonal < cap.personalCap) return; /* 한도 미달성 시 포인트 없음 */
+  /* 15만원 미달성 시 메모/사진 포인트 없음 */
+  if(rawPersonal < cap.personalCap) return;
+
   /* 더블포인트 패스 보유 시 2배 */
   const items = await loadShopItems();
   const hasDouble = (items['double_point']||0) > 0;
-  const modePoints = {check:1, memo:2, photo:3, number:1};
-  let pts = modePoints[certMode]||1;
+  /* 체크 제거: 메모 +1P, 사진 +1P (중복 가능) */
+  const modePoints = {memo:1, photo:1, number:1};
+  let pts = modePoints[certMode]||0;
+  if(pts===0) return;
   if(hasDouble){
     pts *= 2;
     items['double_point'] -= 1;
@@ -8550,16 +8538,9 @@ async function _grantCertPoints(certMode){
   await addPoints(pts);
   /* 포인트 수령 이력 저장 */
   const _certDate2 = selDate || dateStr(new Date(_virtualNow()));
-  const _certModeLabel = {check:'체크', memo:'메모', photo:'사진', number:'숫자'}[certMode]||certMode;
+  const _certModeLabel = {memo:'메모', photo:'사진', number:'숫자'}[certMode]||certMode;
   const _questName = (()=>{ try{ const q=quests&&quests[_certQuestIdx]; return q&&q.name?q.name:'미션'; }catch(e){ return '미션'; } })();
   await _savePxPointLog(_certDate2, `${_questName} - ${_certModeLabel}`, pts).catch(()=>{});
-  /* 날짜별 인증 포인트 누적 저장 (작전기록 바 표시용) */
-  const _certDate = selDate || dateStr(new Date(_virtualNow()));
-  _myCertDayPoints[_certDate] = (_myCertDayPoints[_certDate]||0) + pts;
-  if(_fbDb&&MY_UID){
-    _fbSet(`users/${MY_UID}/certDayPoints/${_certDate}`, _myCertDayPoints[_certDate]).catch(()=>{});
-  }
-  /* 작전기록 바 즉시 갱신 */
   renderHist&&renderHist();
 }
 
@@ -8711,7 +8692,7 @@ function selectQuestMode(mode){
     coopBtn.style.background='rgba(20,30,45,.5)';
     coopBtn.style.borderColor='rgba(46,127,168,.25)';
     coopBtn.style.color='rgba(46,127,168,.5)';
-    desc.textContent='개인모드: 혼자 수행 +5,000원 | 상대 응원 시 협동포인트 +2';
+    desc.textContent='개인모드: 혼자 수행 +5,000원 | 응원/수고했어 시 보급상점 +1P';
   } else {
     coopBtn.style.background='rgba(46,127,168,.25)';
     coopBtn.style.borderColor='rgba(46,127,168,.6)';
@@ -8719,7 +8700,7 @@ function selectQuestMode(mode){
     soloBtn.style.background='rgba(20,30,45,.5)';
     soloBtn.style.borderColor='rgba(42,144,128,.2)';
     soloBtn.style.color='rgba(42,144,128,.4)';
-    desc.textContent='협동모드: 둘 다 완료 시 +10,000원 | 기록실에서 응원 시 협동포인트 +1 (최대 +2)';
+    desc.textContent='협동모드: 둘 다 완료 시 +10,000원 | 응원/수고했어 시 보급상점 +1P';
   }
 }
 
@@ -8871,97 +8852,36 @@ async function sendCheerMsg(toUid,questDate,questIdx,msg){
   arr[questIdx].cheerMsg=msg;
   arr[questIdx].cheerFromNick=myNickname||'상대방';
   await _fbSet(path,arr);
-  /* 팀 공유 협동포인트 +2 (나 + 상대 각각) */
-  await _addCoopPoint(2,'응원하기');
-  if(partnerData&&partnerData.uid){
-    try{
-      const ppath=`users/${partnerData.uid}/coopPoints`;
-      const ps=await _fbGet(ppath);
-      const pc=ps.exists()?(ps.val()||0):0;
-      await _fbSet(ppath,pc+2);
-    }catch(e){}
+  /* 상대방 작전 인증 완료 여부 확인 후 내 보급상점 +1P */
+  if(_cArr[questIdx]&&_cArr[questIdx].completed){
+    await addPoints(1);
+    await _savePxPointLog(questDate||selDate,'응원메시지',1);
   }
-  showToast('💜 응원! 팀 협동포인트 +2');
+  showToast('💜 응원! 보급상점 +1P');
 }
 
-/* 협동포인트 추가 — 팀 공유 포인트 (나에게만 저장, Firebase에서 공유) */
-async function _addCoopPoint(n,reason){
-  if(!_fbDb||!MY_UID) return;
-  const path=`users/${MY_UID}/coopPoints`;
-  try{const snap=await _fbGet(path);const cur=snap.exists()?(snap.val()||0):0;await _fbSet(path,cur+n);}catch(e){}
-}
+/* 협동포인트 제거 — 보급상점으로 통합 */
+async function _addCoopPoint(n,reason){ /* no-op: 삭제됨 */ }
 
 /* ══ 날짜별 개인 포인트 시스템 ══
-   users/{uid}/dayPoints/{date} = {pts: N}
-   나의 포인트: 응원포인트받기(+2), 공감하기(+1) 내가 누를 때 올라감
-   상대 포인트: 상대의 같은 경로에서 실시간 읽음
-*/
-let _myDayPoints = {};    /* {date: pts} 캐시 — 6P 상한 작전기록 */
+   (dayPoints 제거됨 — 보급상점으로 통합)
+/* ══ dayPoints/coopPoints 제거 — 보급상점(pxPoints)으로 통합 ══ */
+let _myDayPoints = {};
 let _partnerDayPoints = {};
-let _myCertDayPoints = {}; /* {date: pts} — 15만 달성 후 인증 포인트 별도 누적 (상한 없음) */
+let _myCertDayPoints = {};
 
-async function _loadDayPoints(){
-  if(!_fbDb||!MY_UID) return;
-  try{
-    const [snap, csnap] = await Promise.all([
-      _fbGet(`users/${MY_UID}/dayPoints`),
-      _fbGet(`users/${MY_UID}/certDayPoints`)
-    ]);
-    if(snap.exists()) _myDayPoints = snap.val()||{};
-    if(csnap.exists()) _myCertDayPoints = csnap.val()||{};
-  }catch(e){}
-}
+async function _loadDayPoints(){ /* no-op: 제거됨 */ }
+function _getMyDayPts(date){ return 0; }
+function _getMyCertDayPts(date){ return 0; }
+function _getPartnerDayPts(date){ return 0; }
+async function _addMyDayPt(date, n){ /* no-op: 제거됨 */ }
 
-function _getMyDayPts(date){ return (_myDayPoints[date]||0); }
-function _getMyCertDayPts(date){ return (_myCertDayPoints[date]||0); }
-function _getPartnerDayPts(date){ return (_partnerDayPoints[date]||0); }
-
-async function _addMyDayPt(date, n){
-  const MAX_DAY_PT = 6; /* 하루 최대: 인증3 + 응원2 + 수고했어1 */
-  const cur = _myDayPoints[date]||0;
-  const actual = Math.min(n, MAX_DAY_PT - cur); /* 상한 초과분 차단 */
-  if(actual <= 0) { showToast('⚠ 오늘 최대 포인트(6P)에 도달했습니다'); return; }
-  _myDayPoints[date] = cur + actual;
-  if(_fbDb&&MY_UID) await _fbSet(`users/${MY_UID}/dayPoints/${date}`, _myDayPoints[date]);
-  /* coopPoints 합산도 갱신 */
-  _addCoopPoint(actual,'dayPoint');
-}
-
-/* 상대방 dayPoints 실시간 구독 */
+/* 파트너 구독 — no-op */
 let _partnerDayPtUnsub = null;
-function _subscribePartnerDayPoints(){
-  if(_partnerDayPtUnsub){ try{_partnerDayPtUnsub();}catch(e){} _partnerDayPtUnsub=null; }
-  if(!partnerData||!partnerData.uid||!_fbDb) return;
-  _fbDb.ref(`users/${partnerData.uid}/dayPoints`).on('value', snap=>{
-    _partnerDayPoints = snap.exists()?(snap.val()||{}):{};
-    /* _partnerTotalPts = dayPoints 합산 (즉시 반영) */
-    /* 사이클 범위 내 포인트만 합산 */
-    const {start:_pStart,end:_pEnd}=getCycleRange();
-    const daySum = Object.entries(_partnerDayPoints).filter(([d])=>d>=_pStart&&d<=_pEnd).reduce((a,[,v])=>a+(v||0),0);
-    window._partnerTotalPts = daySum;
-    /* 전투기록이 열려있으면 갱신 */
-    const hp = document.getElementById('histContent');
-    if(hp && hp.closest('.panel.active')) renderHist();
-    renderCal&&renderCal();
-    /* 팀작전 전투현황 포인트 갱신 */
-    if(typeof updateGemBoxes==='function') updateGemBoxes();
-  });
-  _partnerDayPtUnsub = ()=>{ _fbDb.ref(`users/${partnerData.uid}/dayPoints`).off('value'); };
-}
+function _subscribePartnerDayPoints(){ /* no-op: dayPoints 제거됨 */ }
 
-/* 상대방 coopPoints 실시간 구독 (별도 경로 보완) */
 let _partnerCoopPtUnsub = null;
-function _subscribePartnerCoopPoints(){
-  if(_partnerCoopPtUnsub){ try{_partnerCoopPtUnsub();}catch(e){} _partnerCoopPtUnsub=null; }
-  if(!partnerData||!partnerData.uid||!_fbDb) return;
-  _fbDb.ref(`users/${partnerData.uid}/coopPoints`).on('value', snap=>{
-    const raw = snap.exists() ? (snap.val()||0) : 0;
-    const daySum = Object.values(_partnerDayPoints||{}).reduce((a,b)=>a+(b||0),0);
-    window._partnerTotalPts = Math.max(raw, daySum);
-    if(typeof updateGemBoxes==='function') updateGemBoxes();
-  });
-  _partnerCoopPtUnsub = ()=>{ _fbDb.ref(`users/${partnerData.uid}/coopPoints`).off('value'); };
-}
+function _subscribePartnerCoopPoints(){ /* no-op: coopPoints 제거됨 */ }
 
 /* ── 위생 관련 금지 키워드 ── */
 const BANNED_HYGIENE = ['씻','양치','세수','샤워','목욕','세안','면도','손씻','발씻',
@@ -9657,23 +9577,25 @@ async function submitCheerMsg(){
 
   if(!msg){showToast('응원 메시지를 입력하세요');return;}
 
-  /* ── ② cheer_request 수신 후 응원 / ① ops_register 후 "응원하기" 버튼 흐름
-       → 두 경우 모두 _pendingOpsNotif.fromUid(상대) 작전에 cheerMsg 저장 ── */
   if(!isCoopMode){
     if(!n||!n.fromUid){closeCheerMsgPopup();return;}
-    /* 아침점호 응원 — morningRoll 경로에 저장 */
+    /* 아침점호 응원 */
     if(n._isMorning){
       try{
         const mrCheerPath = `users/${n.fromUid}/morningRoll/${n.questDate}`;
         await _fbUpdate(mrCheerPath, { cheerMsg: msg, cheerFromNick: myNickname||'상대방' });
       }catch(e){}
-      await _addCoopPoint(2,'응원하기');
-      if(partnerData&&partnerData.uid){
-        try{const pp=`users/${partnerData.uid}/coopPoints`;const ps=await _fbGet(pp);const pc=ps.exists()?(ps.val()||0):0;await _fbSet(pp,pc+2);}catch(e){}
-      }
+      /* 상대방 인증 완료 확인 후 내 보급상점 +1P */
+      try{
+        const mrSnap=await _fbGet(`users/${n.fromUid}/morningRoll/${n.questDate}`);
+        if(mrSnap.exists()&&mrSnap.val()&&mrSnap.val().completed){
+          await addPoints(1);
+          await _savePxPointLog(n.questDate||selDate,'응원메시지',1);
+        }
+      }catch(e){}
       closeCheerMsgPopup();
       renderPartnerOps();
-      showToast('💜 응원 완료! 팀 협동포인트 +2');
+      showToast('💜 응원 완료! 보급상점 +1P');
       return;
     }
     /* 상대방 Firebase 경로에 cheerMsg 저장 */
@@ -9690,15 +9612,22 @@ async function submitCheerMsg(){
         }
       }
     }catch(e){}
-    /* 팀 협동포인트 +2 양쪽 */
-    await _addCoopPoint(2,'응원하기');
-    if(partnerData&&partnerData.uid){
-      try{const pp=`users/${partnerData.uid}/coopPoints`;const ps=await _fbGet(pp);const pc=ps.exists()?(ps.val()||0):0;await _fbSet(pp,pc+2);}catch(e){}
-    }
+    /* 상대방 작전 인증 완료 여부 확인 후 내 보급상점 +1P */
+    try{
+      const _cPath=_questPath(n.fromUid, n.questDate);
+      const _cSnap=await _fbGet(_cPath);
+      if(_cSnap.exists()){
+        const _cArr=_cSnap.val()||[];
+        const _cQi=typeof n.questIdx==='number'?n.questIdx:0;
+        if(_cArr[_cQi]&&_cArr[_cQi].completed){
+          await addPoints(1);
+          await _savePxPointLog(n.questDate||selDate,'응원메시지',1);
+        }
+      }
+    }catch(e){}
     closeCheerMsgPopup();
     renderPartnerOps();
-    showToast('💜 응원 완료! 팀 협동포인트 +2');
-    /* 카카오톡 공유 버튼 표시 */
+    showToast('💜 응원 완료! 보급상점 +1P');
     _showKakaoShareBtn('cheer', n?.questName||'작전', myNickname||'나');
     return;
   }
@@ -9742,12 +9671,22 @@ async function submitCheerMsg(){
     }
   }catch(e){}
   if(popup){popup._coopMode=false;popup._coopQi=null;}
-  /* 팀 협동포인트 +2 양쪽 */
-  await _addCoopPoint(2,'응원하기');
-  try{const pp=`users/${partnerData.uid}/coopPoints`;const ps=await _fbGet(pp);const pc=ps.exists()?(ps.val()||0):0;await _fbSet(pp,pc+2);}catch(e){}
+  /* 협동작전 응원 → 상대 인증 완료 시 내 보급상점 +1P */
+  try{
+    const _cCoopPath=_questPath(n.fromUid||partnerData.uid, n.questDate||selDate);
+    const _cCoopSnap=await _fbGet(_cCoopPath);
+    if(_cCoopSnap.exists()){
+      const _cCoopArr=_cCoopSnap.val()||[];
+      const _cCoopQi=popup&&popup._coopQi!=null?popup._coopQi:qi;
+      if(_cCoopArr[_cCoopQi]&&_cCoopArr[_cCoopQi].completed){
+        await addPoints(1);
+        await _savePxPointLog(n.questDate||selDate,'응원메시지',1);
+      }
+    }
+  }catch(e){}
   closeCheerMsgPopup();
   renderPartnerOps();
-  showToast('💜 협동작전 응원 완료! 팀 +2 협동포인트');
+  showToast('💜 협동작전 응원 완료! 보급상점 +1P');
 }
 
 /* 같이하기 → 내 퀘스트로 복사 등록 */
@@ -10976,11 +10915,7 @@ function renderCal(){
     const el=document.createElement('div');
     const isCycleStart = _isCycleStartMonth && (d.getDate()===_sd);
     el.className=`cday ${st} ${key===todayStr?'today':''} ${key===selDate?'sel-d':''} ${isCycleStart?'cycle-start':''}`;
-    /* 날짜별 포인트 — 내 dayPoints만 표시 */
-    const _myDp = _getMyDayPts(key);
-    const _pDp  = _getPartnerDayPts(key);
-    const _dpLabel = _myDp>0?`+${_myDp}p`:'';
-    el.innerHTML=`<div style="font-size:10px;${isCycleStart?'font-weight:900;color:rgba(139,108,58,1);':''}">${d.getDate()}</div><div class="cpct" style="font-family:var(--orb);font-size:9px;font-weight:900;color:${_myDp>0?'#2A4AB5':'rgba(155,155,155,.4)'};">${_dpLabel}</div>`;
+    el.innerHTML=`<div style="font-size:10px;${isCycleStart?'font-weight:900;color:rgba(139,108,58,1);':''}">${d.getDate()}</div>`;
     el.addEventListener('click',()=>{
       selDate=key;if(!allData[key]) allData[key]=[];quests=allData[key];
       renderCal();renderQ();renderDayTabs();updateHUD();
@@ -10990,11 +10925,10 @@ function renderCal(){
     });
     grid.appendChild(el);
   }
-  /* 달성일 기준 시작일부터 오늘까지 누적 협동포인트 = 나 + 상대 dayPoints 합산 */
+  /* 협동포인트 제거됨 */
   const _cycleStartDateStr=`${String(_cycleStartY).padStart(4,'0')}-${String(_cycleStartM+1).padStart(2,'0')}-${String(_sd).padStart(2,'0')}`;
   let _myTotal=0, _partnerTotal=0;
-  Object.entries(_myDayPoints).forEach(([d,v])=>{ if(d>=_cycleStartDateStr&&d<=todayStr) _myTotal+=v; });
-  Object.entries(_partnerDayPoints).forEach(([d,v])=>{ if(d>=_cycleStartDateStr&&d<=todayStr) _partnerTotal+=v; });
+  /* dayPoints 제거됨 */
   const _totalCoopPts = _myTotal + _partnerTotal;
   /* 누적금액·포인트 표시 제거 */
   /* 달성기준일 표시 업데이트 */
@@ -11105,10 +11039,9 @@ function _openEmpathyPopup(item, listIdx, _extCk, _extBtn){
         const _ep=Object.keys(_flags).filter(k=>k.startsWith('histEmpathy_')).length;
         if(_fbDb&&MY_UID) _fbUpdate('users/'+MY_UID+'/profile',{empathyPoints:_ep});
         await _addMyDayPt(item.questDate||selDate, 1); /* 수고했어 → 작전기록 +1p */
-        /* 개인누적금 15만 달성 후에는 보급상점에도 적립 */
-        const _empCapCheck = calcRewardCap();
-        const _empRawPersonal = Object.values(getCycleData()).reduce((sum,items)=>sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||5000),0),0);
-        if(_empRawPersonal >= _empCapCheck.personalCap){ await addPoints(1); } /* 수고했어 → 보급상점 +1p (한도 달성 후) */
+        /* 수고했어 → 항상 보급상점 +1P (15만 달성 여부 무관) */
+        await addPoints(1);
+        await _savePxPointLog(item.questDate||selDate,'수고했어',1);
       }catch(ee){}
       if(listIdx>=0) _empathyPendingList.splice(listIdx,1);
       _renderEmpathyBadge();
@@ -11193,23 +11126,9 @@ function _renderHistInner(){
     const myNick=myNickname||'나';
     const pName=(partnerData&&partnerData.nickname)||'파트너';
 
-    /* ── 날짜별 나/상대 포인트 (dayPoints 캐시) ── */
-    const myPts      = _getMyDayPts(date);
-    const partnerPts = _getPartnerDayPts(date);
-    const myCertPts  = _getMyCertDayPts(date);   /* 한도 달성 후 인증 포인트 */
-    const capNow     = calcRewardCap();
-    const rawPersonalNow = Object.values(getCycleData()).reduce((sum,items)=>
-      sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||5000),0),0);
-    const certBarActive  = rawPersonalNow >= capNow.personalCap; /* 개인한도 달성 후 활성화 */
-    const MAX_EACH   = 6;
-    const myPct      = Math.min(100, Math.round((myPts  / MAX_EACH)*100));
-    const pPct       = Math.min(100, Math.round((partnerPts / MAX_EACH)*100));
-    const myColor    = '#3A8A55';
-    const partColor  = '#6A42C4';
-
+    /* ── 날짜별 포인트 바 제거 (보급상점으로 통합) ── */
     const entry=document.createElement('div');
     entry.className='hist-entry';
-    /* 오늘은 테두리 강조 */
     if(isToday) entry.style.cssText='border:2px solid rgba(47,74,54,.35);border-radius:16px;padding:14px;background:rgba(47,74,54,.03);';
 
     let html=`
@@ -11218,43 +11137,6 @@ function _renderHistInner(){
           <div style="font-family:var(--title);font-size:13px;font-weight:900;color:#1A1F1C;">${date}</div>
           ${isToday?'<span style="font-size:9px;background:#1E2D24;color:#A8F0C8;padding:2px 7px;border-radius:4px;font-family:var(--orb);">TODAY</span>':''}
         </div>
-        <!-- ① 작전기록 포인트 바 (6P 상한 — 응원2P×2 + 수고했어1P×2) -->
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <!-- 나 -->
-          <div style="text-align:right;min-width:50px;flex-shrink:0;">
-            <div style="font-family:var(--kr);font-size:9px;font-weight:700;color:${myColor};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${myNick}</div>
-            <div style="font-family:var(--orb);font-size:11px;font-weight:900;color:${myColor};">${myPts}p</div>
-          </div>
-          <!-- 바 -->
-          <div style="flex:1;position:relative;height:10px;background:rgba(61,72,64,.08);border-radius:5px;overflow:visible;">
-            <!-- 나 왼→중 -->
-            <div style="position:absolute;left:0;top:0;height:100%;width:${myPct/2}%;background:linear-gradient(90deg,${myColor},${myColor}88);border-radius:5px 0 0 5px;transition:width .5s ease;"></div>
-            <!-- 상대 우→중 -->
-            <div style="position:absolute;right:0;top:0;height:100%;width:${pPct/2}%;background:linear-gradient(270deg,${partColor},${partColor}88);border-radius:0 5px 5px 0;transition:width .5s ease;"></div>
-            <!-- 중앙선 -->
-            <div style="position:absolute;left:50%;top:-3px;width:2px;height:16px;background:rgba(61,72,64,.25);transform:translateX(-50%);border-radius:1px;"></div>
-          </div>
-          <!-- 상대 -->
-          <div style="text-align:left;min-width:50px;flex-shrink:0;">
-            <div style="font-family:var(--kr);font-size:9px;font-weight:700;color:${partColor};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pName}</div>
-            <div style="font-family:var(--orb);font-size:11px;font-weight:900;color:${partColor};">${partnerPts}p</div>
-          </div>
-        </div>
-        <!-- ② 개인달성완료 인증포인트누적 칸 -->
-        ${certBarActive
-          ? `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(83,74,183,.07);border:1px solid rgba(83,74,183,.28);border-radius:8px;">
-              <div style="font-family:var(--kr);font-size:8px;font-weight:700;color:rgba(120,100,220,.85);white-space:nowrap;flex-shrink:0;line-height:1.4;">개인달성완료<br>인증포인트누적</div>
-              <div style="flex:1;position:relative;height:7px;background:rgba(83,74,183,.10);border-radius:4px;overflow:hidden;margin:0 4px;">
-                <div style="position:absolute;left:0;top:0;height:100%;width:${Math.min(100,myCertPts>0?Math.round((myCertPts/Math.max(myCertPts,10))*100):0)}%;background:linear-gradient(90deg,rgba(100,80,220,.75),rgba(160,130,255,.65));border-radius:4px;transition:width .6s ease;"></div>
-              </div>
-              <div style="font-family:var(--orb);font-size:13px;font-weight:900;color:rgba(120,100,220,.95);flex-shrink:0;">${myCertPts}p</div>
-            </div>`
-          : `<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;background:rgba(61,72,64,.03);border:1px dashed rgba(61,72,64,.12);border-radius:8px;">
-              <div style="font-family:var(--kr);font-size:8px;font-weight:700;color:rgba(61,72,64,.30);white-space:nowrap;flex-shrink:0;line-height:1.4;">개인달성완료<br>인증포인트누적</div>
-              <div style="flex:1;height:7px;background:rgba(61,72,64,.05);border-radius:4px;margin:0 4px;"></div>
-              <div style="font-family:var(--kr);font-size:8px;color:rgba(61,72,64,.30);text-align:right;flex-shrink:0;line-height:1.3;">개인 누적금액<br>달성 후 적립</div>
-            </div>`
-        }
       </div>`;
 
     const myItems=items_with_mr.filter(q=>q.mode!=='coop');
@@ -12616,7 +12498,7 @@ function renderStatsRevenueCard(){
     }
     /* 구 completedMissions (중복 방지) */
     cm.slice(-3).reverse().forEach(m=>{
-      const alreadyInHQ=[1,2,3,4].some(n=>(window['tmMyReward'+n]||0)>0 && m.n===n);
+      const alreadyInHQ=[1,2,3].some(n=>(window['tmMyReward'+n]||0)>0 && m.n===n);
       if(!alreadyInHQ) detailLines.push(`<div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,75,.92);margin-top:2px;">✅ 특수작전${m.n}: +${(m.reward||0).toLocaleString()}원</div>`);
     });
     tmDetail.innerHTML=detailLines.join('');
@@ -13499,7 +13381,7 @@ function mpUpdateAbGemBox(n, state){
 
 /* 연결되면 AB 구독 시작 — acceptConnectRequest / 기존 리스너에서 호출 */
 function mpStartAllAbSubscriptions(){
-  [1,2,3,4].forEach(n=> mpSubscribeAb(n));
+  [1,2,3].forEach(n=> mpSubscribeAb(n));
 }
 
 /* 기존 빈 함수 유지 (호출부 에러 방지) */
@@ -13525,39 +13407,32 @@ window._mpHandleAccepted = async function(n){
 
 /* ═══════════════════════════════════════════════════════════════════
    🎯 팀 비밀상자 미션 엔진 v3
-   특수임무1(2만) / 특수임무2(5만) / 특수임무3(7만) / 스페셜임무(10만)
+   특수임무1(6만) / 특수임무2(12만) / 스페셜임무A(야구4S)
 ═══════════════════════════════════════════════════════════════════ */
 
 /* 미션 설정 */
 const TM = {
-  /* 특수임무1: 에메랄드 그린 — 3만원 달성 시 개방 */
-  1: { th:30000,  label:'특수임무1', path:'tm_mission1', thType:'money',
+  /* 특수임무1: 에메랄드 그린 — 양쪽 6만원 달성 시 개방 */
+  1: { th:60000,  label:'특수임무1', path:'tm_mission1', thType:'money',
        color:'rgba(52,211,153,1)',   colorDim:'rgba(16,185,129,1)',
        border:'rgba(52,211,153,.5)', glow:'rgba(52,211,153,.18)',
        bgCard:'rgba(2,44,32,.95)',   bgHeader:'linear-gradient(135deg,rgba(5,60,42,.9),rgba(2,35,25,.95))',
        topLine:'linear-gradient(90deg,transparent,rgba(52,211,153,.7),transparent)',
        box:'rgba(52,211,153,.5)',  rewards:[20000,30000,40000] },
-  /* 특수임무2: 바이올렛 퍼플 — 7만원 달성 시 개방 */
-  2: { th:70000,  label:'특수임무2', path:'tm_mission2', thType:'money',
+  /* 특수임무2: 바이올렛 퍼플 — 양쪽 12만원 달성 시 개방 */
+  2: { th:120000,  label:'특수임무2', path:'tm_mission2', thType:'money',
        color:'rgba(167,139,250,1)',  colorDim:'rgba(139,92,246,1)',
        border:'rgba(167,139,250,.5)',glow:'rgba(167,139,250,.18)',
        bgCard:'rgba(30,8,60,.95)',   bgHeader:'linear-gradient(135deg,rgba(42,12,80,.9),rgba(25,6,50,.95))',
        topLine:'linear-gradient(90deg,transparent,rgba(167,139,250,.7),transparent)',
        box:'rgba(167,139,250,.5)', rewards:[20000,30000,40000] },
-  /* 스페셜임무A: 골드 — 협동포인트 20p 달성 시 개방 (A·B 동시 해금) */
-  3: { th:20,    label:'스페셜임무A', path:'tm_special_a', thType:'coop',
+  /* 스페셜임무A: 골드 — 야구게임 4S 달성 시 해금 (개인임무) */
+  3: { th:0,    label:'스페셜임무A', path:'tm_special_a', thType:'baseball',
        color:'rgba(251,191,36,1)',   colorDim:'rgba(245,158,11,1)',
        border:'rgba(251,191,36,.55)',glow:'rgba(251,191,36,.2)',
        bgCard:'rgba(40,25,2,.95)',   bgHeader:'linear-gradient(135deg,rgba(55,34,3,.9),rgba(35,20,2,.95))',
        topLine:'linear-gradient(90deg,transparent,rgba(251,191,36,.7),transparent)',
-       box:'rgba(251,191,36,.6)',  rewards:[30000,40000,50000,60000] },
-  /* 스페셜임무B: 다이아 블루 — 협동포인트 20p 달성 시 개방 (A·B 동시 해금) */
-  4: { th:20,   label:'스페셜임무B', path:'tm_special_b', thType:'coop',
-       color:'rgba(99,210,255,1)',   colorDim:'rgba(56,170,240,1)',
-       border:'rgba(99,210,255,.55)',glow:'rgba(99,210,255,.20)',
-       bgCard:'rgba(2,25,45,.95)',   bgHeader:'linear-gradient(135deg,rgba(4,38,68,.9),rgba(2,20,42,.95))',
-       topLine:'linear-gradient(90deg,transparent,rgba(99,210,255,.7),transparent)',
-       box:'rgba(99,210,255,.6)',  rewards:[30000,40000,50000,60000] }
+       box:'rgba(251,191,36,.6)',  rewards:[20000,30000,40000] }
 };
 
 const TM_QUESTIONS = [
@@ -13589,10 +13464,13 @@ function _tmMyM(){ return window.calcTotalPersonalMoney ? calcTotalPersonalMoney
 function _tmOppM(){ return partnerData ? (partnerData.money||0) : 0; }
 function _tmUnlocked(n){
   const cfg=TM[n];
+  /* 스페셜임무A(n===3): 야구게임 4S 달성 여부로 판단 */
+  if(n===3 || cfg.thType==='baseball'){
+    return !!(window._bbSpecialAUnlocked);
+  }
   if(cfg.thType==='coop'){
     const myCP=Object.values(_myDayPoints||{}).reduce((a,b)=>a+b,0);
     const oppCP=window._partnerTotalPts||0;
-    /* 랜덤 임계값: Firebase에서 로드된 값 사용, 없으면 fallback */
     const _ths = window._specialThresholds||{a:30,b:50};
     const t = (n===3) ? _ths.a : _ths.b;
     return myCP>=t && oppCP>=t;
@@ -13606,7 +13484,7 @@ function _tmUnlocked(n){
 ────────────────────────────────────────── */
 function tmBuildCard(n){
   const cfg  = TM[n];
-  const isSpecial = n===3||n===4;
+  const isSpecial = n===3;
   const icon = isSpecial ? '💎' : '🔒';
   const lockedBg = isSpecial
     ? 'linear-gradient(160deg,rgba(40,30,5,.8),rgba(30,20,3,.95))'
@@ -13641,7 +13519,7 @@ function tmBuildCard(n){
     <!-- 조건 -->
     <div style="text-align:center;margin-bottom:12px;">
       <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.82);margin-bottom:3px;">잠금 해제 조건</div>
-      <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:${cfg.color.replace('1)','.9)')}">${isSpecial?'💎 스페셜 ':''}<span style="font-size:14px;color:#fff;">${cfg.thType==='coop'?'20p~60p 랜덤 달성':(cfg.th/10000).toFixed(0)+'만원 달성'}</span></div>
+      <div style="font-family:var(--kr);font-size:12px;font-weight:900;color:${cfg.color.replace('1)','.9)')}">${isSpecial?'💎 스페셜 ':''}<span style="font-size:14px;color:#fff;">${cfg.thType==='baseball'?'암호점호 4S 해금':cfg.thType==='coop'?'20p~60p 랜덤 달성':(cfg.th/10000).toFixed(0)+'만원 달성'}</span></div>
     </div>
     <!-- 진행 바 -->
     <div>
@@ -13676,7 +13554,7 @@ function tmBuildCard(n){
       <span style="font-size:18px;">${isSpecial?'💎':'🎁'}</span>
       <div>
         <div style="font-family:var(--orb);font-size:9px;letter-spacing:1.5px;color:${cfg.color.replace('1)','.6)')};margin-bottom:2px;">${isSpecial?'JEWEL BOX UNLOCKED':'SECRET BOX UNLOCKED'}</div>
-        <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.5);">${isSpecial?'보석함이 열렸어요! 5일 미션을 완수하세요':'양쪽 모두 '+(cfg.thType==="coop"?cfg.th+"p":Math.round(cfg.th/10000)+"만원")+' 달성!'}</div>
+        <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.5);">${cfg.thType==='baseball'?'암호점호 4S 달성 시 자동 해금':isSpecial?'보석함이 열렸어요! 5일 미션을 완수하세요':'양쪽 모두 '+(cfg.thType==="coop"?cfg.th+"p":Math.round(cfg.th/10000)+"만원")+' 달성!'}</div>
       </div>
     </div>
     ${isSpecial ? `
@@ -13777,7 +13655,7 @@ function tmRender(qaData, n){
   const myAns = qaData ? (qaData[mk]||null) : null;
   const oppAns= qaData ? (qaData[ok]||null) : null;
   const bothDone = !!(myAns && oppAns);
-  const isSpecial = n===3||n===4; /* 스페셜임무A,B 모두 포함 */
+  const isSpecial = n===3; /* 스페셜임무A */
 
   /* 완료 — rewardDone이 있으면 qaData 없어도 complete 표시 */
   const rewardDoneFlag = !isSpecial && !!window['tmRewardDone'+n];
@@ -14053,44 +13931,6 @@ async function tmSave(n){
   const update = { question };
   update[_tmMK()] = ans;
   update[_tmMK()+'_at'] = Date.now();
-
-  if(n===4){
-    /* 스페셜: Firebase에서 현재 days/completedDays 읽어 업데이트 */
-    try{
-      const snap = await _fbGet(path);
-      const d = snap.exists() ? snap.val() : {};
-      const mk = MY_UID < _tmPUid() ? 'days_a' : 'days_b';
-      const ok = MY_UID < _tmPUid() ? 'days_b' : 'days_a';
-      let myDays = d[mk] ? [...d[mk]] : [false,false,false,false,false];
-      const oppDays = d[ok] || [false,false,false,false,false];
-      const completedDays = d.completedDays || 0;
-      const todayIdx = completedDays; /* 0~4 */
-      if(todayIdx < 5){
-        myDays[todayIdx] = true;
-        update[mk] = myDays;
-        /* 상대도 이미 완료했으면 → DAY 진행 + Q/A 초기화 */
-        if(oppDays[todayIdx]===true){
-          const newCompleted = completedDays + 1;
-          update.completedDays = newCompleted;
-          update[_tmMK()] = null;
-          update[_tmOK()] = null;
-          update.question = null;
-          await _fbUpdate(path, update);
-          if(newCompleted >= 5){
-            showToast('🎉 DAY 5 완료! 스페셜임무 달성! (+100,000원)');
-          } else {
-            showToast('✅ DAY '+(todayIdx+1)+' 완료! 양쪽 모두 달성!');
-          }
-        } else {
-          await _fbUpdate(path, update);
-          showToast('✅ DAY '+(todayIdx+1)+' 답글 저장! 상대방 대기중...');
-        }
-      } else {
-        showToast('이미 5일 모두 완료했습니다!');
-      }
-    } catch(e){ showToast('⚠ 저장 실패. 다시 시도해주세요.'); }
-    return;
-  }
 
   try{
     await _fbUpdate(path, update);
@@ -14450,57 +14290,6 @@ function tmSubscribe(n){
         }
         if(window.renderStatsRevenueCard) renderStatsRevenueCard();
       }
-      /* 스페셜: days 동기화 + 양쪽 답글 완료 시 DAY 자동 진행 */
-      if(n===4){
-        const mkD = MY_UID<_tmPUid()?'days_a':'days_b';
-        const okD = MY_UID<_tmPUid()?'days_b':'days_a';
-        const myDays  = d[mkD] ? [...d[mkD]] : [false,false,false,false,false];
-        const oppDays = d[okD] || [false,false,false,false,false];
-        const cd = d.completedDays||0;
-        const myAns  = d[_tmMK()]||null;
-        const oppAns = d[_tmOK()]||null;
-
-        /* 양쪽 모두 오늘 답글 → 아직 completedDays 증가 안 됐으면 자동 진행 */
-        if(myAns && oppAns && cd < 5){
-          const todayIdx = cd;
-          if(!myDays[todayIdx] || !oppDays[todayIdx]){
-            /* 서버에서 completedDays 올리기 */
-            const newMy = [...myDays];
-            const newOpp= [...oppDays];
-            newMy[todayIdx] = true; newOpp[todayIdx] = true;
-            const newCd = cd + 1;
-            const upd = { completedDays: newCd };
-            upd[mkD] = newMy; upd[okD] = newOpp;
-            upd[_tmMK()] = null; upd[_tmOK()] = null; upd.question = null;
-            _fbUpdate(_tmPath(4), upd).then(()=>{
-              if(newCd>=5){
-                showToast('🎉 5일 챌린지 완료! +100,000원');
-              } else {
-                showToast('✅ DAY '+(todayIdx+1)+' 양쪽 완료! DAY '+(newCd+1)+' 시작');
-              }
-            }).catch(()=>{});
-          }
-        }
-
-        /* 서버 days 보정 */
-        const fixedMyDays = [...myDays];
-        let needUpdate = false;
-        for(let i=0; i<cd && i<5; i++){
-          if(oppDays[i] && !fixedMyDays[i]){ fixedMyDays[i]=true; needUpdate=true; }
-        }
-        if(needUpdate){ const uf={}; uf[mkD]=fixedMyDays; _fbUpdate(_tmPath(4),uf).catch(()=>{}); }
-
-        if(cd>=5 && !window['tmRewardDone4']){
-          window['tmRewardDone4']=true;
-          window['tmMyReward4']=100000;
-          if(!window.teamData) window.teamData={};
-          if(!window.teamData.completedMissions) window.teamData.completedMissions=[];
-          if(!window.teamData.completedMissions.find(m=>m.n===4)){
-            window.teamData.completedMissions.push({n:4,label:'스페셜임무',reward:100000,completedAt:Date.now()});
-          }
-          renderStatsRevenueCard();
-        }
-      }
     }
 
     tmRender(d, n);
@@ -14531,7 +14320,7 @@ function teamQAUpdateBox(){
 function teamQAOnConnect(){
   const wrap=document.getElementById('tmCardsWrap');
   if(wrap) wrap.style.display='none';
-  [1,2,3,4].forEach(n=>{
+  [1,2,3].forEach(n=>{
     window['tmSub'+n]=false;
     window['tmUnlockToasted'+n]=false;
     tmBuildCard(n);
@@ -14539,7 +14328,7 @@ function teamQAOnConnect(){
     tmRender(null,n);
   });
   const pName=_tmPN();
-  [1,2,3,4].forEach(n=>{
+  [1,2,3].forEach(n=>{
     const ol=document.getElementById('tmOppNameLock'+n);
     if(ol) ol.textContent=pName;
   });
@@ -14555,7 +14344,7 @@ function teamQAOnDisconnect(){
   if(wrap) wrap.style.display='none';
   const hq=document.getElementById('tmHQWrap');
   if(hq) hq.style.display='none';
-  [1,2,3,4].forEach(n=>{ window['tmSub'+n]=false; window['tmUnlockToasted'+n]=false; });
+  [1,2,3].forEach(n=>{ window['tmSub'+n]=false; window['tmUnlockToasted'+n]=false; });
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -14727,7 +14516,7 @@ function tmHQRenderHome(){
   if(!list) return;
 
   let unlockedCnt=0, doneCnt=0;
-  list.innerHTML = [1,2,3,4].map(n=>{
+  list.innerHTML = [1,2,3].map(n=>{
     const cfg=TM[n];
     const unlocked=_tmUnlocked(n);
     const done=!!window['tmRewardDone'+n];
@@ -14777,8 +14566,8 @@ function tmHQRenderHome(){
             ${badgeHtml}
           </div>
           ${done ? `<div style="font-family:var(--kr);font-size:9px;color:${cfg.color};">보상 획득 완료</div>` : `
-          <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.75);margin-bottom:6px;">${unlocked?'임무 진행 가능':'해제 조건: '+(cfg.thType==="coop"?'20p~60p 랜덤':(cfg.th/10000).toFixed(0)+"만원")+' 달성'}</div>
-          ${unlocked && n===4 ? `<button onclick="event.stopPropagation();_openSpecialSelectWithStatus()" style="padding:6px 12px;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.4);border-radius:7px;color:rgba(251,191,36,.9);font-family:var(--kr);font-size:9px;font-weight:700;cursor:pointer;margin-bottom:5px;width:100%;">💎 스페셜임무 선택 / 현황 확인</button>` : ''}
+          <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.75);margin-bottom:6px;">${unlocked?'임무 진행 가능':cfg.thType==='baseball'?'암호점호 4S 달성':'해제 조건: '+(cfg.thType==="coop"?'20p~60p 랜덤':(cfg.th/10000).toFixed(0)+"만원")+' 달성'}</div>
+          
           <div style="height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-bottom:2px;">
             <div style="height:100%;width:${myPct}%;background:linear-gradient(90deg,${cfg.color},${cfg.colorDim});border-radius:2px;transition:width .5s;"></div>
           </div>
@@ -14820,10 +14609,10 @@ async function tmHQRenderRewardPanel(){
 
   const myName = (myNickname&&myNickname!=='')?myNickname:'나';
   const pName  = _tmPN();
-  const labels = {1:'특수임무1',2:'특수임무2',3:'특수임무3',4:'스페셜임무'};
+  const labels = {1:'특수임무1',2:'특수임무2',3:'스페셜임무A'};
 
   /* 각 임무 결과 로드 */
-  const items = await Promise.all([1,2,3,4].map(async n=>{
+  const items = await Promise.all([1,2,3].map(async n=>{
     const cfg = TM[n];
     const done = !!window['tmRewardDone'+n];
     const unlocked = _tmUnlocked(n);
@@ -14850,7 +14639,7 @@ async function tmHQRenderRewardPanel(){
       const myPick = rd[mk+'_pick'];
       const oppPick= rd[ok+'_pick'];
       const rewards= (rd.box_order && Array.isArray(rd.box_order) && rd.box_order.length) ? rd.box_order : cfg.rewards;
-      const oppAmt = (oppPick!==undefined&&rewards) ? (rewards[oppPick]||0) : (n===4?100000:0);
+      const oppAmt = (oppPick!==undefined&&rewards) ? (rewards[oppPick]||0) : 0;
       return { n, cfg, done:true, unlocked:true, myAns, oppAns, myAmt, oppAmt, myPick, oppPick, rewards };
     } catch(e){
       return { n, cfg, done:true, unlocked:true, myAns:'', oppAns:'', myAmt:window['tmMyReward'+n]||0, oppAmt:0 };
@@ -14867,7 +14656,7 @@ async function tmHQRenderRewardPanel(){
         <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">🔒</div>
         <div style="flex:1;">
           <div style="font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(255,255,255,.70);">${cfg.label}</div>
-          <div style="font-family:var(--orb);font-size:9px;color:rgba(255,255,255,.18);margin-top:2px;">${cfg.thType==="coop"?cfg.th+"p":(cfg.th/10000).toFixed(0)+"만원"} 달성 시 해제</div>
+          <div style="font-family:var(--orb);font-size:9px;color:rgba(255,255,255,.18);margin-top:2px;">${cfg.thType==='baseball'?'암호점호 4S':cfg.thType==="coop"?cfg.th+"p":(cfg.th/10000).toFixed(0)+"만원"} 달성 시 해제</div>
         </div>
       </div>`;
     }
@@ -15016,8 +14805,8 @@ async function tmHQDayCompleteTester(){
 
   if(todayIdx + 1 >= 5){
     /* 5일 모두 완료 → 리워드 지급 */
-    window['tmRewardDone4'] = true;
-    window['tmMyReward4'] = 100000;
+    /* tmRewardDone4 removed - spB deleted */
+    /* tmMyReward4 removed - spB deleted */
     setTimeout(()=>{
       _tmHQShowView('tmHQResult');
       _tmHQSetResultCard(4);
@@ -15058,7 +14847,6 @@ function calcRewardCap(){
   const specialTotal = s1 + s2;
 
   /* 스페셜임무 (포인트 해금) */
-  const specialOp = window['tmMyReward4']||0;
 
   /*
    * 개인임무 한도:
@@ -15071,8 +14859,7 @@ function calcRewardCap(){
   const personalCap = 150000 + specialBonus;
 
   const specialOp3 = window['tmMyReward3']||0; /* 스페셜임무A */
-  const specialOp4 = window['tmMyReward4']||0; /* 스페셜임무B */
-  const specialOpTotal = specialOp3 + specialOp4;
+  const specialOpTotal = specialOp3;
   return {
     specialTotal,
     specialBonus,
@@ -15475,7 +15262,7 @@ async function _spEnter(){
   _tmHQApplyTheme(n);
 
   /* 완료 상태 */
-  if(window['tmRewardDone4']){
+  if(false){ /* tmRewardDone4 removed - spB deleted */
     _tmHQShowView('tmHQResult');
     _tmHQSetResultCard(4);
     return;
@@ -15796,8 +15583,8 @@ async function _spDayComplete(){
     await _fbUpdate(path, update).catch(()=>{});
     if(newCompleted >= 5){
       showToast('🎉 DAY 5 완료! 스페셜임무 달성!');
-      window['tmRewardDone4'] = true;
-      window['tmMyReward4']   = 100000;
+      /* tmRewardDone4 removed - spB deleted */
+      /* tmMyReward4 removed */
       tmHQRenderHome();
       setTimeout(()=>{ _spClaimReward(); }, 800);
     } else {
@@ -15843,8 +15630,8 @@ async function _spTesterNextDay(){
 
   if(newCompleted >= 5){
     showToast('🎉 DAY 5 완료! 스페셜임무 달성!');
-    window['tmRewardDone4'] = true;
-    window['tmMyReward4']   = 100000;
+    /* tmRewardDone4 removed - spB deleted */
+    /* tmMyReward4 removed */
     setTimeout(()=>{
       _spClaimReward();
       tmHQRenderHome();
@@ -15857,8 +15644,8 @@ async function _spTesterNextDay(){
 
 /* 보상 청구 */
 function _spClaimReward(){
-  window['tmRewardDone4'] = true;
-  window['tmMyReward4']   = 100000;
+  /* tmRewardDone4 removed - spB deleted */
+  /* tmMyReward4 removed */
   /* 전체화면 보상 팡! */
   const flash = document.getElementById('tmRewardFlash');
   const inner = document.getElementById('tmRewardFlashInner');
@@ -15907,7 +15694,7 @@ function _tmHQShowDetail(n, q, myAns, oppAns){
 
   /* 보물상자 섹션 — 스페셜(n=4)은 숨김 */
   const boxSection=document.getElementById('tmHQBoxSection');
-  if(boxSection) boxSection.style.display=(n===4)?'none':'block';
+  if(boxSection) boxSection.style.display='block';
 
   /* 스페셜 DAY 진행 표시 */
   const daySection=document.getElementById('tmHQDaySection');
@@ -17055,40 +16842,6 @@ function _bbResetBottomArea(){
   area.innerHTML = `<button onclick="closeBaseballPopup()" style="width:100%;padding:10px;background:transparent;border:none;color:rgba(255,255,255,.28);font-family:var(--kr);font-size:11px;cursor:pointer;">닫기</button>`;
 }
 
-/* 내일 예약 버튼 */
-async function _bbShowTomorrowReserveBtn(){
-  const area = document.getElementById('bbBottomArea');
-  if(!area) return;
-  const _now2 = _virtualNow();
-  const _mrTmr = (()=>{ const d=new Date(_now2); d.setDate(d.getDate()+1); return dateStr(d); })();
-  const _mrResKey = `mrReserved_${MY_UID}_${_mrTmr}`;
-  const _alreadyRes = _getFlag(_mrResKey);
-  let _alreadyReg = false;
-  try{ const s=await _fbGet(_mrPath(_mrTmr)); _alreadyReg=s&&s.exists(); }catch(e){}
-
-  if(_alreadyRes||_alreadyReg){
-    area.innerHTML = `
-      <div style="width:100%;padding:9px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.20);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(42,77,181,.50);text-align:center;margin-bottom:6px;">📋 내일 아침점호 예약완료</div>
-      <button onclick="closeBaseballPopup()" style="width:100%;padding:9px;background:transparent;border:none;color:rgba(255,255,255,.28);font-family:var(--kr);font-size:11px;cursor:pointer;">닫기</button>`;
-  } else {
-    area.innerHTML = `
-      <button onclick="bbReserveTomorrow()" style="width:100%;padding:11px;background:linear-gradient(135deg,rgba(42,77,181,.22),rgba(30,60,150,.18));border:1.5px solid rgba(42,77,181,.50);border-radius:12px;font-family:var(--kr);font-size:11px;font-weight:900;color:rgba(100,140,255,.95);cursor:pointer;margin-bottom:6px;">📋 내일 아침점호 예약하기</button>
-      <button onclick="closeBaseballPopup()" style="width:100%;padding:9px;background:transparent;border:none;color:rgba(255,255,255,.28);font-family:var(--kr);font-size:11px;cursor:pointer;">닫기</button>`;
-  }
-}
-
-async function bbReserveTomorrow(){
-  const _now3 = _virtualNow();
-  const _mrTmr2 = (()=>{ const d=new Date(_now3); d.setDate(d.getDate()+1); return dateStr(d); })();
-  const _mrResKey3 = `mrReserved_${MY_UID}_${_mrTmr2}`;
-  if(_getFlag(_mrResKey3)){ showToast('이미 예약됐습니다'); return; }
-  let _alreadyReg2=false;
-  try{ const s2=await _fbGet(_mrPath(_mrTmr2)); _alreadyReg2=s2&&s2.exists(); }catch(e){}
-  if(_alreadyReg2){ showToast('내일 아침점호가 이미 등록돼 있습니다'); return; }
-  closeBaseballPopup();
-  _openMorningRegPopupForDate(_mrTmr2);
-}
-
 /* 정답 없으면 생성 */
 async function _bbInitData(){
   const data = await _bbLoad();
@@ -17139,7 +16892,7 @@ async function _bbRefreshUI(){
         if(pts>=1&&extraBtn) extraBtn.style.display='block';
       }
     }
-    await _bbShowTomorrowReserveBtn();
+
   }
 }
 
@@ -17248,12 +17001,12 @@ async function bbSubmitGuess(){
       /* 이후 해독 → 5~10P */
       const bonusPt=Math.floor(Math.random()*6)+5;
       await addPoints(bonusPt);
-      await _savePxPointLog(selDate,'암호점호 해독',bonusPt);
+      await _savePxPointLog(selDate,`기상미션`,bonusPt);
       const subEl=document.getElementById('bbResultSub');
       if(subEl) subEl.innerHTML+=`<br><br><span style="color:rgba(255,215,100,.95);font-size:14px;font-weight:900;">+${bonusPt}P 보급상점 적립!</span>`;
       showToast(`🎯 암호 해독! +${bonusPt}P 보급상점!`);
     }
-    await _bbShowTomorrowReserveBtn();
+
 
   } else {
     /* ❌ 틀림 */
@@ -17269,7 +17022,7 @@ async function bbSubmitGuess(){
         if(pts2>=1){ const eb=document.getElementById('bbExtraBtn'); if(eb) eb.style.display='block'; }
       }
     }
-    await _bbShowTomorrowReserveBtn();
+
   }
   if(submitBtn){ submitBtn.disabled=false; submitBtn.style.opacity='1'; }
 }
@@ -17289,28 +17042,42 @@ function _bbRefreshHistoryOnly(hist){
   }).join('');
 }
 
-/* ── 스페셜임무 해금 ── */
+/* ── 스페셜임무A 해금 (야구게임 4S → 즉시 팀전 누적보상 적립) ── */
 async function _bbUnlockSpecial(){
   const amounts=[20000,30000,40000];
   const reward=amounts[Math.floor(Math.random()*amounts.length)];
-  if(FB_READY&&_fbDb&&window.partnerData&&window.partnerData.uid){
-    try{
-      const missionLabel=`암호점호 보상 ${reward/10000}만원`;
-      await _fbUpdate(window.PATH.teamRoom(MY_UID,partnerData.uid),{
-        specialMission:missionLabel,
-        spdays_a:[false,false,false,false,false],
-        spdays_b:[false,false,false,false,false],
-        specialStartedAt:Date.now(),
-        bbSpecialReward:reward,
-      });
-      window.teamData=window.teamData||{};
-      window.teamData.specialMission=missionLabel;
-      if(window.updateGemBoxes) updateGemBoxes();
-      if(window.renderActiveMissionCard) renderActiveMissionCard();
-      showToast(`🌟 스페셜임무 해금! ${reward/10000}만원 — 팀작전 탭 확인!`);
-    }catch(e){ showToast('스페셜임무 해금 오류'); }
-  } else {
-    showToast(`🌟 스페셜임무 해금! 파트너 연결 후 팀작전 탭에서 확인`);
+  const now=_virtualNow();
+
+  try{
+    /* tmMyReward3 에 적립 (사령부 특수·스페셜 임무보상 경로) */
+    window['tmMyReward3'] = reward;
+    window['tmRewardDone3'] = true;
+
+    /* Firebase teamRoom 에 저장 */
+    if(FB_READY && _fbDb && window.partnerData && window.partnerData.uid){
+      const roomPath = window.PATH.teamRoom(MY_UID, partnerData.uid);
+      const rk = 'reward_' + _tmMK();
+      await _fbUpdate(roomPath + '/tm_special_a', { [rk]: reward });
+    }
+
+    /* 스페셜A 해금 플래그 Firebase 저장 */
+    await _fbSet(`users/${MY_UID}/bbSpecialAUnlocked`, true);
+    window._bbSpecialAUnlocked = true;
+
+    /* 포인트 수령이력 저장 (이후 4S 시 5~10P 보급상점 적립과 구분하기 위해 기록) */
+    /* 첫 4S는 돈(원)이라 포인트 이력에는 기록 안 함 */
+
+    if(window.renderHist) renderHist();
+    if(window.updateHUD) updateHUD();
+    if(window.renderStatsRevenueCard) renderStatsRevenueCard();
+    if(window.renderTmPanel) renderTmPanel();
+
+    /* 결과 메시지 업데이트 */
+    const subEl=document.getElementById('bbResultSub');
+    if(subEl) subEl.innerHTML+=`<br><br><span style="color:rgba(255,215,100,.95);font-weight:900;font-size:13px;">⚡ 스페셜임무A 해금!</span><br><span style="color:rgba(255,215,100,.90);font-size:14px;font-weight:900;">+${reward.toLocaleString()}원 임무보상 적립!</span><br><span style="font-size:9px;color:rgba(255,255,255,.4);">사령부 특수·스페셜 임무보상에서 확인</span>`;
+    showToast(`⚡ 스페셜임무A 해금! +${reward.toLocaleString()}원 임무보상 적립!`);
+  }catch(e){
+    showToast('스페셜임무A 보상 적립 오류');
   }
 }
 
