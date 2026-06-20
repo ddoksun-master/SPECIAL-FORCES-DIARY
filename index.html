@@ -559,12 +559,20 @@ html,body{
 }
 .ops-bundle-item{
   border-radius:0 !important;
-  border:none !important;
-  border-left:none !important;
+  border:0 !important;
+  border-top:0 !important;
+  border-right:0 !important;
+  border-bottom:0 !important;
+  border-left:0 !important;
+  outline:0 !important;
+  box-shadow:none !important;
 }
-.ops-bundle-item.slot-easy   { border-left:4px solid #2F4A36 !important; }
-.ops-bundle-item.slot-medium { border-left:4px solid #A8864E !important; }
-.ops-bundle-item.slot-hard   { border-left:4px solid #8B1A1A !important; }
+.ops-bundle-item.slot-easy,
+.ops-slot-filled.ops-bundle-item.slot-easy   { border-left:4px solid #2F4A36 !important; }
+.ops-bundle-item.slot-medium,
+.ops-slot-filled.ops-bundle-item.slot-medium { border-left:4px solid #A8864E !important; }
+.ops-bundle-item.slot-hard,
+.ops-slot-filled.ops-bundle-item.slot-hard   { border-left:4px solid #8B1A1A !important; }
 .ops-bundle-top{border-radius:16px 16px 0 0 !important;}
 .ops-bundle-bottom{border-radius:0 0 16px 16px !important;}
 .ops-bundle-divider{
@@ -8626,6 +8634,8 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
     : slotEl.classList.contains('ops-bundle-item') ? 'ops-bundle-item'
     : '';
   slotEl.className=`ops-slot ops-slot-filled ${catClass}${_bCls?' '+_bCls:''}`+(_sDone&&!_sStamped?' slot-done':'')+(_isFailed?' slot-done':'');
+  /* bundle 안에 있으면 inline border 제거 (CSS !important 적용 보장) */
+  if(_bCls) slotEl.style.cssText='';
   slotEl.onclick=null;
 
   /* 인증 버튼 계산 (rightHtml은 협동작전 전용으로만 사용) */
@@ -8888,7 +8898,9 @@ function _emptySlot(slotEl,si,questCount){
     : '';
   if(si===2){
     slotEl.className='ops-slot'+(_bundleClass?' '+_bundleClass:'');
-    slotEl.style.cssText='background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:none;min-height:72px;';
+    slotEl.style.cssText=_bundleClass
+      ? 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);min-height:72px;'
+      : 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;min-height:72px;';
     slotEl.onclick=()=>openOpsRegPopupForSlot(si);
     slotEl.innerHTML=`
       <div class="slot-plus-ring" style="position:relative;width:56px;height:72px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -8903,7 +8915,7 @@ function _emptySlot(slotEl,si,questCount){
     `;
   } else {
     slotEl.className='ops-slot ops-slot-empty'+(_bundleClass?' '+_bundleClass:'');
-    slotEl.style.cssText='border:none;';
+    slotEl.style.cssText=''; /* bundle-item CSS가 border 처리 */
     slotEl.onclick=()=>openOpsRegPopupForSlot(si);
     slotEl.innerHTML=`
       <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
