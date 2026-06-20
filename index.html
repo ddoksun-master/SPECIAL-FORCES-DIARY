@@ -5897,9 +5897,6 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div id="tplGrid" style="display:none;"></div>
       <div id="rulePopup" style="display:none;"></div>
 
-      <!-- ★ 응원메시지 카드 (아침점호 위) -->
-      <div id="cheerMsgCard" style="display:none;margin-bottom:8px;"></div>
-
       <!-- ★ 작전 슬롯 3개 (작전투입 스타일) -->
       <!-- 야간잠금 배너 (작전투입 위) -->
       <div id="opsBlackoutBanner" style="display:none;margin-bottom:8px;padding:10px 14px;background:rgba(10,5,30,.92);border:1.5px solid rgba(99,60,180,.5);border-radius:12px;align-items:center;gap:10px;">
@@ -5911,10 +5908,13 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
       <div id="opsSlotWrap" style="display:flex;flex-direction:column;gap:0;margin-bottom:10px;">
 
-        <!-- ★ 슬롯 묶음 컨테이너 -->
+        <!-- ★ 슬롯 묶음 컨테이너 (응원메시지 + 아침점호 + 작전1 + 작전2) -->
         <div class="ops-bundle">
 
-          <!-- 슬롯 3 — 아침점호 (맨 위) -->
+          <!-- ★ 응원메시지 카드 (번들 맨 위) -->
+          <div id="cheerMsgCard" style="display:none;"></div>
+
+          <!-- 슬롯 3 — 아침점호 -->
           <div id="opsSlot2" class="ops-slot ops-bundle-item ops-bundle-top" onclick="openOpsRegPopupForSlot(2)" style="background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border-color:rgba(180,150,80,.45);">
             <div class="slot-plus-ring" style="position:relative;">
               <span style="position:absolute;width:42px;height:42px;border:2px solid rgba(160,120,40,.50);border-radius:50%;"></span>
@@ -8249,9 +8249,9 @@ function _renderDiaryDayRecord(){
       html+=`<div style="margin-bottom:10px;padding:10px 12px;background:rgba(106,78,158,.08);border:1.5px solid rgba(106,78,158,.30);border-radius:11px;">
         <div style="font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(155,100,230,.90);margin-bottom:7px;">💜 오늘의 응원</div>
         ${_cheerSentAlready
-          ?`<div style="padding:10px 12px;background:rgba(106,78,158,.22);border:2px solid rgba(150,100,220,.65);border-radius:10px;">
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(200,160,255,.90);font-weight:800;margin-bottom:5px;">💜 내가 보낸 응원</div>
-              <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(230,210,255,.97);line-height:1.5;">${_sentCheerMsg||'(응원 전송 완료)'}</div>
+          ?`<div style="padding:10px 12px;background:rgba(106,78,158,.12);border:2px solid rgba(106,78,158,.55);border-radius:10px;">
+              <div style="font-family:var(--kr);font-size:9px;color:#5A3A8A;font-weight:800;margin-bottom:5px;">💜 내가 보낸 응원</div>
+              <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:#2A1040;line-height:1.5;">${_sentCheerMsg||'(응원 전송 완료)'}</div>
             </div>`
           :`<button class="diary-cheer-send-btn" data-date="${date}" style="width:100%;padding:10px 12px;background:rgba(106,78,158,.20);border:1.5px solid rgba(150,100,220,.50);border-radius:9px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(160,100,255,.95);cursor:pointer;text-align:center;">💜 응원 보내기</button>`}
       </div>`;
@@ -8540,29 +8540,39 @@ function _renderCheerMsgCard(){
   });
   const hasCheer = cheerItems.length > 0;
   const hasReq = reqItems.length > 0;
-  if(!hasCheer && !hasReq){ card.style.display='none'; return; }
+  const slot2 = document.getElementById('opsSlot2');
+  if(!hasCheer && !hasReq){
+    card.style.display='none';
+    /* 응원카드 없으면 아침점호가 bundle 최상단 */
+    if(slot2){ slot2.classList.add('ops-bundle-top'); }
+    return;
+  }
   card.style.display='block';
+  /* 응원카드 있으면 아침점호는 최상단 radius 불필요 */
+  if(slot2){ slot2.classList.remove('ops-bundle-top'); }
   let html = '';
-  /* 응원메시지 */
+  /* 응원메시지 — 번들 안 패딩 스타일, 아래 구분선 포함 */
   if(hasCheer){
     html += cheerItems.map(q=>{
       const _cheerNm = q.cheerFromNick || (partnerData&&partnerData.nickname) || '상대방';
       const oi = quests.indexOf(q);
-      return `<div style="margin-bottom:6px;padding:12px 14px;background:linear-gradient(135deg,rgba(106,78,158,.22),rgba(80,50,140,.18));border:2px solid rgba(150,100,220,.55);border-radius:14px;">
-        <div style="font-family:var(--kr);font-size:9px;color:rgba(180,130,255,.85);font-weight:800;margin-bottom:5px;letter-spacing:.3px;">💜 ${_cheerNm}님의 응원메시지</div>
-        <div style="font-family:var(--kr);font-size:13px;color:rgba(220,200,255,.97);font-weight:800;line-height:1.6;">${q.cheerMsg}</div>
-        <div style="margin-top:6px;font-family:var(--kr);font-size:9px;color:rgba(180,130,255,.55);">📌 ${q.name}</div>
+      return `<div style="padding:12px 14px;background:rgba(106,78,158,.08);">
+        <div style="font-family:var(--kr);font-size:9px;color:#5A3A8A;font-weight:800;margin-bottom:5px;letter-spacing:.3px;">💜 ${_cheerNm}님의 응원메시지</div>
+        <div style="font-family:var(--kr);font-size:13px;color:#2A1040;font-weight:900;line-height:1.6;">${q.cheerMsg}</div>
+        <div style="margin-top:5px;font-family:var(--kr);font-size:9px;color:rgba(80,50,130,.50);">📌 ${q.name}</div>
       </div>`;
-    }).join('');
+    }).join('<div style="height:1px;background:rgba(106,78,158,.15);"></div>');
+    /* 아래에 구분선 추가 */
+    html += '<div class="ops-bundle-divider"></div>';
   }
   /* 응원요청 버튼 */
   if(hasReq && partnerData && partnerData.uid){
     const reqItem = reqItems[0];
     const reqOi = quests.indexOf(reqItem);
-    html += `<div style="padding:10px 14px;background:rgba(106,78,158,.12);border:1.5px solid rgba(106,78,158,.35);border-radius:12px;display:flex;align-items:center;gap:10px;">
-      <span style="font-family:var(--kr);font-size:10px;color:rgba(180,130,255,.75);flex:1;">응원이 필요하신가요?</span>
-      <button id="cheerCardReqBtn" data-qi="${reqOi}" style="padding:8px 14px;background:rgba(106,78,158,.28);border:1.5px solid rgba(150,100,220,.60);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(200,160,255,.95);cursor:pointer;white-space:nowrap;">💜 응원 요청</button>
-    </div>`;
+    html += `<div style="padding:10px 14px;background:rgba(106,78,158,.06);display:flex;align-items:center;gap:10px;">
+      <span style="font-family:var(--kr);font-size:10px;color:rgba(80,50,130,.65);flex:1;">응원이 필요하신가요?</span>
+      <button id="cheerCardReqBtn" data-qi="${reqOi}" style="padding:7px 13px;background:rgba(106,78,158,.20);border:1.5px solid rgba(106,78,158,.50);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:#4A2A7A;cursor:pointer;white-space:nowrap;">💜 응원 요청</button>
+    </div><div class="ops-bundle-divider"></div>`;
   }
   card.innerHTML = html;
   /* 응원요청 버튼 이벤트 */
