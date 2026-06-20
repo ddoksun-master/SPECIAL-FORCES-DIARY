@@ -1414,6 +1414,7 @@ function _fbSet(path,val){ return _fbDb.ref(path).set(val); }
 function _fbGet(path){ return _fbDb.ref(path).get(); }
 function _fbUpdate(path,val){ return _fbDb.ref(path).update(val); }
 function _fbRemove(path){ return _fbDb.ref(path).remove(); }
+function _fbPush(path,val){ return _fbDb.ref(path).push(val); }
 function _fbOn(path,cb){ _fbDb.ref(path).on('value', cb); }
 
 /* ── UID (불변) ── */
@@ -8274,7 +8275,12 @@ function _renderDiaryDayRecord(){
         }
       }
       html+=`<div style="margin-bottom:8px;padding:8px 0;border-bottom:1px solid rgba(106,78,158,.12);">
-        <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(106,78,158,.60);margin-bottom:5px;">💜 오늘의 응원</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+          <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(106,78,158,.60);">💜 오늘의 응원</div>
+          ${_cheerSentAlready
+            ?`<button class="diary-cheer-edit-btn" data-date="${date}" style="padding:3px 8px;background:rgba(106,78,158,.10);border:1px solid rgba(106,78,158,.25);border-radius:6px;font-family:var(--kr);font-size:9px;color:rgba(80,50,130,.65);cursor:pointer;">✏️ 수정</button>`
+            :''}
+        </div>
         ${_cheerSentAlready
           ?`<div style="font-family:var(--kr);font-size:12px;font-weight:800;color:#2A1040;line-height:1.5;">${_sentCheerMsg||'✓ 응원 전송 완료'}</div>`
           :`<button class="diary-cheer-send-btn" data-date="${date}" style="width:100%;padding:9px 12px;background:rgba(106,78,158,.15);border:1.5px solid rgba(150,100,220,.40);border-radius:9px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(100,60,180,.90);cursor:pointer;text-align:center;">💜 응원 보내기</button>`}
@@ -8310,9 +8316,14 @@ function _renderDiaryDayRecord(){
         </div>
       </div>`;
     } else if(isToday && partnerData && partnerData.uid){
-      /* 아침점호 미등록 표시 */
-      html+=`<div style="padding:7px 0;border-bottom:1px solid rgba(255,165,80,.10);margin-bottom:4px;">
+      /* 아침점호 미등록 표시 + 같이하기 버튼 */
+      const _safeMrData3=(typeof window._mrData!=='undefined')?window._mrData:null;
+      const _mrTogether3=_safeMrData3&&_safeMrData3.together===partnerData.uid;
+      html+=`<div style="padding:7px 0;border-bottom:1px solid rgba(255,165,80,.10);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;">
         <span style="font-family:var(--kr);font-size:10px;color:rgba(30,30,30,.55);font-weight:600;">☀️ 아침점호 미등록</span>
+        ${_mrTogether3
+          ?`<div style="padding:5px 9px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.22);border-radius:7px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(60,100,200,.70);">🤝 같이진행중</div>`
+          :`<button class="diary-mr-together-btn" style="padding:5px 9px;background:rgba(30,80,60,.10);border:1px solid rgba(42,100,75,.28);border-radius:7px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(30,80,55,.75);cursor:pointer;">🤝 같이하기</button>`}
       </div>`;
     }
 
@@ -8489,6 +8500,36 @@ function _renderDiaryDayRecord(){
     }); /* diary-cheer-send-btn forEach 끝 */
   });
 
+  /* 오늘의 응원 수정 버튼 */
+  recordList.querySelectorAll('.diary-cheer-edit-btn').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      const d=btn.dataset.date||date;
+      const _cheerDailyKey=`cheerSentToday_${MY_UID}_${d}`;
+      /* flag 해제 → 응원 보내기 버튼으로 복원 */
+      _unsetFlag(_cheerDailyKey);
+      try{ localStorage.removeItem('cheerMsg_'+_cheerDailyKey); }catch(e){}
+      /* 상대방 퀘스트에서 내 cheerMsg 제거 */
+      if(partnerData&&partnerData.uid){
+        try{
+          const _pqs=_partnerQuests||[];
+          const _ppath=_questPath(partnerData.uid,d);
+          const _psnap=await _fbGet(_ppath);
+          if(_psnap.exists()){
+            const _parr=_psnap.val()||[];
+            let _changed=false;
+            _parr.forEach(pq=>{
+              if(pq.cheerFromNick===(myNickname||'나')){
+                pq.cheerMsg=null; pq.cheerFromNick=null; _changed=true;
+              }
+            });
+            if(_changed) await _fbSet(_ppath,_parr);
+          }
+        }catch(e){}
+      }
+      _renderDiaryDayRecord();
+    });
+  });
+
   /* 개인작전 같이하기 */
   recordList.querySelectorAll('.diary-together-btn').forEach(btn=>{
     btn.addEventListener('click',async()=>{
@@ -8505,8 +8546,7 @@ function _renderDiaryDayRecord(){
       };
       btn.disabled=true; btn.textContent='처리 중...';
       await acceptOpsTogether();
-      _renderDiaryDayRecord();
-      renderQ();
+      setTimeout(()=>{ _renderDiaryDayRecord(); renderQ(); }, 300);
     });
   });
 
@@ -8562,13 +8602,15 @@ function _renderCheerMsgCard(){
       </div>`;
     }).join('');
   }
-  /* 응원요청 버튼 */
-  if(hasReq && partnerData && partnerData.uid){
+  /* 응원메시지가 있으면 "오늘의 응원메시지" 표시, 없으면 응원요청 버튼 */
+  if(hasCheer){
+    /* 응원메시지 있음 → 이미 위에서 표시됨, 요청 버튼 불필요 */
+  } else if(hasReq && partnerData && partnerData.uid){
     const reqItem = reqItems[0];
     const reqOi = quests.indexOf(reqItem);
-    html += `<div style="margin-top:6px;padding:8px 12px;background:rgba(106,78,158,.06);border:1px solid rgba(106,78,158,.20);border-radius:10px;display:flex;align-items:center;gap:10px;">
-      <span style="font-family:var(--kr);font-size:10px;color:rgba(80,50,130,.65);flex:1;">응원이 필요하신가요?</span>
-      <button id="cheerCardReqBtn" data-qi="${reqOi}" style="padding:7px 13px;background:rgba(106,78,158,.20);border:1.5px solid rgba(106,78,158,.50);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:#4A2A7A;cursor:pointer;white-space:nowrap;">💜 응원 요청</button>
+    html += `<div style="padding:8px 12px;background:rgba(106,78,158,.06);display:flex;align-items:center;gap:10px;">
+      <span style="font-family:var(--kr);font-size:10px;color:rgba(80,50,130,.55);flex:1;">응원이 필요하신가요?</span>
+      <button id="cheerCardReqBtn" data-qi="${reqOi}" style="padding:7px 13px;background:rgba(106,78,158,.15);border:1px solid rgba(106,78,158,.35);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:#4A2A7A;cursor:pointer;white-space:nowrap;">💜 응원 요청</button>
     </div>`;
   }
   card.innerHTML = html;
