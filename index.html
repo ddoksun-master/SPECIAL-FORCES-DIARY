@@ -6757,7 +6757,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 </style>
 
   <!-- ★★ 팀원 작전확인 패널 — 전투기록으로 흡수됨, 숨김 유지 ★★ -->
-  <div id="partnerOpsSection" style="display:none !important;">
+  <div id="partnerOpsSection" style="display:none !important;"></div>
 
   <!-- BOTTOM NAV -->
   <div class="bottom-nav">
@@ -8160,11 +8160,18 @@ function _renderDiaryDayRecord(){
     }
   }
 
-  /* ── HTML 빌드 (histContent와 동일 구조) ── */
+  /* ── HTML 빌드 ── */
+  /* 오늘은 항상 펼침, 과거날짜는 수고했어 있을 때만 펼침 */
+  const _myHasCheer=(items||[]).some(q=>!!q.cheerMsg && q.cheerFromNick!==(myNickname||'나'));
   const _myHasEmpathy=(items||[]).some(q=>!!q.empathyMsg);
-  const _myCollapsed=!_myHasEmpathy;
+  const _myCollapsed = isToday ? false : !(_myHasEmpathy||_myHasCheer);
 
   let html=``;
+
+  /* 상대 작전 로딩 보완: 오늘인데 비어있으면 구독 트리거 */
+  if(isToday && partnerData && partnerData.uid && (!_partnerQuests || !_partnerQuests.length)){
+    if(typeof subscribePartnerOps==='function') subscribePartnerOps();
+  }
 
   /* 내 카드 */
   html+=`<div style="margin-bottom:10px;">
@@ -8212,7 +8219,9 @@ function _renderDiaryDayRecord(){
   myItems.forEach(q=>{
     const qi=items.indexOf(q);
     const isDone=q.completed||q.stamped;
-    const hasCheer=!!q.cheerMsg && q.cheerFromNick!==(myNickname||'나');
+    /* 상대방이 보낸 응원인지 확인 */
+    const _isMyCheer = q.cheerFromNick && (q.cheerFromNick===(myNickname||'나'));
+    const hasCheer = !!q.cheerMsg && !_isMyCheer;
     const _cpKey=`cheerPointClaimed_${MY_UID}_${date}_${q.qid||qi}`;
     const cheerClaimed=_getFlag(_cpKey);
     const hasRecEmpathy=!!q.empathyMsg;
@@ -8247,12 +8256,16 @@ function _renderDiaryDayRecord(){
     } else {
       html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);">
         <div style="flex:1;min-width:0;">
+          ${hasCheer?`<div style="margin-bottom:7px;padding:8px 11px;background:rgba(106,78,158,.14);border:1.5px solid rgba(106,78,158,.45);border-radius:10px;">
+            <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(106,78,158,.80);margin-bottom:3px;">💜 ${q.cheerFromNick||pName}님의 응원</div>
+            <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:#3D2060;line-height:1.5;">${q.cheerMsg}</div>
+          </div>`:''}
           <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${isDone?'#2F4A36':'#1A1F1C'};display:flex;align-items:center;gap:5px;">
             <span style="font-size:12px;color:${isDone?'#2F4A36':'#9CA49A'};">${isDone?'✅':'○'}</span>${q.name}
           </div>
           <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
             ${isDone?'<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(30,90,50,.85);">✅ 인증완료</span>':''}
-            <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${cheerClaimed?'#8B6C1A':hasCheer?'#6B4A9A':'#9CA49A'};">${cheerClaimed?'⭐ 응원 +2p 수령완료':hasCheer?'응원메시지 수신(미수령)':'응원 미완료'}</span>
+            ${!hasCheer?`<span style="font-family:var(--kr);font-size:9px;color:rgba(61,72,64,.45);">${cheerClaimed?'⭐ 응원포인트 수령완료':'응원 미완료'}</span>`:''}
             ${hasRecEmpathy?'<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(42,144,128,.85);">💬 수고했어</span>':''}
           </div>
           <div style="margin-top:7px;display:flex;gap:6px;">
@@ -8281,7 +8294,8 @@ function _renderDiaryDayRecord(){
       return !_getFlag(ckp);
     });
     const _cardKey=`oppCardCollapsed_${date}`;
-    const _isCollapsed=_getFlag(_cardKey)||(!_needsEmpathy);
+    /* 오늘은 항상 펼침 */
+    const _isCollapsed = isToday ? false : (_getFlag(_cardKey)||(!_needsEmpathy));
     html+=`<div id="oppCardWrap_${date}" style="margin-bottom:10px;">
       <div onclick="_toggleOppCard('${date}')" style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:rgba(106,78,158,.10);border:2px solid rgba(106,78,158,.22);border-radius:${_isCollapsed?'14px':'14px 14px 0 0'};cursor:pointer;user-select:none;">
         <div style="font-family:var(--title);font-size:13px;font-weight:900;color:rgba(70,30,130,.85);display:flex;align-items:center;gap:8px;">
@@ -8296,13 +8310,23 @@ function _renderDiaryDayRecord(){
     if(isToday && partnerData && partnerData.uid){
       const _cheerDailyKey=`cheerSentToday_${MY_UID}_${date}`;
       const _cheerSentAlready=_getFlag(_cheerDailyKey);
+      /* 보낸 메시지 내용: 상대방 퀘스트에서 cheerFromNick===내닉 인 것 찾기 */
+      let _sentCheerMsg='';
+      if(_cheerSentAlready){
+        const _allPQ=[...(_partnerQuests||[])];
+        const _pqWithCheer=_allPQ.find(pq=>pq.cheerMsg&&pq.cheerFromNick===(myNickname||'나'));
+        if(_pqWithCheer) _sentCheerMsg=_pqWithCheer.cheerMsg;
+      }
       html+=`<div style="margin-bottom:10px;padding:10px 12px;background:rgba(106,78,158,.08);border:1.5px solid rgba(106,78,158,.30);border-radius:11px;">
         <div style="font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(155,100,230,.90);margin-bottom:7px;">💜 오늘의 응원</div>
         ${_cheerSentAlready
-          ?`<div style="font-family:var(--kr);font-size:10px;color:rgba(155,100,230,.60);text-align:center;padding:6px 0;">오늘 응원메시지를 보냈어요 💜</div>`
+          ?`<div style="padding:8px 10px;background:rgba(106,78,158,.10);border:1px solid rgba(106,78,158,.25);border-radius:8px;">
+              <div style="font-family:var(--kr);font-size:9px;color:rgba(155,100,230,.60);margin-bottom:3px;">내가 보낸 응원 💜</div>
+              <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(80,40,140,.85);">${_sentCheerMsg||'(응원 전송 완료)'}</div>
+            </div>`
           :`<div style="display:flex;gap:6px;">
-              <input id="diaryCheerInput_${date}" type="text" maxlength="60" placeholder="${pName}에게 응원 메시지를 남겨보세요" style="flex:1;padding:8px 10px;background:rgba(255,255,255,.07);border:1px solid rgba(106,78,158,.35);border-radius:8px;color:#fff;font-family:var(--kr);font-size:10px;outline:none;"/>
-              <button class="diary-cheer-send-btn" data-date="${date}" style="padding:8px 12px;background:rgba(106,78,158,.30);border:1.5px solid rgba(150,100,220,.60);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(200,168,255,.95);cursor:pointer;white-space:nowrap;">전송 +1P</button>
+              <input id="diaryCheerInput_${date}" type="text" maxlength="60" placeholder="${pName}에게 응원 메시지를 남겨보세요" style="flex:1;padding:8px 10px;background:rgba(255,255,255,.07);border:1px solid rgba(106,78,158,.35);border-radius:8px;color:#1A1F1C;font-family:var(--kr);font-size:10px;outline:none;"/>
+              <button class="diary-cheer-send-btn" data-date="${date}" style="padding:8px 12px;background:rgba(106,78,158,.30);border:1.5px solid rgba(150,100,220,.60);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(80,30,160,.95);cursor:pointer;white-space:nowrap;">전송 +1P</button>
             </div>`}
       </div>`;
     }
@@ -9911,7 +9935,7 @@ function _handleDeepLink(url) {
 /* ── 앱 업데이트 감지 & 실행 ── */
 let _pendingSWReg = null;
 
-const APP_VERSION = 'v2.6';
+const APP_VERSION = 'v2.7';
 const _VERCEL_URL='https://special-forces-diary.vercel.app/index.html';
 const _ETAG_STOR_KEY='sfDiary_lastETag';
 
