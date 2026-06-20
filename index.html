@@ -556,6 +556,7 @@ html,body{
   border-radius:0 !important;
   box-shadow:none !important;
   border-left:4px solid transparent !important;
+  background:#fff !important;
 }
 .ops-slot-inner.slot-easy  { border-left:4px solid #2F4A36 !important; }
 .ops-slot-inner.slot-medium{ border-left:4px solid #A8864E !important; }
@@ -567,8 +568,7 @@ html,body{
 }
 /* 내 카드 안 cheerMsgCard */
 #myCardSlotBody #cheerMsgCard{
-  padding:8px 12px;
-  border-bottom:1px solid rgba(47,74,54,.12);
+  padding:8px 12px 0;
 }
 
 /* 빈 슬롯 */
@@ -5906,7 +5906,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           <span id="myCardSlotChevron" style="font-size:12px;color:#6B9975;">▲</span>
         </div>
         <!-- 바디 -->
-        <div id="myCardSlotBody" style="background:rgba(47,74,54,.03);border:2px solid rgba(47,74,54,.18);border-top:none;border-radius:0 0 14px 14px;overflow:hidden;">
+        <div id="myCardSlotBody" style="background:#fff;border:2px solid rgba(47,74,54,.18);border-top:none;border-radius:0 0 14px 14px;overflow:hidden;">
 
           <!-- 야간잠금 배너 -->
           <div id="opsBlackoutBanner" style="display:none;padding:10px 14px;background:rgba(10,5,30,.92);border-bottom:1.5px solid rgba(99,60,180,.5);align-items:center;gap:10px;">
@@ -8257,7 +8257,7 @@ function _renderDiaryDayRecord(){
       html+=`<div style="margin-bottom:8px;padding:8px 0;border-bottom:1px solid rgba(106,78,158,.12);">
         <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(106,78,158,.60);margin-bottom:5px;">💜 오늘의 응원</div>
         ${_cheerSentAlready
-          ?`<div style="font-family:var(--kr);font-size:12px;font-weight:800;color:#2A1040;line-height:1.5;">${_sentCheerMsg||'💜 응원을 보냈어요'}</div>`
+          ?`<div style="font-family:var(--kr);font-size:12px;font-weight:800;color:#2A1040;line-height:1.5;">${_sentCheerMsg||'✓ 응원 전송 완료'}</div>`
           :`<button class="diary-cheer-send-btn" data-date="${date}" style="width:100%;padding:9px 12px;background:rgba(106,78,158,.15);border:1.5px solid rgba(150,100,220,.40);border-radius:9px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(100,60,180,.90);cursor:pointer;text-align:center;">💜 응원 보내기</button>`}
       </div>`;
     }
@@ -8293,7 +8293,7 @@ function _renderDiaryDayRecord(){
     } else if(isToday && partnerData && partnerData.uid){
       /* 아침점호 미등록 표시 */
       html+=`<div style="padding:7px 0;border-bottom:1px solid rgba(255,165,80,.10);margin-bottom:4px;">
-        <span style="font-family:var(--kr);font-size:10px;color:rgba(255,165,80,.40);">☀️ 아침점호 미등록</span>
+        <span style="font-family:var(--kr);font-size:10px;color:rgba(30,30,30,.55);font-weight:600;">☀️ 아침점호 미등록</span>
       </div>`;
     }
 
@@ -8306,26 +8306,17 @@ function _renderDiaryDayRecord(){
       const empDone=_getFlag(ckp);
       const _alreadyCoop=(quests||[]).find(mq=>mq.mode==='coop'&&mq.together===partnerData.uid&&mq.name===q.name);
       html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="flex:1;min-width:0;">
-            <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${isDone?'#4A2A7A':'#3D3050'};display:flex;align-items:center;gap:5px;">
-              <span style="font-size:12px;color:${isDone?'#5A3A8A':'#9CA49A'};">${isDone?'✅':'○'}</span>${q.name}
-              <span style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(42,77,181,.6);padding:1px 6px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.20);border-radius:5px;">협동</span>
-            </div>
-            ${isDone?`<div style="margin-top:4px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(82,180,130,.90);">${pName}님 미션 완료 👊</div>`:''}
-            <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
-              <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${partnerCheer?'#6B4A9A':'#9CA49A'};">${partnerCheer?'응원 획득':'응원 미완료'}</span>
-              ${empDone?`<span style="font-family:var(--kr);font-size:9px;font-weight:600;color:rgba(200,168,75,.85);">👊 수고했어 완료</span>`:''}
-            </div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;margin-left:8px;">
-            ${empDone
-              ?`<div style="padding:7px 10px;background:rgba(200,168,75,.12);border:1.5px solid rgba(200,168,75,.30);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:#7A5C1E;white-space:nowrap;">👊 완료</div>`
-              :isDone
-                ?`<button class="hist-opp-emp-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="padding:7px 10px;background:rgba(106,78,158,.20);border:1.5px solid rgba(150,100,220,.60);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:#fff;cursor:pointer;white-space:nowrap;">👊 수고했어</button>`
-                :`<div style="padding:7px 10px;background:rgba(61,72,64,.08);border:1.5px solid rgba(61,72,64,.20);border-radius:9px;font-family:var(--kr);font-size:9px;color:rgba(61,72,64,.45);white-space:nowrap;">인증 후 가능</div>`}
-            <button class="hist-partner-cert-view-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="padding:6px 10px;background:rgba(106,78,158,.10);border:1.5px solid rgba(106,78,158,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(150,100,220,.85);cursor:pointer;white-space:nowrap;">🔍 인증보기</button>
-          </div>
+        <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${isDone?'#4A2A7A':'#3D3050'};display:flex;align-items:center;gap:5px;margin-bottom:6px;">
+          <span style="font-size:12px;color:${isDone?'#5A3A8A':'#9CA49A'};">${isDone?'✅':'○'}</span>${q.name}
+          <span style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(42,77,181,.6);padding:1px 6px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.20);border-radius:5px;">협동</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${empDone
+            ?`<div style="flex:1;padding:7px 10px;background:rgba(200,168,75,.12);border:1px solid rgba(200,168,75,.30);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:700;color:#7A5C1E;text-align:center;">👊 완료</div>`
+            :isDone
+              ?`<button class="hist-opp-emp-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="flex:1;padding:7px 10px;background:rgba(106,78,158,.15);border:1px solid rgba(150,100,220,.45);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(80,30,140,.90);cursor:pointer;text-align:center;">👊 수고했어</button>`
+              :`<div style="flex:1;padding:7px 10px;background:rgba(61,72,64,.06);border:1px solid rgba(61,72,64,.15);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(61,72,64,.40);text-align:center;">인증 후 가능</div>`}
+          <button class="hist-partner-cert-view-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="flex:1;padding:7px 10px;background:rgba(106,78,158,.08);border:1px solid rgba(106,78,158,.22);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(100,60,170,.85);cursor:pointer;text-align:center;">🔍 인증보기</button>
         </div>
       </div>`;
     });
@@ -8339,31 +8330,23 @@ function _renderDiaryDayRecord(){
       const empDone=_getFlag(ckp);
       const _alreadyCoop=(quests||[]).find(mq=>mq.mode==='coop'&&mq.together===partnerData.uid&&mq.name===q.name);
       const hasMyCoopMission=(quests||[]).filter(mq=>mq.mode==='coop').length>=1;
+      const _togetherBtn = _alreadyCoop
+        ? `<div style="flex:1;padding:7px 10px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.22);border-radius:8px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(60,100,200,.75);text-align:center;">🤝 같이진행중</div>`
+        : isToday
+          ? `<button class="diary-together-btn" data-pqi="${pqi}" data-date="${date}" data-name="${(q.name||'').replace(/"/g,'&quot;')}" data-reason="${(q.reason||'').replace(/"/g,'&quot;')}" style="flex:1;padding:7px 10px;background:rgba(30,80,60,.12);border:1px solid rgba(42,100,75,.35);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(30,80,55,.85);cursor:pointer;text-align:center;">🤝 같이하기</button>`
+          : '';
       html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(106,78,158,.08);">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="flex:1;min-width:0;">
-            <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${isDone?'#4A2A7A':'#3D3050'};display:flex;align-items:center;gap:5px;">
-              <span style="font-size:12px;color:${isDone?'#5A3A8A':'#9CA49A'};">${isDone?'✅':'○'}</span>${q.name}
-            </div>
-            ${isDone?`<div style="margin-top:4px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(82,180,130,.90);">${pName}님 미션 완료 👊</div>`:''}
-            <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
-              <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${myCheerSent?'#6B4A9A':'#9CA49A'};">${myCheerSent?'응원 획득':'응원 미완료'}</span>
-              ${empDone?`<span style="font-family:var(--kr);font-size:9px;font-weight:600;color:rgba(200,168,75,.85);">👊 수고했어 완료</span>`:''}
-            </div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;margin-left:8px;">
-            ${_alreadyCoop
-              ?`<div style="padding:7px 10px;background:rgba(42,77,181,.10);border:1px solid rgba(42,77,181,.28);border-radius:9px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(100,150,255,.85);white-space:nowrap;">🤝 같이진행중</div>`
-              :isToday
-                ?`<button class="diary-together-btn" data-pqi="${pqi}" data-date="${date}" data-name="${(q.name||'').replace(/"/g,'&quot;')}" data-reason="${(q.reason||'').replace(/"/g,'&quot;')}" style="padding:7px 10px;background:rgba(30,80,60,.22);border:1.5px solid rgba(42,100,75,.55);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(40,90,65,.95);cursor:pointer;white-space:nowrap;">🤝 같이하기</button>`
-                :''}
-            ${empDone
-              ?`<div style="padding:7px 10px;background:rgba(200,168,75,.12);border:1.5px solid rgba(200,168,75,.30);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:#7A5C1E;white-space:nowrap;">👊 완료</div>`
-              :isDone
-                ?`<button class="hist-opp-emp-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="padding:7px 10px;background:rgba(106,78,158,.20);border:1.5px solid rgba(150,100,220,.60);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:#fff;cursor:pointer;white-space:nowrap;">👊 수고했어</button>`
-                :`<div style="padding:7px 10px;background:rgba(61,72,64,.08);border:1.5px solid rgba(61,72,64,.20);border-radius:9px;font-family:var(--kr);font-size:9px;color:rgba(61,72,64,.45);white-space:nowrap;">인증 후 가능</div>`}
-            <button class="hist-partner-cert-view-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="padding:6px 10px;background:rgba(106,78,158,.10);border:1.5px solid rgba(106,78,158,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(150,100,220,.85);cursor:pointer;white-space:nowrap;">🔍 인증보기</button>
-          </div>
+        <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${isDone?'#4A2A7A':'#3D3050'};display:flex;align-items:center;gap:5px;margin-bottom:6px;">
+          <span style="font-size:12px;color:${isDone?'#5A3A8A':'#9CA49A'};">${isDone?'✅':'○'}</span>${q.name}
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${_togetherBtn}
+          ${empDone
+            ?`<div style="flex:1;padding:7px 10px;background:rgba(200,168,75,.12);border:1px solid rgba(200,168,75,.30);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:700;color:#7A5C1E;text-align:center;">👊 완료</div>`
+            :isDone
+              ?`<button class="hist-opp-emp-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="flex:1;padding:7px 10px;background:rgba(106,78,158,.15);border:1px solid rgba(150,100,220,.45);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(80,30,140,.90);cursor:pointer;text-align:center;">👊 수고했어</button>`
+              :`<div style="flex:1;padding:7px 10px;background:rgba(61,72,64,.06);border:1px solid rgba(61,72,64,.15);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(61,72,64,.40);text-align:center;">인증 후 가능</div>`}
+          <button class="hist-partner-cert-view-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="flex:1;padding:7px 10px;background:rgba(106,78,158,.08);border:1px solid rgba(106,78,158,.22);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(100,60,170,.85);cursor:pointer;text-align:center;">🔍 인증보기</button>
         </div>
       </div>`;
     });
@@ -8707,14 +8690,12 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
 
   slotEl.innerHTML=`
     <button class="slot-del-btn qdel-btn" title="삭제">✕</button>
-    <div class="slot-op-left">
-      <div class="slot-op-code">${code}</div>
-    </div>
-    <div class="slot-op-body" style="padding-top:10px;padding-bottom:10px;padding-right:8px;min-height:${_showStampNow?'72px':'auto'};">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:2px;">
-        <div class="slot-op-name" style="font-size:14px;font-weight:900;line-height:1.35;flex:1;min-width:0;word-break:keep-all;">${catEmoji} ${q.name}</div>
-        ${q.registeredAt?`<div style="font-family:var(--orb);font-size:10px;color:#6B7268;font-weight:700;white-space:nowrap;flex-shrink:0;line-height:1.35;padding-top:2px;">등록<br>${(()=>{const _d=new Date(q.registeredAt);return (_d.getMonth()+1)+'/'+_d.getDate()+' '+(_d.getHours()<10?'0':'')+_d.getHours()+':'+(_d.getMinutes()<10?'0':'')+_d.getMinutes();})()}</div>`:''}
+    <div class="slot-op-body" style="padding:8px 12px 10px 12px;min-height:${_showStampNow?'72px':'auto'};flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+        <div style="font-family:var(--orb);font-size:8px;letter-spacing:1.5px;color:rgba(80,100,80,.55);">${code}</div>
+        ${q.registeredAt?`<div style="font-family:var(--orb);font-size:9px;color:#6B7268;font-weight:700;white-space:nowrap;text-align:right;line-height:1.4;">등록<br>${(()=>{const _d=new Date(q.registeredAt);return (_d.getMonth()+1)+'/'+_d.getDate()+' '+(_d.getHours()<10?'0':'')+_d.getHours()+':'+(_d.getMinutes()<10?'0':'')+_d.getMinutes();})()}</div>`:''}
       </div>
+      <div class="slot-op-name" style="font-size:14px;font-weight:900;line-height:1.35;word-break:keep-all;margin-bottom:2px;">${catEmoji} ${q.name}</div>
       ${q.reason?`<div class="slot-op-reason">💬 ${q.reason}</div>`:''}
       ${_isNotYetActive?`<div style="margin-top:8px;padding:9px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.22);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(42,77,181,.65);">🕓 오전 4시 등록 예약됨</div>`:_isFailed?`<div style="margin-top:8px;padding:9px;background:rgba(180,40,40,.10);border:1px solid rgba(180,40,40,.30);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(200,60,60,.85);">❌ 임무실패</div>`:soloCheerSlotHtml}
     </div>
@@ -8877,7 +8858,7 @@ function _emptySlot(slotEl,si,questCount){
   if(si===2){
     slotEl.className='ops-slot'+_inner;
     slotEl.style.cssText=_inner
-      ? 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);min-height:72px;'
+      ? 'background:#fff;min-height:72px;border-left:4px solid rgba(180,150,80,.70) !important;'
       : 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;min-height:72px;';
     slotEl.onclick=()=>openOpsRegPopupForSlot(si);
     slotEl.innerHTML=`
@@ -16977,7 +16958,7 @@ function _renderMorningSlot(){
   const _mrInner = slotEl.classList.contains('ops-slot-inner') ? ' ops-slot-inner' : '';
   slotEl.className = 'ops-slot'+_mrInner;
   slotEl.style.cssText = _mrInner
-    ? 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);cursor:default;min-height:auto;'
+    ? 'background:#fff;cursor:default;min-height:auto;border-left:4px solid rgba(180,150,80,.70) !important;'
     : 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;cursor:default;min-height:auto;';
   slotEl.onclick = null;
   /* 활성화 전(tooEarly)이면 시간변경 버튼, 이후면 삭제 버튼 */
@@ -17042,7 +17023,7 @@ function _mrEmptySlot(slotEl){
   const _mrEmInner = slotEl.classList.contains('ops-slot-inner') ? ' ops-slot-inner' : '';
   slotEl.className = 'ops-slot'+_mrEmInner;
   slotEl.style.cssText = _mrEmInner
-    ? 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);'
+    ? 'background:#fff;border-left:4px solid rgba(180,150,80,.70) !important;'
     : 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;';
   slotEl.onclick = ()=>openMorningRegPopup();
   slotEl.innerHTML = `
