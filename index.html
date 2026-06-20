@@ -550,37 +550,6 @@ html,body{
 }
 .ops-slot:active{transform:scale(.99);filter:brightness(.97);}
 
-/* ── 슬롯 묶음 컨테이너 ── */
-.ops-bundle{
-  border:1.5px solid rgba(61,72,64,.28);
-  border-radius:18px;
-  overflow:hidden;
-  background:transparent;
-}
-.ops-bundle-item{
-  border-radius:0 !important;
-  border:0 !important;
-  border-top:0 !important;
-  border-right:0 !important;
-  border-bottom:0 !important;
-  border-left:0 !important;
-  outline:0 !important;
-  box-shadow:none !important;
-}
-.ops-bundle-item.slot-easy,
-.ops-slot-filled.ops-bundle-item.slot-easy   { border-left:4px solid #2F4A36 !important; }
-.ops-bundle-item.slot-medium,
-.ops-slot-filled.ops-bundle-item.slot-medium { border-left:4px solid #A8864E !important; }
-.ops-bundle-item.slot-hard,
-.ops-slot-filled.ops-bundle-item.slot-hard   { border-left:4px solid #8B1A1A !important; }
-.ops-bundle-top{border-radius:16px 16px 0 0 !important;}
-.ops-bundle-bottom{border-radius:0 0 16px 16px !important;}
-.ops-bundle-divider{
-  height:1px;
-  background:rgba(61,72,64,.18);
-  margin:0;
-}
-
 /* 빈 슬롯 */
 .ops-slot-empty{
   background:linear-gradient(90deg,#253B2D 0%,#1F3028 40%,#253B2D 100%);
@@ -5905,63 +5874,64 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div id="tplGrid" style="display:none;"></div>
       <div id="rulePopup" style="display:none;"></div>
 
-      <!-- ★ 작전 슬롯 3개 (작전투입 스타일) -->
-      <!-- 야간잠금 배너 (작전투입 위) -->
-      <div id="opsBlackoutBanner" style="display:none;margin-bottom:8px;padding:10px 14px;background:rgba(10,5,30,.92);border:1.5px solid rgba(99,60,180,.5);border-radius:12px;align-items:center;gap:10px;">
-        <span style="font-size:14px;">🌙</span>
-        <div>
-          <div style="font-family:var(--title);font-size:11px;font-weight:900;color:rgba(180,140,255,.95);">야간 잠금 중</div>
-          <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.65);">04:00 이후에 작전이 활성화됩니다</div>
+      <!-- ★ 내 카드 (상대 카드와 동일한 헤더+바디 구조) -->
+      <div id="myCardSlotWrap" style="margin-bottom:10px;">
+        <!-- 헤더 -->
+        <div onclick="_toggleMyCardSlot()" id="myCardSlotHeader" style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:rgba(47,74,54,.10);border:2px solid rgba(47,74,54,.22);border-radius:14px 14px 0 0;cursor:pointer;user-select:none;">
+          <div style="font-family:var(--title);font-size:13px;font-weight:900;color:#1E2D24;display:flex;align-items:center;gap:8px;">
+            👤 내 카드
+            <span id="myCardSlotNick" style="font-family:var(--kr);font-size:10px;font-weight:700;color:#6B9975;"></span>
+          </div>
+          <span id="myCardSlotChevron" style="font-size:12px;color:#6B9975;">▲</span>
         </div>
-      </div>
-      <div id="opsSlotWrap" style="display:flex;flex-direction:column;gap:0;margin-bottom:10px;">
+        <!-- 바디 -->
+        <div id="myCardSlotBody" style="padding:10px;background:rgba(47,74,54,.04);border:2px solid rgba(47,74,54,.18);border-top:none;border-radius:0 0 14px 14px;">
 
-        <!-- ★ 슬롯 묶음 컨테이너 (응원메시지 + 아침점호 + 작전1 + 작전2) -->
-        <div class="ops-bundle">
-
-          <!-- ★ 응원메시지 카드 (번들 맨 위) -->
-          <div id="cheerMsgCard" style="display:none;"></div>
-
-          <!-- 슬롯 3 — 아침점호 -->
-          <div id="opsSlot2" class="ops-slot ops-bundle-item ops-bundle-top" onclick="openOpsRegPopupForSlot(2)" style="background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border-color:rgba(180,150,80,.45);">
-            <div class="slot-plus-ring" style="position:relative;">
-              <span style="position:absolute;width:42px;height:42px;border:2px solid rgba(160,120,40,.50);border-radius:50%;"></span>
-              <span style="font-size:24px;font-weight:300;color:#7A5C10;position:relative;z-index:1;">+</span>
+          <!-- 야간잠금 배너 -->
+          <div id="opsBlackoutBanner" style="display:none;margin-bottom:8px;padding:10px 14px;background:rgba(10,5,30,.92);border:1.5px solid rgba(99,60,180,.5);border-radius:12px;align-items:center;gap:10px;">
+            <span style="font-size:14px;">🌙</span>
+            <div>
+              <div style="font-family:var(--title);font-size:11px;font-weight:900;color:rgba(180,140,255,.95);">야간 잠금 중</div>
+              <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.65);">04:00 이후에 작전이 활성화됩니다</div>
             </div>
-            <div class="slot-deploy-info">
-              <div class="slot-deploy-title" style="color:#3A2C08;">아침점호</div>
-              <div class="slot-deploy-sub" style="color:rgba(90,60,10,.60);">MORNING ROLL CALL</div>
-            </div>
-            <div class="slot-arrow" style="color:#8A6C20;">›</div>
           </div>
 
-          <!-- 슬롯 구분선 -->
-          <div class="ops-bundle-divider"></div>
+          <!-- ★ 응원메시지 카드 -->
+          <div id="cheerMsgCard" style="display:none;margin-bottom:8px;"></div>
 
-          <!-- 슬롯 1 -->
-          <div id="opsSlot0" class="ops-slot ops-bundle-item ops-slot-empty" onclick="openOpsRegPopupForSlot(0)">
-            <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
-            <div class="slot-deploy-info">
-              <div class="slot-deploy-title">작전투입 1</div>
+          <!-- 슬롯들 -->
+          <div id="opsSlotWrap" style="display:flex;flex-direction:column;gap:8px;">
+
+            <!-- 아침점호 슬롯 -->
+            <div id="opsSlot2" class="ops-slot" onclick="openOpsRegPopupForSlot(2)" style="background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border-color:rgba(180,150,80,.45);">
+              <div class="slot-plus-ring" style="position:relative;">
+                <span style="position:absolute;width:42px;height:42px;border:2px solid rgba(160,120,40,.50);border-radius:50%;"></span>
+                <span style="font-size:24px;font-weight:300;color:#7A5C10;position:relative;z-index:1;">+</span>
+              </div>
+              <div class="slot-deploy-info">
+                <div class="slot-deploy-title" style="color:#3A2C08;">아침점호</div>
+                <div class="slot-deploy-sub" style="color:rgba(90,60,10,.60);">MORNING ROLL CALL</div>
+              </div>
+              <div class="slot-arrow" style="color:#8A6C20;">›</div>
             </div>
-            <div class="slot-arrow">›</div>
-          </div>
 
-          <!-- 슬롯 구분선 -->
-          <div class="ops-bundle-divider"></div>
-
-          <!-- 슬롯 2 -->
-          <div id="opsSlot1" class="ops-slot ops-bundle-item ops-bundle-bottom ops-slot-empty" onclick="openOpsRegPopupForSlot(1)">
-            <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
-            <div class="slot-deploy-info">
-              <div class="slot-deploy-title">작전투입 2</div>
+            <!-- 작전 슬롯 1 -->
+            <div id="opsSlot0" class="ops-slot ops-slot-empty" onclick="openOpsRegPopupForSlot(0)">
+              <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
+              <div class="slot-deploy-info"><div class="slot-deploy-title">작전투입 1</div></div>
+              <div class="slot-arrow">›</div>
             </div>
-            <div class="slot-arrow">›</div>
-          </div>
 
-        </div><!-- /ops-bundle -->
+            <!-- 작전 슬롯 2 -->
+            <div id="opsSlot1" class="ops-slot ops-slot-empty" onclick="openOpsRegPopupForSlot(1)">
+              <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
+              <div class="slot-deploy-info"><div class="slot-deploy-title">작전투입 2</div></div>
+              <div class="slot-arrow">›</div>
+            </div>
 
-      </div>
+          </div><!-- /opsSlotWrap -->
+        </div><!-- /myCardSlotBody -->
+      </div><!-- /myCardSlotWrap -->
 
 
       <!-- ★ 암호점호 야구게임 팝업 -->
@@ -7207,6 +7177,7 @@ function _completeLogin(uid, nick){
   window.myNickname = nick;
   myNickname = nick;
   MY_UID = uid;
+  if(typeof _initMyCardSlotNick==='function') _initMyCardSlotNick();
   /* 코드는 닉네임 기반으로 항상 동일하게 생성 */
   MY_CODE = nickToShareCode(nick);
   _testerKey = null;
@@ -8548,39 +8519,29 @@ function _renderCheerMsgCard(){
   });
   const hasCheer = cheerItems.length > 0;
   const hasReq = reqItems.length > 0;
-  const slot2 = document.getElementById('opsSlot2');
-  if(!hasCheer && !hasReq){
-    card.style.display='none';
-    /* 응원카드 없으면 아침점호가 bundle 최상단 */
-    if(slot2){ slot2.classList.add('ops-bundle-top'); }
-    return;
-  }
+  if(!hasCheer && !hasReq){ card.style.display='none'; return; }
   card.style.display='block';
-  /* 응원카드 있으면 아침점호는 최상단 radius 불필요 */
-  if(slot2){ slot2.classList.remove('ops-bundle-top'); }
   let html = '';
   /* 응원메시지 — 번들 안 패딩 스타일, 아래 구분선 포함 */
   if(hasCheer){
     html += cheerItems.map(q=>{
       const _cheerNm = q.cheerFromNick || (partnerData&&partnerData.nickname) || '상대방';
       const oi = quests.indexOf(q);
-      return `<div style="padding:12px 14px;background:rgba(106,78,158,.08);">
+      return `<div style="padding:10px 12px;background:rgba(106,78,158,.10);border:1.5px solid rgba(106,78,158,.35);border-radius:11px;margin-bottom:6px;">
         <div style="font-family:var(--kr);font-size:9px;color:#5A3A8A;font-weight:800;margin-bottom:5px;letter-spacing:.3px;">💜 ${_cheerNm}님의 응원메시지</div>
         <div style="font-family:var(--kr);font-size:13px;color:#2A1040;font-weight:900;line-height:1.6;">${q.cheerMsg}</div>
         <div style="margin-top:5px;font-family:var(--kr);font-size:9px;color:rgba(80,50,130,.50);">📌 ${q.name}</div>
       </div>`;
-    }).join('<div style="height:1px;background:rgba(106,78,158,.15);"></div>');
-    /* 아래에 구분선 추가 */
-    html += '<div class="ops-bundle-divider"></div>';
+    }).join('');
   }
   /* 응원요청 버튼 */
   if(hasReq && partnerData && partnerData.uid){
     const reqItem = reqItems[0];
     const reqOi = quests.indexOf(reqItem);
-    html += `<div style="padding:10px 14px;background:rgba(106,78,158,.06);display:flex;align-items:center;gap:10px;">
+    html += `<div style="margin-top:6px;padding:8px 12px;background:rgba(106,78,158,.06);border:1px solid rgba(106,78,158,.20);border-radius:10px;display:flex;align-items:center;gap:10px;">
       <span style="font-family:var(--kr);font-size:10px;color:rgba(80,50,130,.65);flex:1;">응원이 필요하신가요?</span>
       <button id="cheerCardReqBtn" data-qi="${reqOi}" style="padding:7px 13px;background:rgba(106,78,158,.20);border:1.5px solid rgba(106,78,158,.50);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:#4A2A7A;cursor:pointer;white-space:nowrap;">💜 응원 요청</button>
-    </div><div class="ops-bundle-divider"></div>`;
+    </div>`;
   }
   card.innerHTML = html;
   /* 응원요청 버튼 이벤트 */
@@ -8628,14 +8589,8 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
 
   const _sStamped = q.stamped||false;
   const _sDone = _sStamped || q.completed;
-  /* bundle 클래스 보존 */
-  const _bCls = slotEl.classList.contains('ops-bundle-top') ? 'ops-bundle-top ops-bundle-item'
-    : slotEl.classList.contains('ops-bundle-bottom') ? 'ops-bundle-bottom ops-bundle-item'
-    : slotEl.classList.contains('ops-bundle-item') ? 'ops-bundle-item'
-    : '';
-  slotEl.className=`ops-slot ops-slot-filled ${catClass}${_bCls?' '+_bCls:''}`+(_sDone&&!_sStamped?' slot-done':'')+(_isFailed?' slot-done':'');
-  /* bundle 안에 있으면 inline border 제거 (CSS !important 적용 보장) */
-  if(_bCls) slotEl.style.cssText='';
+  slotEl.className=`ops-slot ops-slot-filled ${catClass}`+(_sDone&&!_sStamped?' slot-done':'')+(_isFailed?' slot-done':'');
+  slotEl.style.cssText='';
   slotEl.onclick=null;
 
   /* 인증 버튼 계산 (rightHtml은 협동작전 전용으로만 사용) */
@@ -8891,16 +8846,9 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
 
 /* ── 빈 슬롯 복원 ── */
 function _emptySlot(slotEl,si,questCount){
-  /* bundle 클래스 보존 */
-  const _bundleClass = slotEl.classList.contains('ops-bundle-top') ? 'ops-bundle-top ops-bundle-item'
-    : slotEl.classList.contains('ops-bundle-bottom') ? 'ops-bundle-bottom ops-bundle-item'
-    : slotEl.classList.contains('ops-bundle-item') ? 'ops-bundle-item'
-    : '';
   if(si===2){
-    slotEl.className='ops-slot'+(_bundleClass?' '+_bundleClass:'');
-    slotEl.style.cssText=_bundleClass
-      ? 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);min-height:72px;'
-      : 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;min-height:72px;';
+    slotEl.className='ops-slot';
+    slotEl.style.cssText='background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;min-height:72px;';
     slotEl.onclick=()=>openOpsRegPopupForSlot(si);
     slotEl.innerHTML=`
       <div class="slot-plus-ring" style="position:relative;width:56px;height:72px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -8914,8 +8862,8 @@ function _emptySlot(slotEl,si,questCount){
       <div class="slot-arrow" style="color:#8A6C20;width:40px;height:72px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">›</div>
     `;
   } else {
-    slotEl.className='ops-slot ops-slot-empty'+(_bundleClass?' '+_bundleClass:'');
-    slotEl.style.cssText=''; /* bundle-item CSS가 border 처리 */
+    slotEl.className='ops-slot ops-slot-empty';
+    slotEl.style.cssText='';
     slotEl.onclick=()=>openOpsRegPopupForSlot(si);
     slotEl.innerHTML=`
       <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
@@ -10888,6 +10836,23 @@ setInterval(()=>{
 
 
 /* ── 내 작전기록 카드 접기/펼치기 ── */
+/* ── 내 카드 슬롯 토글 ── */
+let _myCardSlotOpen = true;
+function _toggleMyCardSlot(){
+  const body = document.getElementById('myCardSlotBody');
+  const chevron = document.getElementById('myCardSlotChevron');
+  const header = document.getElementById('myCardSlotHeader');
+  if(!body) return;
+  _myCardSlotOpen = !_myCardSlotOpen;
+  body.style.display = _myCardSlotOpen ? 'block' : 'none';
+  if(chevron) chevron.textContent = _myCardSlotOpen ? '▲' : '▼';
+  if(header) header.style.borderRadius = _myCardSlotOpen ? '14px 14px 0 0' : '14px';
+}
+function _initMyCardSlotNick(){
+  const el = document.getElementById('myCardSlotNick');
+  if(el && myNickname) el.textContent = '('+myNickname+')';
+}
+
 function _toggleMyCard(date){
   const body = document.getElementById('myCardBody_'+date);
   const chevron = document.getElementById('myCardChevron_'+date);
@@ -16976,12 +16941,8 @@ function _renderMorningSlot(){
 
   const regTime = d.registeredAt ? (()=>{const _d=new Date(d.registeredAt);return (_d.getMonth()+1)+'/'+_d.getDate()+' '+String(_d.getHours()).padStart(2,'0')+':'+String(_d.getMinutes()).padStart(2,'0');})() : '';
 
-  const _bndCls = slotEl.classList.contains('ops-bundle-top') ? 'ops-bundle-top ops-bundle-item'
-    : slotEl.classList.contains('ops-bundle-bottom') ? 'ops-bundle-bottom ops-bundle-item'
-    : slotEl.classList.contains('ops-bundle-item') ? 'ops-bundle-item'
-    : '';
-  slotEl.className = 'ops-slot'+(_bndCls?' '+_bndCls:'');
-  slotEl.style.cssText = 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:none;cursor:default;min-height:auto;';
+  slotEl.className = 'ops-slot';
+  slotEl.style.cssText = 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;cursor:default;min-height:auto;';
   slotEl.onclick = null;
   /* 활성화 전(tooEarly)이면 시간변경 버튼, 이후면 삭제 버튼 */
   const topActionBtn = tooEarly
@@ -17042,12 +17003,8 @@ function _renderMorningSlot(){
 
 /* ── 빈 슬롯 (미등록) ── */
 function _mrEmptySlot(slotEl){
-  const _bndCls2 = slotEl.classList.contains('ops-bundle-top') ? 'ops-bundle-top ops-bundle-item'
-    : slotEl.classList.contains('ops-bundle-bottom') ? 'ops-bundle-bottom ops-bundle-item'
-    : slotEl.classList.contains('ops-bundle-item') ? 'ops-bundle-item'
-    : '';
-  slotEl.className = 'ops-slot'+(_bndCls2?' '+_bndCls2:'');
-  slotEl.style.cssText = 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:none;';
+  slotEl.className = 'ops-slot';
+  slotEl.style.cssText = 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;';
   slotEl.onclick = ()=>openMorningRegPopup();
   slotEl.innerHTML = `
     <div class="slot-plus-ring" style="position:relative;width:56px;height:72px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
