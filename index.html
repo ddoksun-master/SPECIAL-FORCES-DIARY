@@ -550,6 +550,29 @@ html,body{
 }
 .ops-slot:active{transform:scale(.99);filter:brightness(.97);}
 
+/* ── 슬롯 묶음 컨테이너 ── */
+.ops-bundle{
+  border:1.5px solid rgba(61,72,64,.28);
+  border-radius:18px;
+  overflow:hidden;
+  background:transparent;
+}
+.ops-bundle-item{
+  border-radius:0 !important;
+  border:none !important;
+  border-left:none !important;
+}
+.ops-bundle-item.slot-easy   { border-left:4px solid #2F4A36 !important; }
+.ops-bundle-item.slot-medium { border-left:4px solid #A8864E !important; }
+.ops-bundle-item.slot-hard   { border-left:4px solid #8B1A1A !important; }
+.ops-bundle-top{border-radius:16px 16px 0 0 !important;}
+.ops-bundle-bottom{border-radius:0 0 16px 16px !important;}
+.ops-bundle-divider{
+  height:1px;
+  background:rgba(61,72,64,.18);
+  margin:0;
+}
+
 /* 빈 슬롯 */
 .ops-slot-empty{
   background:linear-gradient(90deg,#253B2D 0%,#1F3028 40%,#253B2D 100%);
@@ -5886,38 +5909,49 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.65);">04:00 이후에 작전이 활성화됩니다</div>
         </div>
       </div>
-      <div id="opsSlotWrap" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px;">
+      <div id="opsSlotWrap" style="display:flex;flex-direction:column;gap:0;margin-bottom:10px;">
 
-        <!-- 슬롯 3 — 아침점호 (맨 위) -->
-        <div id="opsSlot2" class="ops-slot" onclick="openOpsRegPopupForSlot(2)" style="background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border-color:rgba(180,150,80,.45);">
-          <div class="slot-plus-ring" style="position:relative;">
-            <span style="position:absolute;width:42px;height:42px;border:2px solid rgba(160,120,40,.50);border-radius:50%;"></span>
-            <span style="font-size:24px;font-weight:300;color:#7A5C10;position:relative;z-index:1;">+</span>
-          </div>
-          <div class="slot-deploy-info">
-            <div class="slot-deploy-title" style="color:#3A2C08;">아침점호</div>
-            <div class="slot-deploy-sub" style="color:rgba(90,60,10,.60);">MORNING ROLL CALL</div>
-          </div>
-          <div class="slot-arrow" style="color:#8A6C20;">›</div>
-        </div>
+        <!-- ★ 슬롯 묶음 컨테이너 -->
+        <div class="ops-bundle">
 
-        <!-- 슬롯 1 -->
-        <div id="opsSlot0" class="ops-slot ops-slot-empty" onclick="openOpsRegPopupForSlot(0)">
-          <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
-          <div class="slot-deploy-info">
-            <div class="slot-deploy-title">작전투입 1</div>
+          <!-- 슬롯 3 — 아침점호 (맨 위) -->
+          <div id="opsSlot2" class="ops-slot ops-bundle-item ops-bundle-top" onclick="openOpsRegPopupForSlot(2)" style="background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border-color:rgba(180,150,80,.45);">
+            <div class="slot-plus-ring" style="position:relative;">
+              <span style="position:absolute;width:42px;height:42px;border:2px solid rgba(160,120,40,.50);border-radius:50%;"></span>
+              <span style="font-size:24px;font-weight:300;color:#7A5C10;position:relative;z-index:1;">+</span>
+            </div>
+            <div class="slot-deploy-info">
+              <div class="slot-deploy-title" style="color:#3A2C08;">아침점호</div>
+              <div class="slot-deploy-sub" style="color:rgba(90,60,10,.60);">MORNING ROLL CALL</div>
+            </div>
+            <div class="slot-arrow" style="color:#8A6C20;">›</div>
           </div>
-          <div class="slot-arrow">›</div>
-        </div>
 
-        <!-- 슬롯 2 -->
-        <div id="opsSlot1" class="ops-slot ops-slot-empty" onclick="openOpsRegPopupForSlot(1)">
-          <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
-          <div class="slot-deploy-info">
-            <div class="slot-deploy-title">작전투입 2</div>
+          <!-- 슬롯 구분선 -->
+          <div class="ops-bundle-divider"></div>
+
+          <!-- 슬롯 1 -->
+          <div id="opsSlot0" class="ops-slot ops-bundle-item ops-slot-empty" onclick="openOpsRegPopupForSlot(0)">
+            <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
+            <div class="slot-deploy-info">
+              <div class="slot-deploy-title">작전투입 1</div>
+            </div>
+            <div class="slot-arrow">›</div>
           </div>
-          <div class="slot-arrow">›</div>
-        </div>
+
+          <!-- 슬롯 구분선 -->
+          <div class="ops-bundle-divider"></div>
+
+          <!-- 슬롯 2 -->
+          <div id="opsSlot1" class="ops-slot ops-bundle-item ops-bundle-bottom ops-slot-empty" onclick="openOpsRegPopupForSlot(1)">
+            <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
+            <div class="slot-deploy-info">
+              <div class="slot-deploy-title">작전투입 2</div>
+            </div>
+            <div class="slot-arrow">›</div>
+          </div>
+
+        </div><!-- /ops-bundle -->
 
       </div>
 
@@ -8215,9 +8249,9 @@ function _renderDiaryDayRecord(){
       html+=`<div style="margin-bottom:10px;padding:10px 12px;background:rgba(106,78,158,.08);border:1.5px solid rgba(106,78,158,.30);border-radius:11px;">
         <div style="font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(155,100,230,.90);margin-bottom:7px;">💜 오늘의 응원</div>
         ${_cheerSentAlready
-          ?`<div style="padding:8px 10px;background:rgba(106,78,158,.10);border:1px solid rgba(106,78,158,.25);border-radius:8px;">
-              <div style="font-family:var(--kr);font-size:9px;color:rgba(155,100,230,.60);margin-bottom:3px;">내가 보낸 응원 💜</div>
-              <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(80,40,140,.85);">${_sentCheerMsg||'(응원 전송 완료)'}</div>
+          ?`<div style="padding:10px 12px;background:rgba(106,78,158,.22);border:2px solid rgba(150,100,220,.65);border-radius:10px;">
+              <div style="font-family:var(--kr);font-size:9px;color:rgba(200,160,255,.90);font-weight:800;margin-bottom:5px;">💜 내가 보낸 응원</div>
+              <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(230,210,255,.97);line-height:1.5;">${_sentCheerMsg||'(응원 전송 완료)'}</div>
             </div>`
           :`<button class="diary-cheer-send-btn" data-date="${date}" style="width:100%;padding:10px 12px;background:rgba(106,78,158,.20);border:1.5px solid rgba(150,100,220,.50);border-radius:9px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(160,100,255,.95);cursor:pointer;text-align:center;">💜 응원 보내기</button>`}
       </div>`;
@@ -8576,7 +8610,12 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
 
   const _sStamped = q.stamped||false;
   const _sDone = _sStamped || q.completed;
-  slotEl.className=`ops-slot ops-slot-filled ${catClass}`+(_sDone&&!_sStamped?' slot-done':'')+(_isFailed?' slot-done':'');
+  /* bundle 클래스 보존 */
+  const _bCls = slotEl.classList.contains('ops-bundle-top') ? 'ops-bundle-top ops-bundle-item'
+    : slotEl.classList.contains('ops-bundle-bottom') ? 'ops-bundle-bottom ops-bundle-item'
+    : slotEl.classList.contains('ops-bundle-item') ? 'ops-bundle-item'
+    : '';
+  slotEl.className=`ops-slot ops-slot-filled ${catClass}${_bCls?' '+_bCls:''}`+(_sDone&&!_sStamped?' slot-done':'')+(_isFailed?' slot-done':'');
   slotEl.onclick=null;
 
   /* 인증 버튼 계산 (rightHtml은 협동작전 전용으로만 사용) */
@@ -8832,9 +8871,14 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
 
 /* ── 빈 슬롯 복원 ── */
 function _emptySlot(slotEl,si,questCount){
+  /* bundle 클래스 보존 */
+  const _bundleClass = slotEl.classList.contains('ops-bundle-top') ? 'ops-bundle-top ops-bundle-item'
+    : slotEl.classList.contains('ops-bundle-bottom') ? 'ops-bundle-bottom ops-bundle-item'
+    : slotEl.classList.contains('ops-bundle-item') ? 'ops-bundle-item'
+    : '';
   if(si===2){
-    slotEl.className='ops-slot';
-    slotEl.style.cssText='background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;min-height:72px;';
+    slotEl.className='ops-slot'+(_bundleClass?' '+_bundleClass:'');
+    slotEl.style.cssText='background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:none;min-height:72px;';
     slotEl.onclick=()=>openOpsRegPopupForSlot(si);
     slotEl.innerHTML=`
       <div class="slot-plus-ring" style="position:relative;width:56px;height:72px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -8848,8 +8892,8 @@ function _emptySlot(slotEl,si,questCount){
       <div class="slot-arrow" style="color:#8A6C20;width:40px;height:72px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">›</div>
     `;
   } else {
-    slotEl.className='ops-slot ops-slot-empty';
-    slotEl.style.cssText='';
+    slotEl.className='ops-slot ops-slot-empty'+(_bundleClass?' '+_bundleClass:'');
+    slotEl.style.cssText='border:none;';
     slotEl.onclick=()=>openOpsRegPopupForSlot(si);
     slotEl.innerHTML=`
       <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
@@ -16910,8 +16954,12 @@ function _renderMorningSlot(){
 
   const regTime = d.registeredAt ? (()=>{const _d=new Date(d.registeredAt);return (_d.getMonth()+1)+'/'+_d.getDate()+' '+String(_d.getHours()).padStart(2,'0')+':'+String(_d.getMinutes()).padStart(2,'0');})() : '';
 
-  slotEl.className = 'ops-slot';
-  slotEl.style.cssText = 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;cursor:default;min-height:auto;';
+  const _bndCls = slotEl.classList.contains('ops-bundle-top') ? 'ops-bundle-top ops-bundle-item'
+    : slotEl.classList.contains('ops-bundle-bottom') ? 'ops-bundle-bottom ops-bundle-item'
+    : slotEl.classList.contains('ops-bundle-item') ? 'ops-bundle-item'
+    : '';
+  slotEl.className = 'ops-slot'+(_bndCls?' '+_bndCls:'');
+  slotEl.style.cssText = 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:none;cursor:default;min-height:auto;';
   slotEl.onclick = null;
   /* 활성화 전(tooEarly)이면 시간변경 버튼, 이후면 삭제 버튼 */
   const topActionBtn = tooEarly
@@ -16972,8 +17020,12 @@ function _renderMorningSlot(){
 
 /* ── 빈 슬롯 (미등록) ── */
 function _mrEmptySlot(slotEl){
-  slotEl.className = 'ops-slot';
-  slotEl.style.cssText = 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;';
+  const _bndCls2 = slotEl.classList.contains('ops-bundle-top') ? 'ops-bundle-top ops-bundle-item'
+    : slotEl.classList.contains('ops-bundle-bottom') ? 'ops-bundle-bottom ops-bundle-item'
+    : slotEl.classList.contains('ops-bundle-item') ? 'ops-bundle-item'
+    : '';
+  slotEl.className = 'ops-slot'+(_bndCls2?' '+_bndCls2:'');
+  slotEl.style.cssText = 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:none;';
   slotEl.onclick = ()=>openMorningRegPopup();
   slotEl.innerHTML = `
     <div class="slot-plus-ring" style="position:relative;width:56px;height:72px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
