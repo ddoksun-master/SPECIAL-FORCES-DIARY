@@ -5885,6 +5885,19 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
       <div id="opsSlotWrap" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px;">
 
+        <!-- 슬롯 3 — 아침점호 (맨 위) -->
+        <div id="opsSlot2" class="ops-slot" onclick="openOpsRegPopupForSlot(2)" style="background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border-color:rgba(180,150,80,.45);">
+          <div class="slot-plus-ring" style="position:relative;">
+            <span style="position:absolute;width:42px;height:42px;border:2px solid rgba(160,120,40,.50);border-radius:50%;"></span>
+            <span style="font-size:24px;font-weight:300;color:#7A5C10;position:relative;z-index:1;">+</span>
+          </div>
+          <div class="slot-deploy-info">
+            <div class="slot-deploy-title" style="color:#3A2C08;">아침점호</div>
+            <div class="slot-deploy-sub" style="color:rgba(90,60,10,.60);">MORNING ROLL CALL</div>
+          </div>
+          <div class="slot-arrow" style="color:#8A6C20;">›</div>
+        </div>
+
         <!-- 슬롯 1 -->
         <div id="opsSlot0" class="ops-slot ops-slot-empty" onclick="openOpsRegPopupForSlot(0)">
           <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
@@ -5901,19 +5914,6 @@ document.addEventListener('DOMContentLoaded',()=>{
             <div class="slot-deploy-title">작전투입 2</div>
           </div>
           <div class="slot-arrow">›</div>
-        </div>
-
-        <!-- 슬롯 3 — 아침점호 -->
-        <div id="opsSlot2" class="ops-slot" onclick="openOpsRegPopupForSlot(2)" style="background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border-color:rgba(180,150,80,.45);">
-          <div class="slot-plus-ring" style="position:relative;">
-            <span style="position:absolute;width:42px;height:42px;border:2px solid rgba(160,120,40,.50);border-radius:50%;"></span>
-            <span style="font-size:24px;font-weight:300;color:#7A5C10;position:relative;z-index:1;">+</span>
-          </div>
-          <div class="slot-deploy-info">
-            <div class="slot-deploy-title" style="color:#3A2C08;">아침점호</div>
-            <div class="slot-deploy-sub" style="color:rgba(90,60,10,.60);">MORNING ROLL CALL</div>
-          </div>
-          <div class="slot-arrow" style="color:#8A6C20;">›</div>
         </div>
 
       </div>
@@ -6756,29 +6756,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 </style>
 
-  <!-- ★★ 팀원 작전확인 — 바텀바 위 고정 패널 ★★ -->
-  <div id="partnerOpsSection" style="display:none;position:fixed;bottom:calc(60px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:44;pointer-events:none;">
-    <div style="pointer-events:all;margin:0 0 0 0;">
-      <!-- 헤더 탭 — 클릭으로 펼치기/접기 -->
-      <div id="partnerOpsHeader" onclick="togglePartnerOps()" style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:linear-gradient(135deg,#3D2A6E,#2A1E52);border-top:2px solid rgba(155,120,212,.55);border-left:1px solid rgba(155,120,212,.25);border-right:1px solid rgba(155,120,212,.25);cursor:pointer;user-select:none;box-shadow:0 -3px 18px rgba(106,78,158,.35);">
-        <div style="display:flex;align-items:center;gap:9px;">
-          <div style="padding:3px 8px;background:rgba(155,120,212,.25);border:1px solid rgba(155,120,212,.50);border-radius:6px;font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,255,.90);letter-spacing:1px;" id="partnerCodeBadgeHeader">PT</div>
-          <div>
-            <div style="font-family:var(--title);font-size:12px;font-weight:900;color:rgba(220,200,255,.95);letter-spacing:.3px;" id="partnerOpsTitle">팀원 작전확인</div>
-          </div>
-          <span id="partnerOpsBadge" style="font-family:var(--orb);font-size:9px;font-weight:900;color:rgba(200,168,255,.9);background:rgba(155,120,212,.20);padding:2px 8px;border-radius:6px;border:1px solid rgba(155,120,212,.35);"></span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-family:var(--kr);font-size:9px;color:rgba(200,168,255,.55);">상단으로 올려서 확인</span>
-          <span id="partnerOpsChevron" style="font-size:14px;color:rgba(200,168,255,.70);transition:transform .25s;">▲</span>
-        </div>
-      </div>
-      <!-- 내용 (접힌 상태가 기본) -->
-      <div id="partnerOpsBody" style="display:none;max-height:38vh;overflow-y:auto;background:linear-gradient(180deg,#1E1438,#160F2E);border-left:1px solid rgba(155,120,212,.22);border-right:1px solid rgba(155,120,212,.22);padding:10px 12px 8px;-webkit-overflow-scrolling:touch;">
-        <div id="partnerOpsList" style="display:flex;flex-direction:column;gap:10px;"></div>
-      </div>
-    </div>
-  </div>
+  <!-- ★★ 팀원 작전확인 패널 — 전투기록으로 흡수됨, 숨김 유지 ★★ -->
+  <div id="partnerOpsSection" style="display:none !important;">
 
   <!-- BOTTOM NAV -->
   <div class="bottom-nav">
@@ -8291,8 +8270,8 @@ function _renderDiaryDayRecord(){
   }
   html+=`</div></div>`;
 
-  /* 상대 카드 */
-  if(partnerCoopItems.length>0||partnerSoloItems.length>0||partnerMrItem){
+  /* 상대 카드 — 아침점호 맨 위, 오늘의응원 입력창, 같이하기 버튼 */
+  if(partnerCoopItems.length>0||partnerSoloItems.length>0||partnerMrItem||isToday){
     const _needsEmpathy=[...partnerCoopItems,...partnerSoloItems].some((q,_idx)=>{
       const isCoopQ=partnerCoopItems.includes(q);
       const pqi=_partnerQuests?_partnerQuests.indexOf(q):_idx;
@@ -8313,7 +8292,22 @@ function _renderDiaryDayRecord(){
       </div>
       <div id="oppCardBody_${date}" style="display:${_isCollapsed?'none':'block'};padding:12px;background:rgba(106,78,158,.05);border:2px solid rgba(106,78,158,.20);border-top:none;border-radius:0 0 14px 14px;">`;
 
-    /* 상대 아침점호 */
+    /* ── 오늘의 응원 입력창 (오늘만 표시) ── */
+    if(isToday && partnerData && partnerData.uid){
+      const _cheerDailyKey=`cheerSentToday_${MY_UID}_${date}`;
+      const _cheerSentAlready=_getFlag(_cheerDailyKey);
+      html+=`<div style="margin-bottom:10px;padding:10px 12px;background:rgba(106,78,158,.08);border:1.5px solid rgba(106,78,158,.30);border-radius:11px;">
+        <div style="font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(155,100,230,.90);margin-bottom:7px;">💜 오늘의 응원</div>
+        ${_cheerSentAlready
+          ?`<div style="font-family:var(--kr);font-size:10px;color:rgba(155,100,230,.60);text-align:center;padding:6px 0;">오늘 응원메시지를 보냈어요 💜</div>`
+          :`<div style="display:flex;gap:6px;">
+              <input id="diaryCheerInput_${date}" type="text" maxlength="60" placeholder="${pName}에게 응원 메시지를 남겨보세요" style="flex:1;padding:8px 10px;background:rgba(255,255,255,.07);border:1px solid rgba(106,78,158,.35);border-radius:8px;color:#fff;font-family:var(--kr);font-size:10px;outline:none;"/>
+              <button class="diary-cheer-send-btn" data-date="${date}" style="padding:8px 12px;background:rgba(106,78,158,.30);border:1.5px solid rgba(150,100,220,.60);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(200,168,255,.95);cursor:pointer;white-space:nowrap;">전송 +1P</button>
+            </div>`}
+      </div>`;
+    }
+
+    /* ── 상대 아침점호 (맨 위) ── */
     if(partnerMrItem){
       const _pmr=partnerMrItem;
       const _pmrH=_pmr.hour;
@@ -8322,26 +8316,40 @@ function _renderDiaryDayRecord(){
       const _pmrCertTime=_pmrCertAt?String(new Date(_pmrCertAt).getHours()).padStart(2,'0')+':'+String(new Date(_pmrCertAt).getMinutes()).padStart(2,'0'):null;
       const _pmrFrom=String(_pmrH).padStart(2,'0')+':00';
       const _pmrTo=String(_pmrH).padStart(2,'0')+':59';
-      html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(255,165,80,.12);margin-bottom:4px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
-          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-            <span style="font-size:12px;">☀️</span>
-            <span style="font-family:var(--kr);font-size:12px;font-weight:900;color:#1A1F1C;">아침점호 ${_pmrH}시</span>
+      /* 내 morningRoll과 같이하기 상태 확인 */
+      const _safeMrData2=(typeof window._mrData!=='undefined')?window._mrData:null;
+      const _mrTogether=_safeMrData2&&_safeMrData2.together===partnerData.uid;
+      html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(255,165,80,.15);margin-bottom:4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;flex:1;">
+            <span style="font-size:13px;">☀️</span>
+            <span style="font-family:var(--kr);font-size:12px;font-weight:900;color:rgba(255,165,80,.95);">아침점호 ${_pmrH}시</span>
             ${_pmrDone&&_pmrCertTime
-              ?`<span style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_pmrCertTime} 인증완료</span>`
-              :`<span style="font-family:var(--kr);font-size:10px;color:rgba(180,150,80,.65);font-weight:600;">(인증 ${_pmrFrom}~${_pmrTo})</span>`}
+              ?`<span style="font-family:var(--kr);font-size:11px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_pmrCertTime} 인증</span>`
+              :`<span style="font-family:var(--kr);font-size:9px;color:rgba(180,150,80,.65);font-weight:600;">(${_pmrFrom}~${_pmrTo})</span>`}
           </div>
+          ${_mrTogether
+            ?`<div style="padding:6px 10px;background:rgba(42,77,181,.10);border:1px solid rgba(42,77,181,.28);border-radius:8px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(100,150,255,.85);white-space:nowrap;">🤝 같이진행중</div>`
+            :isToday
+              ?`<button class="diary-mr-together-btn" style="padding:6px 10px;background:rgba(82,212,164,.18);border:1.5px solid rgba(82,212,164,.50);border-radius:8px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(82,212,164,.95);cursor:pointer;white-space:nowrap;">🤝 같이하기</button>`
+              :''}
         </div>
+      </div>`;
+    } else if(isToday && partnerData && partnerData.uid){
+      /* 아침점호 미등록 표시 */
+      html+=`<div style="padding:7px 0;border-bottom:1px solid rgba(255,165,80,.10);margin-bottom:4px;">
+        <span style="font-family:var(--kr);font-size:10px;color:rgba(255,165,80,.40);">☀️ 아침점호 미등록</span>
       </div>`;
     }
 
-    /* 상대 협동 미션 */
+    /* ── 상대 협동 미션 ── */
     partnerCoopItems.forEach((q,_)=>{
       const pqi=_partnerQuests?_partnerQuests.indexOf(q):_;
       const isDone=q.completed||q.stamped;
       const partnerCheer=q.cheerMsg&&(q.cheerFromNick===(myNickname||'나')||q.cheerFromNick===myNickname);
       const ckp=`histEmpathy_${partnerData&&partnerData.uid}_${date}_coop_${q.qid||pqi}`;
       const empDone=_getFlag(ckp);
+      const _alreadyCoop=(quests||[]).find(mq=>mq.mode==='coop'&&mq.together===partnerData.uid&&mq.name===q.name);
       html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);">
         <div style="display:flex;align-items:center;justify-content:space-between;">
           <div style="flex:1;min-width:0;">
@@ -8349,10 +8357,10 @@ function _renderDiaryDayRecord(){
               <span style="font-size:12px;color:${isDone?'#5A3A8A':'#9CA49A'};">${isDone?'✅':'○'}</span>${q.name}
               <span style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(42,77,181,.6);padding:1px 6px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.20);border-radius:5px;">협동</span>
             </div>
-            ${isDone?`<div style="margin-top:4px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(82,180,130,.90);">${pName}님 미션이 완료되었습니다 👊</div>`:''}
+            ${isDone?`<div style="margin-top:4px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(82,180,130,.90);">${pName}님 미션 완료 👊</div>`:''}
             <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
-              <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${partnerCheer?'#6B4A9A':'#9CA49A'};">${partnerCheer?'응원 +2p 획득':'응원 미완료'}</span>
-              ${empDone?`<span style="font-family:var(--kr);font-size:9px;font-weight:600;color:rgba(200,168,75,.85);">👊 수고했어 +1p 완료</span>`:''}
+              <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${partnerCheer?'#6B4A9A':'#9CA49A'};">${partnerCheer?'응원 획득':'응원 미완료'}</span>
+              ${empDone?`<span style="font-family:var(--kr);font-size:9px;font-weight:600;color:rgba(200,168,75,.85);">👊 수고했어 완료</span>`:''}
             </div>
           </div>
           <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;margin-left:8px;">
@@ -8367,26 +8375,33 @@ function _renderDiaryDayRecord(){
       </div>`;
     });
 
-    /* 상대 개인 미션 */
+    /* ── 상대 개인 미션 + 같이하기 버튼 ── */
     partnerSoloItems.forEach(q=>{
       const pqi=_partnerQuests?_partnerQuests.indexOf(q):0;
       const isDone=q.completed||q.stamped;
       const myCheerSent=q.cheerFromNick&&(q.cheerFromNick===(myNickname||'상대방')||q.cheerFromNick===myNickname);
       const ckp=`histEmpathy_${partnerData&&partnerData.uid}_${date}_${q.qid||pqi}`;
       const empDone=_getFlag(ckp);
+      const _alreadyCoop=(quests||[]).find(mq=>mq.mode==='coop'&&mq.together===partnerData.uid&&mq.name===q.name);
+      const hasMyCoopMission=(quests||[]).filter(mq=>mq.mode==='coop').length>=1;
       html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(106,78,158,.08);">
         <div style="display:flex;align-items:center;justify-content:space-between;">
           <div style="flex:1;min-width:0;">
             <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${isDone?'#4A2A7A':'#3D3050'};display:flex;align-items:center;gap:5px;">
               <span style="font-size:12px;color:${isDone?'#5A3A8A':'#9CA49A'};">${isDone?'✅':'○'}</span>${q.name}
             </div>
-            ${isDone?`<div style="margin-top:4px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(82,180,130,.90);">${pName}님 미션이 완료되었습니다 👊</div>`:''}
+            ${isDone?`<div style="margin-top:4px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(82,180,130,.90);">${pName}님 미션 완료 👊</div>`:''}
             <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
-              <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${myCheerSent?'#6B4A9A':'#9CA49A'};">${myCheerSent?'응원 +2p 획득':'응원 미완료'}</span>
-              ${empDone?`<span style="font-family:var(--kr);font-size:9px;font-weight:600;color:rgba(200,168,75,.85);">👊 수고했어 +1p 완료</span>`:''}
+              <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${myCheerSent?'#6B4A9A':'#9CA49A'};">${myCheerSent?'응원 획득':'응원 미완료'}</span>
+              ${empDone?`<span style="font-family:var(--kr);font-size:9px;font-weight:600;color:rgba(200,168,75,.85);">👊 수고했어 완료</span>`:''}
             </div>
           </div>
           <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;margin-left:8px;">
+            ${_alreadyCoop
+              ?`<div style="padding:7px 10px;background:rgba(42,77,181,.10);border:1px solid rgba(42,77,181,.28);border-radius:9px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(100,150,255,.85);white-space:nowrap;">🤝 같이진행중</div>`
+              :isToday
+                ?`<button class="diary-together-btn" data-pqi="${pqi}" data-date="${date}" data-name="${(q.name||'').replace(/"/g,'&quot;')}" data-reason="${(q.reason||'').replace(/"/g,'&quot;')}" style="padding:7px 10px;background:rgba(82,212,164,.18);border:1.5px solid rgba(82,212,164,.50);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(82,212,164,.95);cursor:pointer;white-space:nowrap;">🤝 같이하기</button>`
+                :''}
             ${empDone
               ?`<div style="padding:7px 10px;background:rgba(200,168,75,.12);border:1.5px solid rgba(200,168,75,.30);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:#7A5C1E;white-space:nowrap;">👊 완료</div>`
               :isDone
@@ -8451,6 +8466,68 @@ function _renderDiaryDayRecord(){
       }
       if(!q){ showToast('상대방 작전 데이터를 불러오는 중입니다'); return; }
       _showCertDetail(q,pqi,date,true,ck,btn);
+    });
+  });
+
+  /* 오늘의 응원 전송 */
+  recordList.querySelectorAll('.diary-cheer-send-btn').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      const d=btn.dataset.date||date;
+      const inp=document.getElementById('diaryCheerInput_'+d);
+      const msg=(inp?inp.value||'':'').trim();
+      if(!msg){ showToast('응원 메시지를 입력하세요'); return; }
+      const _cheerDailyKey=`cheerSentToday_${MY_UID}_${d}`;
+      if(_getFlag(_cheerDailyKey)){ showToast('오늘 이미 응원했어요 (하루 1회)'); return; }
+      if(!partnerData||!partnerData.uid){ showToast('상대방이 연결되지 않았습니다'); return; }
+      btn.disabled=true; btn.textContent='전송 중...';
+      /* 상대 첫번째 작전에 cheerMsg 저장 */
+      const _pqs=_partnerQuests||[];
+      const _targetQi=_pqs.length>0?0:-1;
+      _pendingOpsNotif={
+        fromUid:partnerData.uid, fromNick:partnerData.nickname||'상대방',
+        questName:_pqs[0]?_pqs[0].name:'', questDate:d, questIdx:_targetQi,
+        questReason:'', _isMorning:false,
+      };
+      /* cheerMsgInput에 값 세팅 후 submitCheerMsg 호출 */
+      const _cheerInput=document.getElementById('cheerMsgInput');
+      if(_cheerInput) _cheerInput.value=msg;
+      await submitCheerMsg();
+      _renderDiaryDayRecord();
+    });
+  });
+
+  /* 개인작전 같이하기 */
+  recordList.querySelectorAll('.diary-together-btn').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      const pqi=parseInt(btn.dataset.pqi);
+      const d=btn.dataset.date||date;
+      const qName=btn.dataset.name||'';
+      const qReason=btn.dataset.reason||'';
+      const pq=_partnerQuests&&_partnerQuests[pqi];
+      if(!pq&&!qName){ showToast('작전 정보를 불러오는 중입니다'); return; }
+      _pendingOpsNotif={
+        fromUid:partnerData.uid, fromNick:partnerData.nickname||'상대방',
+        questName:qName||pq?.name||'', questDate:d, questIdx:pqi,
+        questReason:qReason||pq?.reason||'', _isMorning:false,
+      };
+      btn.disabled=true; btn.textContent='처리 중...';
+      await acceptOpsTogether();
+      _renderDiaryDayRecord();
+      renderQ();
+    });
+  });
+
+  /* 아침점호 같이하기 */
+  recordList.querySelectorAll('.diary-mr-together-btn').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      const d=btn.dataset.date||date;
+      _pendingOpsNotif={
+        fromUid:partnerData.uid, fromNick:partnerData.nickname||'상대방',
+        questName:'아침점호', questDate:d, questIdx:-1, _isMorning:true,
+      };
+      btn.disabled=true; btn.textContent='처리 중...';
+      await acceptOpsTogether();
+      _renderDiaryDayRecord();
     });
   });
 }
@@ -9834,7 +9911,7 @@ function _handleDeepLink(url) {
 /* ── 앱 업데이트 감지 & 실행 ── */
 let _pendingSWReg = null;
 
-const APP_VERSION = 'v2.5';
+const APP_VERSION = 'v2.6';
 const _VERCEL_URL='https://special-forces-diary.vercel.app/index.html';
 const _ETAG_STOR_KEY='sfDiary_lastETag';
 
