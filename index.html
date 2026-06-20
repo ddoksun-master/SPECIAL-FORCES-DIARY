@@ -550,6 +550,27 @@ html,body{
 }
 .ops-slot:active{transform:scale(.99);filter:brightness(.97);}
 
+/* 내 카드 안 슬롯 — 테두리·radius 없이 플랫하게 */
+.ops-slot-inner{
+  border:none !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  border-left:4px solid transparent !important;
+}
+.ops-slot-inner.slot-easy  { border-left:4px solid #2F4A36 !important; }
+.ops-slot-inner.slot-medium{ border-left:4px solid #A8864E !important; }
+.ops-slot-inner.slot-hard  { border-left:4px solid #8B1A1A !important; }
+.my-card-divider{
+  height:1px;
+  background:rgba(47,74,54,.12);
+  flex-shrink:0;
+}
+/* 내 카드 안 cheerMsgCard */
+#myCardSlotBody #cheerMsgCard{
+  padding:8px 12px;
+  border-bottom:1px solid rgba(47,74,54,.12);
+}
+
 /* 빈 슬롯 */
 .ops-slot-empty{
   background:linear-gradient(90deg,#253B2D 0%,#1F3028 40%,#253B2D 100%);
@@ -5885,10 +5906,10 @@ document.addEventListener('DOMContentLoaded',()=>{
           <span id="myCardSlotChevron" style="font-size:12px;color:#6B9975;">▲</span>
         </div>
         <!-- 바디 -->
-        <div id="myCardSlotBody" style="padding:10px;background:rgba(47,74,54,.04);border:2px solid rgba(47,74,54,.18);border-top:none;border-radius:0 0 14px 14px;">
+        <div id="myCardSlotBody" style="background:rgba(47,74,54,.03);border:2px solid rgba(47,74,54,.18);border-top:none;border-radius:0 0 14px 14px;overflow:hidden;">
 
           <!-- 야간잠금 배너 -->
-          <div id="opsBlackoutBanner" style="display:none;margin-bottom:8px;padding:10px 14px;background:rgba(10,5,30,.92);border:1.5px solid rgba(99,60,180,.5);border-radius:12px;align-items:center;gap:10px;">
+          <div id="opsBlackoutBanner" style="display:none;padding:10px 14px;background:rgba(10,5,30,.92);border-bottom:1.5px solid rgba(99,60,180,.5);align-items:center;gap:10px;">
             <span style="font-size:14px;">🌙</span>
             <div>
               <div style="font-family:var(--title);font-size:11px;font-weight:900;color:rgba(180,140,255,.95);">야간 잠금 중</div>
@@ -5899,11 +5920,11 @@ document.addEventListener('DOMContentLoaded',()=>{
           <!-- ★ 응원메시지 카드 -->
           <div id="cheerMsgCard" style="display:none;margin-bottom:8px;"></div>
 
-          <!-- 슬롯들 -->
-          <div id="opsSlotWrap" style="display:flex;flex-direction:column;gap:8px;">
+          <!-- 슬롯들 (카드 내부 — 테두리·radius 없이 구분선만) -->
+          <div id="opsSlotWrap" style="display:flex;flex-direction:column;">
 
             <!-- 아침점호 슬롯 -->
-            <div id="opsSlot2" class="ops-slot" onclick="openOpsRegPopupForSlot(2)" style="background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border-color:rgba(180,150,80,.45);">
+            <div id="opsSlot2" class="ops-slot ops-slot-inner" onclick="openOpsRegPopupForSlot(2)" style="background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);">
               <div class="slot-plus-ring" style="position:relative;">
                 <span style="position:absolute;width:42px;height:42px;border:2px solid rgba(160,120,40,.50);border-radius:50%;"></span>
                 <span style="font-size:24px;font-weight:300;color:#7A5C10;position:relative;z-index:1;">+</span>
@@ -5915,15 +5936,19 @@ document.addEventListener('DOMContentLoaded',()=>{
               <div class="slot-arrow" style="color:#8A6C20;">›</div>
             </div>
 
+            <div class="my-card-divider"></div>
+
             <!-- 작전 슬롯 1 -->
-            <div id="opsSlot0" class="ops-slot ops-slot-empty" onclick="openOpsRegPopupForSlot(0)">
+            <div id="opsSlot0" class="ops-slot ops-slot-empty ops-slot-inner" onclick="openOpsRegPopupForSlot(0)">
               <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
               <div class="slot-deploy-info"><div class="slot-deploy-title">작전투입 1</div></div>
               <div class="slot-arrow">›</div>
             </div>
 
+            <div class="my-card-divider"></div>
+
             <!-- 작전 슬롯 2 -->
-            <div id="opsSlot1" class="ops-slot ops-slot-empty" onclick="openOpsRegPopupForSlot(1)">
+            <div id="opsSlot1" class="ops-slot ops-slot-empty ops-slot-inner" onclick="openOpsRegPopupForSlot(1)">
               <div class="slot-plus-ring"><span class="slot-plus-icon">+</span></div>
               <div class="slot-deploy-info"><div class="slot-deploy-title">작전투입 2</div></div>
               <div class="slot-arrow">›</div>
@@ -8218,21 +8243,22 @@ function _renderDiaryDayRecord(){
     if(isToday && partnerData && partnerData.uid){
       const _cheerDailyKey=`cheerSentToday_${MY_UID}_${date}`;
       const _cheerSentAlready=_getFlag(_cheerDailyKey);
-      /* 보낸 메시지 내용: 상대방 퀘스트에서 cheerFromNick===내닉 인 것 찾기 */
+      /* 보낸 메시지 내용: partnerQuests → localStorage 순으로 탐색 */
       let _sentCheerMsg='';
       if(_cheerSentAlready){
         const _allPQ=[...(_partnerQuests||[])];
         const _pqWithCheer=_allPQ.find(pq=>pq.cheerMsg&&pq.cheerFromNick===(myNickname||'나'));
         if(_pqWithCheer) _sentCheerMsg=_pqWithCheer.cheerMsg;
+        /* fallback: 전송 시 저장한 localStorage 값 */
+        if(!_sentCheerMsg){
+          try{ _sentCheerMsg=localStorage.getItem('cheerMsg_'+_cheerDailyKey)||''; }catch(e){}
+        }
       }
-      html+=`<div style="margin-bottom:10px;padding:10px 12px;background:rgba(106,78,158,.08);border:1.5px solid rgba(106,78,158,.30);border-radius:11px;">
-        <div style="font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(155,100,230,.90);margin-bottom:7px;">💜 오늘의 응원</div>
+      html+=`<div style="margin-bottom:8px;padding:8px 0;border-bottom:1px solid rgba(106,78,158,.12);">
+        <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(106,78,158,.60);margin-bottom:5px;">💜 오늘의 응원</div>
         ${_cheerSentAlready
-          ?`<div style="padding:10px 12px;background:rgba(106,78,158,.12);border:2px solid rgba(106,78,158,.55);border-radius:10px;">
-              <div style="font-family:var(--kr);font-size:9px;color:#5A3A8A;font-weight:800;margin-bottom:5px;">💜 내가 보낸 응원</div>
-              <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:#2A1040;line-height:1.5;">${_sentCheerMsg||'(응원 전송 완료)'}</div>
-            </div>`
-          :`<button class="diary-cheer-send-btn" data-date="${date}" style="width:100%;padding:10px 12px;background:rgba(106,78,158,.20);border:1.5px solid rgba(150,100,220,.50);border-radius:9px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(160,100,255,.95);cursor:pointer;text-align:center;">💜 응원 보내기</button>`}
+          ?`<div style="font-family:var(--kr);font-size:12px;font-weight:800;color:#2A1040;line-height:1.5;">${_sentCheerMsg||'💜 응원을 보냈어요'}</div>`
+          :`<button class="diary-cheer-send-btn" data-date="${date}" style="width:100%;padding:9px 12px;background:rgba(106,78,158,.15);border:1.5px solid rgba(150,100,220,.40);border-radius:9px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(100,60,180,.90);cursor:pointer;text-align:center;">💜 응원 보내기</button>`}
       </div>`;
     }
 
@@ -8589,7 +8615,8 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
 
   const _sStamped = q.stamped||false;
   const _sDone = _sStamped || q.completed;
-  slotEl.className=`ops-slot ops-slot-filled ${catClass}`+(_sDone&&!_sStamped?' slot-done':'')+(_isFailed?' slot-done':'');
+  const _innerCls = slotEl.classList.contains('ops-slot-inner') ? ' ops-slot-inner' : '';
+  slotEl.className=`ops-slot ops-slot-filled ${catClass}${_innerCls}`+(_sDone&&!_sStamped?' slot-done':'')+(_isFailed?' slot-done':'');
   slotEl.style.cssText='';
   slotEl.onclick=null;
 
@@ -8846,9 +8873,12 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
 
 /* ── 빈 슬롯 복원 ── */
 function _emptySlot(slotEl,si,questCount){
+  const _inner = slotEl.classList.contains('ops-slot-inner') ? ' ops-slot-inner' : '';
   if(si===2){
-    slotEl.className='ops-slot';
-    slotEl.style.cssText='background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;min-height:72px;';
+    slotEl.className='ops-slot'+_inner;
+    slotEl.style.cssText=_inner
+      ? 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);min-height:72px;'
+      : 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;min-height:72px;';
     slotEl.onclick=()=>openOpsRegPopupForSlot(si);
     slotEl.innerHTML=`
       <div class="slot-plus-ring" style="position:relative;width:56px;height:72px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -8862,7 +8892,7 @@ function _emptySlot(slotEl,si,questCount){
       <div class="slot-arrow" style="color:#8A6C20;width:40px;height:72px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">›</div>
     `;
   } else {
-    slotEl.className='ops-slot ops-slot-empty';
+    slotEl.className='ops-slot ops-slot-empty'+_inner;
     slotEl.style.cssText='';
     slotEl.onclick=()=>openOpsRegPopupForSlot(si);
     slotEl.innerHTML=`
@@ -10136,6 +10166,7 @@ async function submitCheerMsg(){
         await _savePxPointLog(n.questDate||selDate,'응원메시지',1);
       }catch(e){}
       _setFlag(_cheerDailyKey); /* 하루 1회 플래그 */
+      try{localStorage.setItem('cheerMsg_'+_cheerDailyKey, msg);}catch(e){}
       closeCheerMsgPopup();
       renderPartnerOps();
       showToast('💜 응원 완료! 보급상점 +1P');
@@ -10161,6 +10192,7 @@ async function submitCheerMsg(){
       await _savePxPointLog(n.questDate||selDate,'응원메시지',1);
     }catch(e){}
     _setFlag(_cheerDailyKey); /* 하루 1회 플래그 */
+    try{localStorage.setItem('cheerMsg_'+_cheerDailyKey, msg);}catch(e){}
     closeCheerMsgPopup();
     renderPartnerOps();
     showToast('💜 응원 완료! 보급상점 +1P');
@@ -10213,6 +10245,7 @@ async function submitCheerMsg(){
     await _savePxPointLog(n.questDate||selDate,'응원메시지',1);
   }catch(e){}
   _setFlag(_cheerDailyKey); /* 하루 1회 플래그 */
+  try{localStorage.setItem('cheerMsg_'+_cheerDailyKey, msg);}catch(e){}
   closeCheerMsgPopup();
   renderPartnerOps();
   showToast('💜 협동작전 응원 완료! 보급상점 +1P');
@@ -16941,8 +16974,11 @@ function _renderMorningSlot(){
 
   const regTime = d.registeredAt ? (()=>{const _d=new Date(d.registeredAt);return (_d.getMonth()+1)+'/'+_d.getDate()+' '+String(_d.getHours()).padStart(2,'0')+':'+String(_d.getMinutes()).padStart(2,'0');})() : '';
 
-  slotEl.className = 'ops-slot';
-  slotEl.style.cssText = 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;cursor:default;min-height:auto;';
+  const _mrInner = slotEl.classList.contains('ops-slot-inner') ? ' ops-slot-inner' : '';
+  slotEl.className = 'ops-slot'+_mrInner;
+  slotEl.style.cssText = _mrInner
+    ? 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);cursor:default;min-height:auto;'
+    : 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;cursor:default;min-height:auto;';
   slotEl.onclick = null;
   /* 활성화 전(tooEarly)이면 시간변경 버튼, 이후면 삭제 버튼 */
   const topActionBtn = tooEarly
@@ -17003,8 +17039,11 @@ function _renderMorningSlot(){
 
 /* ── 빈 슬롯 (미등록) ── */
 function _mrEmptySlot(slotEl){
-  slotEl.className = 'ops-slot';
-  slotEl.style.cssText = 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;';
+  const _mrEmInner = slotEl.classList.contains('ops-slot-inner') ? ' ops-slot-inner' : '';
+  slotEl.className = 'ops-slot'+_mrEmInner;
+  slotEl.style.cssText = _mrEmInner
+    ? 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);'
+    : 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;';
   slotEl.onclick = ()=>openMorningRegPopup();
   slotEl.innerHTML = `
     <div class="slot-plus-ring" style="position:relative;width:56px;height:72px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
