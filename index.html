@@ -5874,6 +5874,9 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div id="tplGrid" style="display:none;"></div>
       <div id="rulePopup" style="display:none;"></div>
 
+      <!-- ★ 응원메시지 카드 (아침점호 위) -->
+      <div id="cheerMsgCard" style="display:none;margin-bottom:8px;"></div>
+
       <!-- ★ 작전 슬롯 3개 (작전투입 스타일) -->
       <!-- 야간잠금 배너 (작전투입 위) -->
       <div id="opsBlackoutBanner" style="display:none;margin-bottom:8px;padding:10px 14px;background:rgba(10,5,30,.92);border:1.5px solid rgba(99,60,180,.5);border-radius:12px;align-items:center;gap:10px;">
@@ -8054,6 +8057,8 @@ function renderQ(){
     if(_mrLoaded) _renderMorningSlot();
     else reloadMorningRoll();
   }
+  /* ── 응원메시지 카드 (아침점호 위 별도 카드로 표시) ── */
+  _renderCheerMsgCard();
   /* 이슈10,11: 당일기준 작전기록 요약 */
   _renderDiaryDayRecord();
 }
@@ -8173,117 +8178,7 @@ function _renderDiaryDayRecord(){
     if(typeof subscribePartnerOps==='function') subscribePartnerOps();
   }
 
-  /* 내 카드 */
-  html+=`<div style="margin-bottom:10px;">
-    <div onclick="_toggleMyCard('${date}')" style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:rgba(47,74,54,.10);border:2px solid rgba(47,74,54,.22);border-radius:${_myCollapsed?'14px':'14px 14px 0 0'};cursor:pointer;user-select:none;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-family:var(--title);font-size:13px;font-weight:900;color:#1E2D24;">👤 내 카드</span>
-        <span style="font-family:var(--kr);font-size:10px;font-weight:700;color:#6B9975;">(${myNick})</span>
-        ${_myHasEmpathy?`<span style="font-family:var(--kr);font-size:9px;background:rgba(42,144,128,.20);border:1px solid rgba(42,144,128,.40);color:rgba(42,144,128,.90);padding:2px 7px;border-radius:5px;">💬 수고했어 메시지</span>`:''}
-      </div>
-      <span id="myCardChevron_${date}" style="font-size:10px;color:#6B9975;">${_myCollapsed?'▼':'▲'}</span>
-    </div>
-    <div id="myCardBody_${date}" style="display:${_myCollapsed?'none':'block'};padding:12px;background:rgba(47,74,54,.04);border:2px solid rgba(47,74,54,.18);border-top:none;border-radius:0 0 14px 14px;">`;
-
-  /* 내 협동 미션 */
-  myCoopItems.forEach(q=>{
-    const qi=items.indexOf(q);
-    const myDone=q.stamped||q.completed;
-    const hasCheer=!!q.cheerMsg && q.cheerFromNick!==(myNickname||'나');
-    const _cpKey=`cheerPointClaimed_${MY_UID}_${date}_${q.qid||qi}`;
-    const cheerClaimed=_getFlag(_cpKey);
-    const hasRecEmpathy=!!q.empathyMsg;
-    html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);">
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${myDone?'#2F4A36':'#1A1F1C'};display:flex;align-items:center;gap:5px;">
-            <span style="font-size:12px;color:${myDone?'#2F4A36':'#9CA49A'};">${myDone?'✅':'○'}</span>${q.name}
-            <span style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(42,77,181,.6);padding:1px 6px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.20);border-radius:5px;letter-spacing:.5px;">협동</span>
-          </div>
-          <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
-            ${myDone?`<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(30,90,50,.85);">✅ 인증완료</span>`:''}
-            <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${cheerClaimed?'#8B6C1A':hasCheer?'#6B4A9A':'#9CA49A'};">${cheerClaimed?'⭐ 응원 +2p 수령완료':hasCheer?'응원메시지 수신(미수령)':'응원 미완료'}</span>
-            ${hasRecEmpathy?`<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(42,144,128,.85);">💬 수고했어</span>`:''}
-          </div>
-          <div style="margin-top:7px;display:flex;gap:6px;">
-            <button class="hist-cert-view-btn" data-date="${date}" data-qi="${qi}" style="flex:1;padding:8px 6px;background:rgba(47,74,54,.12);border:1.5px solid rgba(47,74,54,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(30,45,36,.85);cursor:pointer;text-align:center;">📋 인증보기</button>
-          </div>
-        </div>
-      </div>
-      ${q.certPhotoUrl?`<div style="margin-top:6px;cursor:pointer;" onclick="_showFullscreenPhoto('${q.certPhotoUrl}')"><img src="${q.certPhotoUrl}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid rgba(82,212,164,.25);"/></div>`:''}
-      ${hasRecEmpathy?`<div style="margin-top:5px;padding:6px 8px;background:rgba(42,144,128,.08);border:1px solid rgba(42,144,128,.20);border-radius:7px;font-family:var(--kr);font-size:9px;color:rgba(42,144,128,.85);font-weight:600;">💬 ${q.empathyFromNick||'파트너'}: "${q.empathyMsg}"</div>`:''}
-    </div>`;
-  });
-
-  /* 내 개인 미션 */
-  myItems.forEach(q=>{
-    const qi=items.indexOf(q);
-    const isDone=q.completed||q.stamped;
-    /* 상대방이 보낸 응원인지 확인 */
-    const _isMyCheer = q.cheerFromNick && (q.cheerFromNick===(myNickname||'나'));
-    const hasCheer = !!q.cheerMsg && !_isMyCheer;
-    const _cpKey=`cheerPointClaimed_${MY_UID}_${date}_${q.qid||qi}`;
-    const cheerClaimed=_getFlag(_cpKey);
-    const hasRecEmpathy=!!q.empathyMsg;
-    const _feedNow=_virtualNow();
-    const _feed04=new Date(date+'T04:00:00').getTime();
-    const _isReservedFeed = !!q.reserved && isToday && _feedNow < _feed04;
-    if(_isReservedFeed){
-      html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:12px;color:#9CA49A;">○</span>
-          <div style="flex:1;font-family:var(--kr);font-size:12px;font-weight:800;color:#9CA49A;">${q.name}</div>
-          <div style="padding:5px 10px;background:rgba(42,77,181,.10);border:1px solid rgba(42,77,181,.25);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(100,140,255,.75);">예약중.</div>
-        </div>
-      </div>`;
-      return;
-    }
-    if(q._isMorning){
-      const _myMrCertAt=q.certifiedAt;
-      const _myMrCertTime=_myMrCertAt?String(new Date(q.certifiedAt).getHours()).padStart(2,'0')+':'+String(new Date(q.certifiedAt).getMinutes()).padStart(2,'0'):null;
-      const _myMrH=q.hour||'';
-      const _myMrFrom=String(_myMrH).padStart(2,'0')+':00';
-      const _myMrTo=String(_myMrH).padStart(2,'0')+':59';
-      html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);margin-bottom:4px;">
-        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-          <span style="font-size:12px;">☀️</span>
-          <span style="font-family:var(--kr);font-size:12px;font-weight:900;color:#1A1F1C;">아침점호 ${_myMrH}시</span>
-          ${_myMrCertTime
-            ?`<span style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_myMrCertTime} 인증완료</span>`
-            :`<span style="font-family:var(--kr);font-size:10px;color:rgba(100,130,100,.65);font-weight:600;">(인증 ${_myMrFrom}~${_myMrTo})</span>`}
-        </div>
-      </div>`;
-    } else {
-      html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);">
-        <div style="flex:1;min-width:0;">
-          ${hasCheer?`<div style="margin-bottom:7px;padding:8px 11px;background:rgba(106,78,158,.14);border:1.5px solid rgba(106,78,158,.45);border-radius:10px;">
-            <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(106,78,158,.80);margin-bottom:3px;">💜 ${q.cheerFromNick||pName}님의 응원</div>
-            <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:#3D2060;line-height:1.5;">${q.cheerMsg}</div>
-          </div>`:''}
-          <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${isDone?'#2F4A36':'#1A1F1C'};display:flex;align-items:center;gap:5px;">
-            <span style="font-size:12px;color:${isDone?'#2F4A36':'#9CA49A'};">${isDone?'✅':'○'}</span>${q.name}
-          </div>
-          <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
-            ${isDone?'<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(30,90,50,.85);">✅ 인증완료</span>':''}
-            ${!hasCheer?`<span style="font-family:var(--kr);font-size:9px;color:rgba(61,72,64,.45);">${cheerClaimed?'⭐ 응원포인트 수령완료':'응원 미완료'}</span>`:''}
-            ${hasRecEmpathy?'<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(42,144,128,.85);">💬 수고했어</span>':''}
-          </div>
-          <div style="margin-top:7px;display:flex;gap:6px;">
-            <button class="hist-cert-view-btn" data-date="${date}" data-qi="${qi}" style="flex:1;padding:8px 6px;background:rgba(47,74,54,.12);border:1.5px solid rgba(47,74,54,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(30,45,36,.85);cursor:pointer;text-align:center;">📋 인증보기</button>
-          </div>
-        </div>
-        ${q.certPhotoUrl?`<div style="margin-top:6px;cursor:pointer;" onclick="_showFullscreenPhoto('${q.certPhotoUrl}')"><img src="${q.certPhotoUrl}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid rgba(82,212,164,.25);"/></div>`:''}
-        ${hasRecEmpathy?`<div style="margin-top:5px;padding:6px 8px;background:rgba(42,144,128,.08);border:1px solid rgba(42,144,128,.20);border-radius:7px;font-family:var(--kr);font-size:9px;color:rgba(42,144,128,.85);font-weight:600;">💬 ${q.empathyFromNick||'파트너'}: "${q.empathyMsg}"</div>`:''}
-      </div>`;
-    }
-  });
-
-  if(myItems.length===0&&myCoopItems.length===0){
-    html+=`<div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.4);padding:6px 0;">내 작전 없음</div>`;
-  }
-  html+=`</div></div>`;
-
-  /* 상대 카드 — 아침점호 맨 위, 오늘의응원 입력창, 같이하기 버튼 */
+    /* 상대 카드 — 아침점호 맨 위, 오늘의응원 입력창, 같이하기 버튼 */
   if(partnerCoopItems.length>0||partnerSoloItems.length>0||partnerMrItem||isToday){
     const _needsEmpathy=[...partnerCoopItems,...partnerSoloItems].some((q,_idx)=>{
       const isCoopQ=partnerCoopItems.includes(q);
@@ -8306,7 +8201,7 @@ function _renderDiaryDayRecord(){
       </div>
       <div id="oppCardBody_${date}" style="display:${_isCollapsed?'none':'block'};padding:12px;background:rgba(106,78,158,.05);border:2px solid rgba(106,78,158,.20);border-top:none;border-radius:0 0 14px 14px;">`;
 
-    /* ── 오늘의 응원 입력창 (오늘만 표시) ── */
+    /* ── 오늘의 응원 (오늘만 표시) ── */
     if(isToday && partnerData && partnerData.uid){
       const _cheerDailyKey=`cheerSentToday_${MY_UID}_${date}`;
       const _cheerSentAlready=_getFlag(_cheerDailyKey);
@@ -8324,10 +8219,7 @@ function _renderDiaryDayRecord(){
               <div style="font-family:var(--kr);font-size:9px;color:rgba(155,100,230,.60);margin-bottom:3px;">내가 보낸 응원 💜</div>
               <div style="font-family:var(--kr);font-size:11px;font-weight:700;color:rgba(80,40,140,.85);">${_sentCheerMsg||'(응원 전송 완료)'}</div>
             </div>`
-          :`<div style="display:flex;gap:6px;">
-              <input id="diaryCheerInput_${date}" type="text" maxlength="60" placeholder="${pName}에게 응원 메시지를 남겨보세요" style="flex:1;padding:8px 10px;background:rgba(255,255,255,.07);border:1px solid rgba(106,78,158,.35);border-radius:8px;color:#1A1F1C;font-family:var(--kr);font-size:10px;outline:none;"/>
-              <button class="diary-cheer-send-btn" data-date="${date}" style="padding:8px 12px;background:rgba(106,78,158,.30);border:1.5px solid rgba(150,100,220,.60);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(80,30,160,.95);cursor:pointer;white-space:nowrap;">전송 +1P</button>
-            </div>`}
+          :`<button class="diary-cheer-send-btn" data-date="${date}" style="width:100%;padding:10px 12px;background:rgba(106,78,158,.20);border:1.5px solid rgba(150,100,220,.50);border-radius:9px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(160,100,255,.95);cursor:pointer;text-align:center;">💜 응원 보내기</button>`}
       </div>`;
     }
 
@@ -8355,7 +8247,7 @@ function _renderDiaryDayRecord(){
           ${_mrTogether
             ?`<div style="padding:6px 10px;background:rgba(42,77,181,.10);border:1px solid rgba(42,77,181,.28);border-radius:8px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(100,150,255,.85);white-space:nowrap;">🤝 같이진행중</div>`
             :isToday
-              ?`<button class="diary-mr-together-btn" style="padding:6px 10px;background:rgba(82,212,164,.18);border:1.5px solid rgba(82,212,164,.50);border-radius:8px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(82,212,164,.95);cursor:pointer;white-space:nowrap;">🤝 같이하기</button>`
+              ?`<button class="diary-mr-together-btn" style="padding:6px 10px;background:rgba(30,80,60,.22);border:1.5px solid rgba(42,100,75,.55);border-radius:8px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(40,90,65,.95);cursor:pointer;white-space:nowrap;">🤝 같이하기</button>`
               :''}
         </div>
       </div>`;
@@ -8424,7 +8316,7 @@ function _renderDiaryDayRecord(){
             ${_alreadyCoop
               ?`<div style="padding:7px 10px;background:rgba(42,77,181,.10);border:1px solid rgba(42,77,181,.28);border-radius:9px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(100,150,255,.85);white-space:nowrap;">🤝 같이진행중</div>`
               :isToday
-                ?`<button class="diary-together-btn" data-pqi="${pqi}" data-date="${date}" data-name="${(q.name||'').replace(/"/g,'&quot;')}" data-reason="${(q.reason||'').replace(/"/g,'&quot;')}" style="padding:7px 10px;background:rgba(82,212,164,.18);border:1.5px solid rgba(82,212,164,.50);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(82,212,164,.95);cursor:pointer;white-space:nowrap;">🤝 같이하기</button>`
+                ?`<button class="diary-together-btn" data-pqi="${pqi}" data-date="${date}" data-name="${(q.name||'').replace(/"/g,'&quot;')}" data-reason="${(q.reason||'').replace(/"/g,'&quot;')}" style="padding:7px 10px;background:rgba(30,80,60,.22);border:1.5px solid rgba(42,100,75,.55);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(40,90,65,.95);cursor:pointer;white-space:nowrap;">🤝 같이하기</button>`
                 :''}
             ${empDone
               ?`<div style="padding:7px 10px;background:rgba(200,168,75,.12);border:1.5px solid rgba(200,168,75,.30);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:#7A5C1E;white-space:nowrap;">👊 완료</div>`
@@ -8493,31 +8385,67 @@ function _renderDiaryDayRecord(){
     });
   });
 
-  /* 오늘의 응원 전송 */
+  /* 오늘의 응원 전송 — 버튼 클릭 시 인라인 입력창 표시 */
   recordList.querySelectorAll('.diary-cheer-send-btn').forEach(btn=>{
     btn.addEventListener('click',async()=>{
       const d=btn.dataset.date||date;
-      const inp=document.getElementById('diaryCheerInput_'+d);
-      const msg=(inp?inp.value||'':'').trim();
-      if(!msg){ showToast('응원 메시지를 입력하세요'); return; }
-      const _cheerDailyKey=`cheerSentToday_${MY_UID}_${d}`;
-      if(_getFlag(_cheerDailyKey)){ showToast('오늘 이미 응원했어요 (하루 1회)'); return; }
-      if(!partnerData||!partnerData.uid){ showToast('상대방이 연결되지 않았습니다'); return; }
-      btn.disabled=true; btn.textContent='전송 중...';
-      /* 상대 첫번째 작전에 cheerMsg 저장 */
-      const _pqs=_partnerQuests||[];
-      const _targetQi=_pqs.length>0?0:-1;
-      _pendingOpsNotif={
-        fromUid:partnerData.uid, fromNick:partnerData.nickname||'상대방',
-        questName:_pqs[0]?_pqs[0].name:'', questDate:d, questIdx:_targetQi,
-        questReason:'', _isMorning:false,
-      };
-      /* cheerMsgInput에 값 세팅 후 submitCheerMsg 호출 */
-      const _cheerInput=document.getElementById('cheerMsgInput');
-      if(_cheerInput) _cheerInput.value=msg;
-      await submitCheerMsg();
-      _renderDiaryDayRecord();
-    });
+      /* 이미 입력창이 열려있으면 전송 */
+      const existInp=document.getElementById('diaryCheerInput_'+d);
+      if(existInp){
+        const msg=(existInp.value||'').trim();
+        if(!msg){ showToast('응원 메시지를 입력하세요'); return; }
+        /* 아래 공통 전송 로직 진입 */
+        const _cheerDailyKey=`cheerSentToday_${MY_UID}_${d}`;
+        if(_getFlag(_cheerDailyKey)){ showToast('오늘 이미 응원했어요 (하루 1회)'); return; }
+        if(!partnerData||!partnerData.uid){ showToast('상대방이 연결되지 않았습니다'); return; }
+        btn.disabled=true; btn.textContent='전송 중...';
+        const _pqs=_partnerQuests||[];
+        const _targetQi=_pqs.length>0?0:-1;
+        _pendingOpsNotif={
+          fromUid:partnerData.uid, fromNick:partnerData.nickname||'상대방',
+          questName:_pqs[0]?_pqs[0].name:'', questDate:d, questIdx:_targetQi,
+          questReason:'', _isMorning:false,
+        };
+        const _cheerInput=document.getElementById('cheerMsgInput');
+        if(_cheerInput) _cheerInput.value=msg;
+        await submitCheerMsg();
+        _renderDiaryDayRecord();
+        return;
+      }
+      /* 버튼을 입력창+전송버튼으로 교체 */
+      const _wrap=btn.parentElement;
+      if(_wrap){
+        _wrap.innerHTML=`<div style="display:flex;gap:6px;">
+          <input id="diaryCheerInput_${d}" type="text" maxlength="60" placeholder="${(partnerData&&partnerData.nickname)||'상대'}에게 응원 메시지를 남겨보세요" style="flex:1;padding:8px 10px;background:rgba(255,255,255,.07);border:1px solid rgba(106,78,158,.35);border-radius:8px;color:#1A1F1C;font-family:var(--kr);font-size:10px;outline:none;" autofocus/>
+          <button class="diary-cheer-send-btn" data-date="${d}" style="padding:8px 12px;background:rgba(106,78,158,.30);border:1.5px solid rgba(150,100,220,.60);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(80,30,160,.95);cursor:pointer;white-space:nowrap;">전송 +1P</button>
+        </div>`;
+        const _newInp=_wrap.querySelector('input');
+        if(_newInp){ _newInp.focus(); }
+        /* 새 버튼에 이벤트 재연결 */
+        const _newBtn=_wrap.querySelector('.diary-cheer-send-btn');
+        if(_newBtn) _newBtn.addEventListener('click',async()=>{
+          const _inp=document.getElementById('diaryCheerInput_'+d);
+          const msg=(_inp?_inp.value||'':'').trim();
+          if(!msg){ showToast('응원 메시지를 입력하세요'); return; }
+          const _cheerDailyKey=`cheerSentToday_${MY_UID}_${d}`;
+          if(_getFlag(_cheerDailyKey)){ showToast('오늘 이미 응원했어요 (하루 1회)'); return; }
+          if(!partnerData||!partnerData.uid){ showToast('상대방이 연결되지 않았습니다'); return; }
+          _newBtn.disabled=true; _newBtn.textContent='전송 중...';
+          const _pqs=_partnerQuests||[];
+          const _targetQi=_pqs.length>0?0:-1;
+          _pendingOpsNotif={
+            fromUid:partnerData.uid, fromNick:partnerData.nickname||'상대방',
+            questName:_pqs[0]?_pqs[0].name:'', questDate:d, questIdx:_targetQi,
+            questReason:'', _isMorning:false,
+          };
+          const _cheerInputEl=document.getElementById('cheerMsgInput');
+          if(_cheerInputEl) _cheerInputEl.value=msg;
+          await submitCheerMsg();
+          _renderDiaryDayRecord();
+        });
+      }
+      return;
+    }); /* diary-cheer-send-btn forEach 끝 */
   });
 
   /* 개인작전 같이하기 */
@@ -8558,6 +8486,74 @@ function _renderDiaryDayRecord(){
 
 
 /* ── 슬롯 채우기 ── */
+/* ── 응원메시지 카드 렌더 (아침점호 위 별도 카드) ── */
+function _renderCheerMsgCard(){
+  const card = document.getElementById('cheerMsgCard');
+  if(!card) return;
+  /* 미완료 작전 중 상대가 보낸 응원메시지가 있는 것 수집 */
+  const _myNick = myNickname||'나';
+  const cheerItems = (quests||[]).filter(q=>{
+    if(q.completed && !q.stamped) return false; /* 완료작전 제외 */
+    if(!q.cheerMsg) return false;
+    const _isMyCheer = q.cheerFromNick && (q.cheerFromNick===_myNick);
+    return !_isMyCheer; /* 상대가 보낸 것만 */
+  });
+  /* 응원요청 가능한 작전 (cheerMsg 없고 미완료) */
+  const reqItems = (quests||[]).filter(q=>{
+    if(q.completed && !q.stamped) return false;
+    if(q.mode==='coop') return false; /* 협동은 제외 */
+    return !q.cheerMsg; /* 응원 없는 것 */
+  });
+  const hasCheer = cheerItems.length > 0;
+  const hasReq = reqItems.length > 0;
+  if(!hasCheer && !hasReq){ card.style.display='none'; return; }
+  card.style.display='block';
+  let html = '';
+  /* 응원메시지 */
+  if(hasCheer){
+    html += cheerItems.map(q=>{
+      const _cheerNm = q.cheerFromNick || (partnerData&&partnerData.nickname) || '상대방';
+      const oi = quests.indexOf(q);
+      return `<div style="margin-bottom:6px;padding:12px 14px;background:linear-gradient(135deg,rgba(106,78,158,.22),rgba(80,50,140,.18));border:2px solid rgba(150,100,220,.55);border-radius:14px;">
+        <div style="font-family:var(--kr);font-size:9px;color:rgba(180,130,255,.85);font-weight:800;margin-bottom:5px;letter-spacing:.3px;">💜 ${_cheerNm}님의 응원메시지</div>
+        <div style="font-family:var(--kr);font-size:13px;color:rgba(220,200,255,.97);font-weight:800;line-height:1.6;">${q.cheerMsg}</div>
+        <div style="margin-top:6px;font-family:var(--kr);font-size:9px;color:rgba(180,130,255,.55);">📌 ${q.name}</div>
+      </div>`;
+    }).join('');
+  }
+  /* 응원요청 버튼 */
+  if(hasReq && partnerData && partnerData.uid){
+    const reqItem = reqItems[0];
+    const reqOi = quests.indexOf(reqItem);
+    html += `<div style="padding:10px 14px;background:rgba(106,78,158,.12);border:1.5px solid rgba(106,78,158,.35);border-radius:12px;display:flex;align-items:center;gap:10px;">
+      <span style="font-family:var(--kr);font-size:10px;color:rgba(180,130,255,.75);flex:1;">응원이 필요하신가요?</span>
+      <button id="cheerCardReqBtn" data-qi="${reqOi}" style="padding:8px 14px;background:rgba(106,78,158,.28);border:1.5px solid rgba(150,100,220,.60);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(200,160,255,.95);cursor:pointer;white-space:nowrap;">💜 응원 요청</button>
+    </div>`;
+  }
+  card.innerHTML = html;
+  /* 응원요청 버튼 이벤트 */
+  const _reqBtn = card.querySelector('#cheerCardReqBtn');
+  if(_reqBtn){
+    _reqBtn.addEventListener('click', async e=>{
+      e.stopPropagation();
+      if(!partnerData||!partnerData.uid){showToast('💜 파트너 연결 후 응원 요청이 가능합니다');return;}
+      const _oi = parseInt(_reqBtn.dataset.qi);
+      const _q = quests[_oi];
+      if(!_q){return;}
+      try{
+        await _fbPush(`notifications/${partnerData.uid}`,{
+          type:'cheer_request',msg:'응원해주세요! 💪',
+          questName:_q.name,questIdx:_oi,questDate:selDate,
+          fromUid:MY_UID,fromNick:myNickname||'나',createdAt:Date.now()
+        });
+        _reqBtn.textContent='📨 응원 요청 전송됨';
+        _reqBtn.disabled=true;
+        showToast('💜 응원 요청을 보냈어요!');
+      }catch(e2){ showToast('❌ 전송 실패'); }
+    });
+  }
+}
+
 function _fillSlot(slotEl,qitemDiv,q,oi){
   const opsCategory=q.category||'health';
   const catClass={health:'slot-easy',knowledge:'slot-hard',life:'slot-medium'}[opsCategory]||'slot-easy';
@@ -8624,13 +8620,10 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
 
     if(!_sStamped && !q.completed){
       if(!isCoop){
-        /* 개인 — 응원요청 + 인증 나란히 */
-        const _cheerReqBtn = !q.cheerMsg
-          ? `<button class="solo-cheer-req-btn" data-qi="${oi}" style="flex:1;padding:11px 8px;background:rgba(106,78,158,.15);border:1.5px solid rgba(106,78,158,.42);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(180,130,255,.90);cursor:pointer;text-align:center;">💜 응원 요청</button>`
-          : `<div style="flex:1;"></div>`;
+        /* 개인 — 인증하기만 (응원요청+메시지는 위 응원메시지 카드로 이동) */
         const _certLabel = _sCanCert ? '📸 인증하기' : `⏱ ${_sRem}분 후 인증`;
-        const _certBtn = `<button class="slot-cert-btn solo-complete-btn" style="flex:1;padding:11px 8px;${_sCanCert?_certStyleActive:_certStyleWait}font-family:var(--kr);font-size:10px;font-weight:700;border-radius:10px;cursor:pointer;text-align:center;">${_certLabel}</button>`;
-        soloCheerSlotHtml = `<div style="margin-top:8px;">${_cheerBox}<div style="display:flex;gap:8px;">${_cheerReqBtn}${_certBtn}</div></div>`;
+        const _certBtn = `<button class="slot-cert-btn solo-complete-btn" style="width:100%;padding:11px 8px;${_sCanCert?_certStyleActive:_certStyleWait}font-family:var(--kr);font-size:10px;font-weight:700;border-radius:10px;cursor:pointer;text-align:center;">${_certLabel}</button>`;
+        soloCheerSlotHtml = `<div style="margin-top:8px;">${_certBtn}</div>`;
       } else {
         /* 협동 — 응원메시지(있으면) + 협동작전중배지 + 인증 나란히 */
         const together = q.together;
@@ -8652,6 +8645,7 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
         const _pts = _hasPartnerCheer ? '+2p' : '+0p';
         soloCheerSlotHtml = `<div style="margin-top:8px;">${_hasPartnerCheer ? _cheerBox : ''}
           <button class="cheer-point-claim-btn" data-qi="${oi}" style="width:100%;margin-top:${_hasPartnerCheer?'6':'0'}px;padding:12px;background:linear-gradient(135deg,#F5E020,#E8C800);border:2px solid #C8A800;border-radius:11px;color:#3A2E00;font-family:var(--kr);font-size:11px;font-weight:900;cursor:pointer;letter-spacing:.3px;box-shadow:0 3px 14px rgba(230,190,0,.35);">⭐ 응원포인트 받기 ${_pts}</button>
+          <button class="slot-cert-view-btn" data-qi="${oi}" style="width:100%;margin-top:6px;padding:9px;background:rgba(47,74,54,.12);border:1.5px solid rgba(47,74,54,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(30,45,36,.85);cursor:pointer;text-align:center;">📋 인증보기</button>
         </div>`;
       } else {
         /* 수령 완료 → 받기완료 배지 + 응원메시지 유지 + 내일 예약 버튼 */
@@ -8661,7 +8655,9 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
         const _reserveBtn=_alreadyReserved
           ? `<div style="width:100%;margin-top:6px;padding:9px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.20);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(42,77,181,.50);text-align:center;">📋 내일 작전 예약완료</div>`
           : `<button class="tomorrow-reserve-btn" data-qi="${oi}" data-name="${(q.name||'').replace(/"/g,'&quot;')}" data-reason="${(q.reason||'').replace(/"/g,'&quot;')}" data-cat="${q.category||q.difficulty||'easy'}" data-reskey="${_resKey}" style="width:100%;margin-top:6px;padding:9px;background:linear-gradient(135deg,rgba(42,77,181,.18),rgba(30,60,150,.22));border:1.5px solid rgba(42,77,181,.45);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(100,140,255,.95);cursor:pointer;">📋 내일 작전 예약하기</button>`;
-        soloCheerSlotHtml = `<div style="margin-top:8px;">${_cheerBox}<div style="width:100%;margin-top:${_cheerBox?'6':'0'}px;padding:11px;text-align:center;background:rgba(61,72,64,.08);border:1px solid rgba(61,72,64,.18);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:#3D4840;">✅ 받기완료</div>${_reserveBtn}</div>`;
+        soloCheerSlotHtml = `<div style="margin-top:8px;">${_cheerBox}<div style="width:100%;margin-top:${_cheerBox?'6':'0'}px;padding:11px;text-align:center;background:rgba(61,72,64,.08);border:1px solid rgba(61,72,64,.18);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:#3D4840;">✅ 받기완료</div>
+          <button class="slot-cert-view-btn" data-qi="${oi}" style="width:100%;margin-top:6px;padding:9px;background:rgba(47,74,54,.12);border:1.5px solid rgba(47,74,54,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(30,45,36,.85);cursor:pointer;text-align:center;">📋 인증보기</button>
+          ${_reserveBtn}</div>`;
 
       }
     }
@@ -8692,6 +8688,17 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
     if(_isFailed){showToast('❌ 임무실패 — 인증불가');return;}
     const n=_virtualNow();if(n<(quests[oi].certAvailableAt||0)){showToast('⏱ 인증 가능까지 '+Math.ceil(((quests[oi].certAvailableAt||0)-n)/60000)+'분 남았습니다');return;}openCertPopup(oi);
   });}
+  /* 인증보기 버튼 — 슬롯 내 */
+  const slotCertViewBtn=slotEl.querySelector('.slot-cert-view-btn');
+  if(slotCertViewBtn){
+    slotCertViewBtn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const _qi=parseInt(slotCertViewBtn.dataset.qi);
+      const _q=quests[_qi];
+      if(!_q) return;
+      _showCertDetail(_q,_qi,selDate,false,null,null);
+    });
+  }
   /* 개인 응원 요청 버튼 — 슬롯 내 바인딩 */
   const slotCheerReqBtn=slotEl.querySelector('.solo-cheer-req-btn');
   if(slotCheerReqBtn){
@@ -10939,6 +10946,8 @@ function subscribePartnerOps(){
   _fbDb.ref(path).on('value', snap=>{
     _partnerQuests = snap.exists() ? (snap.val()||[]) : [];
     renderPartnerOps();
+    /* 상대 카드(작전기록 패널)도 갱신 */
+    if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord();
   });
   _partnerQuestUnsub = ()=>{ _fbDb.ref(path).off('value'); _subscribedPartnerPath=''; };
   /* 상대방 morningRoll 구독 */
@@ -11802,116 +11811,6 @@ function _renderHistInner(){
       }
     }
 
-    /* ══ 내 카드 — 기본 접힘, empathyMsg 있으면 자동 펼침 ══ */
-    const _myHasEmpathy=(items||[]).some(q=>!!q.empathyMsg);
-    const _myCollapsed=!_myHasEmpathy; /* empathyMsg 수신 시 자동 펼침 */
-    html+=`<div style="margin-bottom:10px;">
-      <div onclick="_toggleMyCard('${date}')" style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:rgba(47,74,54,.10);border:2px solid rgba(47,74,54,.22);border-radius:${_myCollapsed?'14px':'14px 14px 0 0'};cursor:pointer;user-select:none;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-family:var(--title);font-size:13px;font-weight:900;color:#1E2D24;">👤 내 카드</span>
-          <span style="font-family:var(--kr);font-size:10px;font-weight:700;color:#6B9975;">(${myNick})</span>
-          ${_myHasEmpathy?`<span style="font-family:var(--kr);font-size:9px;background:rgba(42,144,128,.20);border:1px solid rgba(42,144,128,.40);color:rgba(42,144,128,.90);padding:2px 7px;border-radius:5px;">💬 수고했어 메시지</span>`:''}
-        </div>
-        <span id="myCardChevron_${date}" style="font-size:10px;color:#6B9975;">${_myCollapsed?'▼':'▲'}</span>
-      </div>
-      <div id="myCardBody_${date}" style="display:${_myCollapsed?'none':'block'};padding:12px;background:rgba(47,74,54,.04);border:2px solid rgba(47,74,54,.18);border-top:none;border-radius:0 0 14px 14px;">`;
-
-    /* 내 협동 미션 */
-    myCoopItems.forEach(q=>{
-      const qi=items.indexOf(q);
-      const myDone=q.stamped||q.completed;
-      const hasCheer=!!q.cheerMsg && q.cheerFromNick!==(myNickname||'나'); /* 상대가 보낸 응원 */
-      const _cpKey=`cheerPointClaimed_${MY_UID}_${date}_${q.qid||qi}`;
-      const cheerClaimed=_getFlag(_cpKey);
-      const hasRecEmpathy=!!q.empathyMsg;
-      html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="flex:1;min-width:0;">
-            <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${myDone?'#2F4A36':'#1A1F1C'};display:flex;align-items:center;gap:5px;">
-              <span style="font-size:12px;color:${myDone?'#2F4A36':'#9CA49A'};">${myDone?'✅':'○'}</span>${q.name}
-              <span style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(42,77,181,.6);padding:1px 6px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.20);border-radius:5px;letter-spacing:.5px;">협동</span>
-            </div>
-            <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
-              ${myDone?`<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(30,90,50,.85);">✅ 인증완료</span>`:''}
-              <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${cheerClaimed?'#8B6C1A':hasCheer?'#6B4A9A':'#9CA49A'};">${cheerClaimed?'⭐ 응원 +2p 수령완료':hasCheer?'응원메시지 수신(미수령)':'응원 미완료'}</span>
-              ${hasRecEmpathy?`<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(42,144,128,.85);">💬 수고했어</span>`:''}
-            </div>
-            <div style="margin-top:7px;display:flex;gap:6px;">
-              <button class="hist-cert-view-btn" data-date="${date}" data-qi="${qi}" style="flex:1;padding:8px 6px;background:rgba(47,74,54,.12);border:1.5px solid rgba(47,74,54,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(30,45,36,.85);cursor:pointer;text-align:center;">📋 인증보기</button>
-            </div>
-          </div>
-        </div>
-        ${q.certPhotoUrl?`<div style="margin-top:6px;cursor:pointer;" onclick="_showFullscreenPhoto('${q.certPhotoUrl}')"><img src="${q.certPhotoUrl}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid rgba(82,212,164,.25);"/></div>`:''}
-        ${hasRecEmpathy?`<div style="margin-top:5px;padding:6px 8px;background:rgba(42,144,128,.08);border:1px solid rgba(42,144,128,.20);border-radius:7px;font-family:var(--kr);font-size:9px;color:rgba(42,144,128,.85);font-weight:600;">💬 ${q.empathyFromNick||'파트너'}: "${q.empathyMsg}"</div>`:''}
-      </div>`;
-    });
-
-    /* 내 개인 미션 */
-    myItems.forEach(q=>{
-      const qi=items.indexOf(q);
-      const isDone=q.completed||q.stamped;
-      const hasCheer=!!q.cheerMsg && q.cheerFromNick!==(myNickname||'나');
-      const _cpKey=`cheerPointClaimed_${MY_UID}_${date}_${q.qid||qi}`;
-      const cheerClaimed=_getFlag(_cpKey);
-      const hasRecEmpathy=!!q.empathyMsg;
-      /* 예약중 체크: 오늘 날짜이고 예약됐으며 04:00 전이면 "예약중." 만 표시 */
-      const _feedNow=_virtualNow();
-      const _feed04=new Date(date+'T04:00:00').getTime();
-      const _isReservedFeed = !!q.reserved && isToday && _feedNow < _feed04;
-      if(_isReservedFeed){
-        html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:12px;color:#9CA49A;">○</span>
-            <div style="flex:1;font-family:var(--kr);font-size:12px;font-weight:800;color:#9CA49A;">${q.name}</div>
-            <div style="padding:5px 10px;background:rgba(42,77,181,.10);border:1px solid rgba(42,77,181,.25);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(100,140,255,.75);">예약중.</div>
-          </div>
-        </div>`;
-        return;
-      }
-      if(q._isMorning){
-        /* 아침점호 — 상대 카드와 동일한 구조 */
-        const _myMrCertAt = q.certifiedAt;
-        const _myMrCertTime = _myMrCertAt
-          ? String(new Date(q.certifiedAt).getHours()).padStart(2,'0')+':'+String(new Date(q.certifiedAt).getMinutes()).padStart(2,'0')
-          : null;
-        const _myMrH = q.hour || '';
-        const _myMrFrom = String(_myMrH).padStart(2,'0')+':00';
-        const _myMrTo   = String(_myMrH).padStart(2,'0')+':59';
-        html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);margin-bottom:4px;">
-          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-            <span style="font-size:12px;">☀️</span>
-            <span style="font-family:var(--kr);font-size:12px;font-weight:900;color:#1A1F1C;">아침점호 ${_myMrH}시</span>
-            ${_myMrCertTime
-              ? `<span style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_myMrCertTime} 인증완료</span>`
-              : `<span style="font-family:var(--kr);font-size:10px;color:rgba(100,130,100,.65);font-weight:600;">(인증 ${_myMrFrom}~${_myMrTo})</span>`
-            }
-          </div>
-        </div>`;
-      } else {
-      html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);">
-        <div style="flex:1;min-width:0;">
-          <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${isDone?'#2F4A36':'#1A1F1C'};display:flex;align-items:center;gap:5px;">
-            <span style="font-size:12px;color:${isDone?'#2F4A36':'#9CA49A'};">${isDone?'✅':'○'}</span>${q.name}
-          </div>
-          <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
-            ${isDone?'<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(30,90,50,.85);">✅ 인증완료</span>':''}
-            <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${cheerClaimed?'#8B6C1A':hasCheer?'#6B4A9A':'#9CA49A'};">${cheerClaimed?'⭐ 응원 +2p 수령완료':hasCheer?'응원메시지 수신(미수령)':'응원 미완료'}</span>
-            ${hasRecEmpathy?'<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(42,144,128,.85);">💬 수고했어</span>':''}
-          </div>
-          <div style="margin-top:7px;display:flex;gap:6px;">
-            <button class="hist-cert-view-btn" data-date="${date}" data-qi="${qi}" style="flex:1;padding:8px 6px;background:rgba(47,74,54,.12);border:1.5px solid rgba(47,74,54,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(30,45,36,.85);cursor:pointer;text-align:center;">📋 인증보기</button>
-          </div>
-        </div>
-        ${q.certPhotoUrl?`<div style="margin-top:6px;cursor:pointer;" onclick="_showFullscreenPhoto('${q.certPhotoUrl}')"><img src="${q.certPhotoUrl}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid rgba(82,212,164,.25);"/></div>`:''}
-        ${hasRecEmpathy?`<div style="margin-top:5px;padding:6px 8px;background:rgba(42,144,128,.08);border:1px solid rgba(42,144,128,.20);border-radius:7px;font-family:var(--kr);font-size:9px;color:rgba(42,144,128,.85);font-weight:600;">💬 ${q.empathyFromNick||'파트너'}: "${q.empathyMsg}"</div>`:''}
-      </div>`;
-      }
-    });
-
-    if(myItems.length===0&&myCoopItems.length===0){
-      html+=`<div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.4);padding:6px 0;">내 작전 없음</div>`;
-    }
-    html+=`</div></div>`; /* 내 카드 body + 전체 */
 
     /* ══ 상대 카드 (오늘만) ══ */
     if(partnerCoopItems.length>0||partnerSoloItems.length>0||partnerMrItem){
