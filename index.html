@@ -556,25 +556,43 @@ html,body{
   border-radius:0 !important;
   box-shadow:none !important;
   border-left:4px solid transparent !important;
-  background:#fff !important;
+  background:transparent !important;
 }
 .ops-slot-inner.slot-easy  { border-left:4px solid #2F4A36 !important; }
 .ops-slot-inner.slot-medium{ border-left:4px solid #A8864E !important; }
 .ops-slot-inner.slot-hard  { border-left:4px solid #8B1A1A !important; }
 .my-card-divider{
   height:1px;
-  background:rgba(47,74,54,.12);
+  background:rgba(47,74,54,.18);
   flex-shrink:0;
 }
 /* 내 카드 안 cheerMsgCard */
 #myCardSlotBody #cheerMsgCard{
-  padding:8px 12px 0;
+  padding:6px 12px 0;
+}
+#myCardSlotBody #cheerMsgCard > div{
+  background:rgba(106,78,158,.10) !important;
+  border:1.5px solid rgba(106,78,158,.28) !important;
+  border-radius:10px;
+  margin-bottom:6px;
 }
 
 /* 빈 슬롯 */
 .ops-slot-empty{
   background:linear-gradient(90deg,#253B2D 0%,#1F3028 40%,#253B2D 100%);
   border-color:rgba(139,108,58,.35);
+}
+.ops-slot-inner.ops-slot-empty .slot-deploy-title{
+  color:rgba(47,74,54,.55);
+}
+.ops-slot-inner.ops-slot-empty .slot-plus-icon{
+  color:rgba(47,74,54,.40);
+}
+.ops-slot-inner.ops-slot-empty .slot-plus-ring::before{
+  border-color:rgba(47,74,54,.28);
+}
+.ops-slot-inner.ops-slot-empty .slot-arrow{
+  color:rgba(47,74,54,.35);
 }
 .ops-slot-empty:active{filter:brightness(1.08);}
 
@@ -5906,7 +5924,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           <span id="myCardSlotChevron" style="font-size:12px;color:#6B9975;">▲</span>
         </div>
         <!-- 바디 -->
-        <div id="myCardSlotBody" style="background:#fff;border:2px solid rgba(47,74,54,.18);border-top:none;border-radius:0 0 14px 14px;overflow:hidden;">
+        <div id="myCardSlotBody" style="background:rgba(47,74,54,.04);border:2px solid rgba(47,74,54,.18);border-top:none;border-radius:0 0 14px 14px;overflow:hidden;">
 
           <!-- 야간잠금 배너 -->
           <div id="opsBlackoutBanner" style="display:none;padding:10px 14px;background:rgba(10,5,30,.92);border-bottom:1.5px solid rgba(99,60,180,.5);align-items:center;gap:10px;">
@@ -8153,8 +8171,9 @@ function _renderDiaryDayRecord(){
     return;
   }
 
-  /* 작전이 아무것도 없으면 숨김 */
-  if(!items_with_mr.length){ wrap.style.display='none'; return; }
+  /* 내 작전도 없고 파트너도 없으면 숨김 */
+  const _hasPartner = !!(partnerData && partnerData.uid);
+  if(!items_with_mr.length && !_hasPartner){ wrap.style.display='none'; return; }
   wrap.style.display='block';
   if(lblEl) lblEl.textContent = isToday ? '오늘' : date;
 
@@ -8858,7 +8877,7 @@ function _emptySlot(slotEl,si,questCount){
   if(si===2){
     slotEl.className='ops-slot'+_inner;
     slotEl.style.cssText=_inner
-      ? 'background:#fff;min-height:72px;border-left:4px solid rgba(180,150,80,.70) !important;'
+      ? 'background:transparent;min-height:72px;border-left:4px solid rgba(180,150,80,.70);'
       : 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;min-height:72px;';
     slotEl.onclick=()=>openOpsRegPopupForSlot(si);
     slotEl.innerHTML=`
@@ -16958,7 +16977,7 @@ function _renderMorningSlot(){
   const _mrInner = slotEl.classList.contains('ops-slot-inner') ? ' ops-slot-inner' : '';
   slotEl.className = 'ops-slot'+_mrInner;
   slotEl.style.cssText = _mrInner
-    ? 'background:#fff;cursor:default;min-height:auto;border-left:4px solid rgba(180,150,80,.70) !important;'
+    ? 'background:transparent;cursor:default;min-height:auto;border-left:4px solid rgba(180,150,80,.70);'
     : 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;cursor:default;min-height:auto;';
   slotEl.onclick = null;
   /* 활성화 전(tooEarly)이면 시간변경 버튼, 이후면 삭제 버튼 */
@@ -17023,7 +17042,7 @@ function _mrEmptySlot(slotEl){
   const _mrEmInner = slotEl.classList.contains('ops-slot-inner') ? ' ops-slot-inner' : '';
   slotEl.className = 'ops-slot'+_mrEmInner;
   slotEl.style.cssText = _mrEmInner
-    ? 'background:#fff;border-left:4px solid rgba(180,150,80,.70) !important;'
+    ? 'background:transparent;border-left:4px solid rgba(180,150,80,.70);'
     : 'background:linear-gradient(90deg,#F3E3C1 0%,#F9F1D2 40%,#F3E3C1 100%);border:1.5px solid rgba(180,150,80,.45);border-radius:16px;';
   slotEl.onclick = ()=>openMorningRegPopup();
   slotEl.innerHTML = `
