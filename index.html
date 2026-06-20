@@ -8079,15 +8079,16 @@ function renderQ(){
   _renderDiaryDayRecord();
 }
 
-/* 이슈10,11: 작전수첩 패널 내 당일 작전기록 요약 렌더 */
+/* 작전수첩 패널 내 전투기록 — _renderHistInner 단일 날짜 블록과 동일 */
 function _renderDiaryDayRecord(){
   const wrap = document.getElementById('diaryDayRecord');
   const recordList = document.getElementById('diaryDayRecordList');
   const lblEl = document.getElementById('diaryDayRecordLabel');
   if(!wrap || !recordList) return;
 
-  const _todayStr2 = dateStr(new Date(_virtualNow()));
+  const todayStr2 = dateStr(new Date(_virtualNow()));
   const date = selDate;
+  const isToday = (date === todayStr2);
   const items = allData[date] || [];
 
   /* _mrData는 아침점호 모듈에서 선언 — window 경유로 안전하게 접근 */
@@ -8095,9 +8096,9 @@ function _renderDiaryDayRecord(){
 
   /* 아침점호 포함 */
   let _mrItem = null;
-  if(date === _todayStr2 && _safeMrData && _safeMrData.hour){
+  if(isToday && _safeMrData && _safeMrData.hour){
     _mrItem = { ..._safeMrData, name:`아침점호 ☀️ ${_safeMrData.hour}시`, category:'morning', mode:_safeMrData.mode||'solo', _isMorning:true };
-  } else if(date !== _todayStr2){
+  } else if(!isToday){
     const _mrCacheKey = '_mrHistCache_'+date;
     if(window[_mrCacheKey]) _mrItem = window[_mrCacheKey];
     else if(_fbDb && MY_UID && !window[_mrCacheKey+'_loading']){
@@ -8113,145 +8114,347 @@ function _renderDiaryDayRecord(){
   }
   const items_with_mr = _mrItem ? [_mrItem, ...items] : items;
 
-  /* 완료/등록 작전 없으면 숨김 */
-  if(!items_with_mr.length && !_mrItem){
-    wrap.style.display='none';
+  /* 미래날짜 04시 전: 예약 건수만 표시 */
+  const _isFutureDate = date > todayStr2;
+  const _date04ms = new Date(date+'T04:00:00').getTime();
+  const _isBefore04 = _virtualNow() < _date04ms;
+  if(_isFutureDate && _isBefore04){
+    const _resCount = items_with_mr.filter(q=>q&&q.reserved).length;
+    if(!_resCount){ wrap.style.display='none'; return; }
+    wrap.style.display='block';
+    if(lblEl) lblEl.textContent = date;
+    recordList.innerHTML=`<div style="padding:10px 14px;background:rgba(42,77,181,.06);border:1.5px dashed rgba(42,77,181,.22);border-radius:12px;display:flex;align-items:center;gap:10px;">
+      <span style="font-family:var(--orb);font-size:10px;color:rgba(78,130,220,.80);font-weight:700;">${date}</span>
+      <span style="font-family:var(--kr);font-size:10px;color:rgba(78,130,220,.70);">(예약 ${_resCount}건)</span>
+      <span style="font-family:var(--orb);font-size:9px;color:rgba(78,130,220,.45);margin-left:auto;">04:00 활성화</span>
+    </div>`;
     return;
   }
+
+  /* 작전이 아무것도 없으면 숨김 */
+  if(!items_with_mr.length){ wrap.style.display='none'; return; }
   wrap.style.display='block';
-  if(lblEl) lblEl.textContent = date===_todayStr2 ? '오늘' : date;
+  if(lblEl) lblEl.textContent = isToday ? '오늘' : date;
 
   const myNick = myNickname||'나';
-  const myItems = items_with_mr.filter(q=>!q._isMorning && q.mode!=='coop');
+  const pName = (partnerData&&partnerData.nickname)||'파트너';
+  const myItems = items_with_mr.filter(q=>q.mode!=='coop');
   const myCoopItems = items_with_mr.filter(q=>q.mode==='coop');
-  const myMrItem = _mrItem;
-  const allDisplayItems = items_with_mr;
 
-  if(!allDisplayItems.length){
-    wrap.style.display='none';
-    return;
+  /* 상대방 퀘스트 */
+  let partnerCoopItems=[], partnerSoloItems=[], partnerMrItem=null;
+  if(partnerData&&partnerData.uid){
+    if(isToday && _partnerQuests && _partnerQuests.length>0){
+      partnerCoopItems = _partnerQuests.filter(q=>q.mode==='coop');
+      partnerSoloItems = _partnerQuests.filter(q=>q.mode!=='coop');
+    } else if(!isToday){
+      const pCacheKey='_partnerHist_'+date;
+      if(window[pCacheKey]){
+        partnerCoopItems = window[pCacheKey].filter(q=>q.mode==='coop');
+        partnerSoloItems = window[pCacheKey].filter(q=>q.mode!=='coop');
+      } else if(_fbDb && !window[pCacheKey+'_loading']){
+        window[pCacheKey+'_loading']=true;
+        _fbDb.ref(_questPath(partnerData.uid,date)).once('value',snap=>{
+          window[pCacheKey]=snap.exists()?(snap.val()||[]):[];
+          window[pCacheKey+'_loading']=false;
+          _renderDiaryDayRecord();
+        });
+        recordList.innerHTML='<div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.4);text-align:center;padding:8px 0;">불러오는 중...</div>';
+        return;
+      }
+    }
+    /* 상대 아침점호 */
+    const _safePMR = (typeof window._partnerMorningRoll !== 'undefined') ? window._partnerMorningRoll : null;
+    if(isToday && _safePMR && _safePMR.hour){
+      partnerMrItem = _safePMR;
+    } else if(!isToday){
+      const pMrKey='_pMrHistCache_'+date;
+      if(window[pMrKey]) partnerMrItem = window[pMrKey].hour ? window[pMrKey] : null;
+      else if(_fbDb && !window[pMrKey+'_loading']){
+        window[pMrKey+'_loading']=true;
+        _fbDb.ref('users/'+partnerData.uid+'/morningRoll/'+date).once('value',snap=>{
+          window[pMrKey]=snap.exists()&&snap.val()&&snap.val().hour ? snap.val() : {};
+          window[pMrKey+'_loading']=false;
+          _renderDiaryDayRecord();
+        });
+      }
+    }
   }
 
-  /* ── 카드 스타일로 렌더 (작전기록 histContent와 동일 포맷) ── */
-  let html = `<div style="padding:12px 14px;background:rgba(47,74,54,.05);border:1.5px solid rgba(47,74,54,.20);border-radius:14px;">`;
+  /* ── HTML 빌드 (histContent와 동일 구조) ── */
+  const _myHasEmpathy=(items||[]).some(q=>!!q.empathyMsg);
+  const _myCollapsed=!_myHasEmpathy;
 
-  /* 날짜 헤더 */
-  const totalComp = allDisplayItems.filter(q=>q.completed||q.stamped).length;
-  const totalMon  = allDisplayItems.filter(q=>q.completed||q.stamped).reduce((s,q)=>s+(q.reward||5000),0);
-  html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(47,74,54,.12);">
-    <div style="display:flex;align-items:center;gap:7px;">
-      <span style="font-family:var(--title);font-size:12px;font-weight:900;color:#1E2D24;">👤 ${myNick}</span>
-      ${totalComp>0?`<span style="font-family:var(--orb);font-size:9px;color:rgba(47,74,54,.7);">${totalComp}건 완료</span>`:''}
+  let html=``;
+
+  /* 내 카드 */
+  html+=`<div style="margin-bottom:10px;">
+    <div onclick="_toggleMyCard('${date}')" style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:rgba(47,74,54,.10);border:2px solid rgba(47,74,54,.22);border-radius:${_myCollapsed?'14px':'14px 14px 0 0'};cursor:pointer;user-select:none;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-family:var(--title);font-size:13px;font-weight:900;color:#1E2D24;">👤 내 카드</span>
+        <span style="font-family:var(--kr);font-size:10px;font-weight:700;color:#6B9975;">(${myNick})</span>
+        ${_myHasEmpathy?`<span style="font-family:var(--kr);font-size:9px;background:rgba(42,144,128,.20);border:1px solid rgba(42,144,128,.40);color:rgba(42,144,128,.90);padding:2px 7px;border-radius:5px;">💬 수고했어 메시지</span>`:''}
+      </div>
+      <span id="myCardChevron_${date}" style="font-size:10px;color:#6B9975;">${_myCollapsed?'▼':'▲'}</span>
     </div>
-    ${totalMon>0?`<span style="font-family:var(--orb);font-size:10px;font-weight:900;color:rgba(47,74,54,.8);">+${totalMon.toLocaleString()}원</span>`:''}
-  </div>`;
+    <div id="myCardBody_${date}" style="display:${_myCollapsed?'none':'block'};padding:12px;background:rgba(47,74,54,.04);border:2px solid rgba(47,74,54,.18);border-top:none;border-radius:0 0 14px 14px;">`;
 
-  /* 아침점호 */
-  if(myMrItem){
-    const mrDone = myMrItem.completed||myMrItem.stamped;
-    const mrHour = myMrItem.hour||'?';
-    const certTm = myMrItem.certifiedAt ? (()=>{const d=new Date(myMrItem.certifiedAt);return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;})() : '';
-    const cheerNm = myMrItem.cheerFromNick;
-    const isMyMrCheer = cheerNm && (cheerNm===(myNickname||'나'));
-    html += `<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.07);">
-      <div style="display:flex;align-items:center;gap:7px;">
-        <span style="font-size:14px;">${mrDone?'✅':'○'}</span>
+  /* 내 협동 미션 */
+  myCoopItems.forEach(q=>{
+    const qi=items.indexOf(q);
+    const myDone=q.stamped||q.completed;
+    const hasCheer=!!q.cheerMsg && q.cheerFromNick!==(myNickname||'나');
+    const _cpKey=`cheerPointClaimed_${MY_UID}_${date}_${q.qid||qi}`;
+    const cheerClaimed=_getFlag(_cpKey);
+    const hasRecEmpathy=!!q.empathyMsg;
+    html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
         <div style="flex:1;min-width:0;">
-          <div style="font-family:var(--kr);font-size:11px;font-weight:800;color:${mrDone?'rgba(255,140,50,.9)':'#9CA49A'};">☀️ 아침점호 ${mrHour}시</div>
-          ${mrDone&&certTm?`<div style="font-family:var(--orb);font-size:9px;color:rgba(255,140,50,.60);margin-top:1px;">${certTm} 인증</div>`:''}
-          ${myMrItem.cheerMsg&&!isMyMrCheer?`<div style="margin-top:4px;padding:5px 8px;background:rgba(106,78,158,.10);border:1px solid rgba(106,78,158,.28);border-radius:7px;font-family:var(--kr);font-size:9px;color:rgba(106,78,158,.85);font-weight:700;">💜 응원: ${myMrItem.cheerMsg}</div>`:''}
-        </div>
-        <span style="font-family:var(--orb);font-size:9px;color:rgba(255,140,50,.55);">+2,000원</span>
-      </div>
-    </div>`;
-  }
-
-  /* 협동 작전 */
-  myCoopItems.forEach((q,_)=>{
-    const qi = items.indexOf(q);
-    const isDone = q.completed||q.stamped;
-    const catEmoji={health:'🏃',knowledge:'📚',life:'🏠'}[q.category||'health']||'📋';
-    const rew = q.reward||5000;
-    const certTm = q.certifiedAt?(()=>{const d=new Date(q.certifiedAt);return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;})():'';
-    const hasCheer = !!q.cheerMsg && q.cheerFromNick!==(myNickname||'나');
-    const hasMemo = !!q.certNote;
-    const hasPhoto = !!q.certPhotoUrl;
-    const partnerCertified = !!q.partnerCertified;
-    const pName = (partnerData&&partnerData.nickname)||'상대방';
-    html += `<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.07);">
-      <div style="display:flex;align-items:center;gap:7px;">
-        <span style="font-size:14px;">${isDone?'✅':'○'}</span>
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-            <span style="font-size:12px;">${catEmoji}</span>
-            <span style="font-family:var(--kr);font-size:11px;font-weight:800;color:${isDone?'#2F4A36':'#1A1F1C'};">${q.name}</span>
-            <span style="font-family:var(--orb);font-size:8px;color:rgba(42,77,181,.7);padding:1px 5px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.20);border-radius:4px;">협동</span>
-            ${hasMemo?'<span style="font-size:10px;">📝</span>':''}
-            ${hasPhoto?'<span style="font-size:10px;">📷</span>':''}
+          <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${myDone?'#2F4A36':'#1A1F1C'};display:flex;align-items:center;gap:5px;">
+            <span style="font-size:12px;color:${myDone?'#2F4A36':'#9CA49A'};">${myDone?'✅':'○'}</span>${q.name}
+            <span style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(42,77,181,.6);padding:1px 6px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.20);border-radius:5px;letter-spacing:.5px;">협동</span>
           </div>
-          <div style="margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-            ${isDone&&certTm?`<span style="font-family:var(--orb);font-size:9px;color:rgba(47,74,54,.55);">${certTm} 인증</span>`:''}
-            ${partnerCertified?`<span style="font-family:var(--kr);font-size:9px;color:rgba(42,77,181,.7);">🤝 ${pName} 인증완료</span>`:`<span style="font-family:var(--kr);font-size:9px;color:rgba(150,150,150,.6);">⏳ ${pName} 대기중</span>`}
+          <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
+            ${myDone?`<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(30,90,50,.85);">✅ 인증완료</span>`:''}
+            <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${cheerClaimed?'#8B6C1A':hasCheer?'#6B4A9A':'#9CA49A'};">${cheerClaimed?'⭐ 응원 +2p 수령완료':hasCheer?'응원메시지 수신(미수령)':'응원 미완료'}</span>
+            ${hasRecEmpathy?`<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(42,144,128,.85);">💬 수고했어</span>`:''}
           </div>
-          ${hasCheer?`<div style="margin-top:4px;padding:5px 8px;background:rgba(106,78,158,.10);border:1px solid rgba(106,78,158,.28);border-radius:7px;font-family:var(--kr);font-size:9px;color:rgba(106,78,158,.85);font-weight:700;">💜 응원: ${q.cheerMsg}</div>`:''}
-          ${hasMemo&&q.certNote?`<div style="margin-top:4px;padding:5px 8px;background:rgba(47,74,54,.06);border:1px solid rgba(47,74,54,.14);border-radius:7px;font-family:var(--kr);font-size:9px;color:#3D4840;line-height:1.4;">📝 ${q.certNote}</div>`:''}
-          ${hasPhoto?`<div style="margin-top:5px;cursor:pointer;" onclick="_showFullscreenPhoto('${q.certPhotoUrl}')"><img src="${q.certPhotoUrl}" style="width:100%;max-height:100px;object-fit:cover;border-radius:7px;border:1px solid rgba(82,212,164,.20);"/></div>`:''}
+          <div style="margin-top:7px;display:flex;gap:6px;">
+            <button class="hist-cert-view-btn" data-date="${date}" data-qi="${qi}" style="flex:1;padding:8px 6px;background:rgba(47,74,54,.12);border:1.5px solid rgba(47,74,54,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(30,45,36,.85);cursor:pointer;text-align:center;">📋 인증보기</button>
+          </div>
         </div>
-        <span style="font-family:var(--orb);font-size:9px;color:rgba(47,74,54,.55);white-space:nowrap;">+${rew.toLocaleString()}원</span>
       </div>
+      ${q.certPhotoUrl?`<div style="margin-top:6px;cursor:pointer;" onclick="_showFullscreenPhoto('${q.certPhotoUrl}')"><img src="${q.certPhotoUrl}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid rgba(82,212,164,.25);"/></div>`:''}
+      ${hasRecEmpathy?`<div style="margin-top:5px;padding:6px 8px;background:rgba(42,144,128,.08);border:1px solid rgba(42,144,128,.20);border-radius:7px;font-family:var(--kr);font-size:9px;color:rgba(42,144,128,.85);font-weight:600;">💬 ${q.empathyFromNick||'파트너'}: "${q.empathyMsg}"</div>`:''}
     </div>`;
   });
 
-  /* 개인 작전 (아침점호 제외) */
+  /* 내 개인 미션 */
   myItems.forEach(q=>{
-    const qi = items.indexOf(q);
-    const isDone = q.completed||q.stamped;
-    const catEmoji={health:'🏃',knowledge:'📚',life:'🏠'}[q.category||'health']||'📋';
-    const rew = q.reward||5000;
-    const certTm = q.certifiedAt?(()=>{const d=new Date(q.certifiedAt);return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;})():'';
-    const hasCheer = !!q.cheerMsg && q.cheerFromNick!==(myNickname||'나');
-    const hasMemo = !!q.certNote;
-    const hasPhoto = !!q.certPhotoUrl;
-    /* 예약중 체크 */
-    const _nowDR = _virtualNow();
-    const _date04DR = new Date(date+'T04:00:00').getTime();
-    const _isReservedDR = !!q.reserved && _nowDR < _date04DR;
-    if(_isReservedDR){
-      html += `<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.07);">
-        <div style="display:flex;align-items:center;gap:7px;">
-          <span style="font-size:14px;color:#9CA49A;">○</span>
-          <span style="font-family:var(--kr);font-size:11px;font-weight:700;color:#9CA49A;flex:1;">${catEmoji} ${q.name}</span>
-          <span style="font-family:var(--kr);font-size:9px;color:rgba(78,130,220,.65);padding:3px 7px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.18);border-radius:5px;">예약중</span>
+    const qi=items.indexOf(q);
+    const isDone=q.completed||q.stamped;
+    const hasCheer=!!q.cheerMsg && q.cheerFromNick!==(myNickname||'나');
+    const _cpKey=`cheerPointClaimed_${MY_UID}_${date}_${q.qid||qi}`;
+    const cheerClaimed=_getFlag(_cpKey);
+    const hasRecEmpathy=!!q.empathyMsg;
+    const _feedNow=_virtualNow();
+    const _feed04=new Date(date+'T04:00:00').getTime();
+    const _isReservedFeed = !!q.reserved && isToday && _feedNow < _feed04;
+    if(_isReservedFeed){
+      html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;color:#9CA49A;">○</span>
+          <div style="flex:1;font-family:var(--kr);font-size:12px;font-weight:800;color:#9CA49A;">${q.name}</div>
+          <div style="padding:5px 10px;background:rgba(42,77,181,.10);border:1px solid rgba(42,77,181,.25);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(100,140,255,.75);">예약중.</div>
         </div>
       </div>`;
       return;
     }
-    html += `<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.07);">
-      <div style="display:flex;align-items:center;gap:7px;">
-        <span style="font-size:14px;">${isDone?'✅':'○'}</span>
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-            <span style="font-size:12px;">${catEmoji}</span>
-            <span style="font-family:var(--kr);font-size:11px;font-weight:800;color:${isDone?'#2F4A36':'#1A1F1C'};">${q.name}</span>
-            ${hasMemo?'<span style="font-size:10px;">📝</span>':''}
-            ${hasPhoto?'<span style="font-size:10px;">📷</span>':''}
-          </div>
-          <div style="margin-top:2px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-            ${isDone&&certTm?`<span style="font-family:var(--orb);font-size:9px;color:rgba(47,74,54,.55);">${certTm} 인증</span>`:''}
-            ${!isDone?`<span style="font-family:var(--kr);font-size:9px;color:#9CA49A;">미완료</span>`:''}
-          </div>
-          ${hasCheer?`<div style="margin-top:4px;padding:5px 8px;background:rgba(106,78,158,.10);border:1px solid rgba(106,78,158,.28);border-radius:7px;font-family:var(--kr);font-size:9px;color:rgba(106,78,158,.85);font-weight:700;">💜 응원: ${q.cheerMsg}</div>`:''}
-          ${hasMemo&&q.certNote?`<div style="margin-top:4px;padding:5px 8px;background:rgba(47,74,54,.06);border:1px solid rgba(47,74,54,.14);border-radius:7px;font-family:var(--kr);font-size:9px;color:#3D4840;line-height:1.4;">📝 ${q.certNote}</div>`:''}
-          ${hasPhoto?`<div style="margin-top:5px;cursor:pointer;" onclick="_showFullscreenPhoto('${q.certPhotoUrl}')"><img src="${q.certPhotoUrl}" style="width:100%;max-height:100px;object-fit:cover;border-radius:7px;border:1px solid rgba(82,212,164,.20);"/></div>`:''}
+    if(q._isMorning){
+      const _myMrCertAt=q.certifiedAt;
+      const _myMrCertTime=_myMrCertAt?String(new Date(q.certifiedAt).getHours()).padStart(2,'0')+':'+String(new Date(q.certifiedAt).getMinutes()).padStart(2,'0'):null;
+      const _myMrH=q.hour||'';
+      const _myMrFrom=String(_myMrH).padStart(2,'0')+':00';
+      const _myMrTo=String(_myMrH).padStart(2,'0')+':59';
+      html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);margin-bottom:4px;">
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+          <span style="font-size:12px;">☀️</span>
+          <span style="font-family:var(--kr);font-size:12px;font-weight:900;color:#1A1F1C;">아침점호 ${_myMrH}시</span>
+          ${_myMrCertTime
+            ?`<span style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_myMrCertTime} 인증완료</span>`
+            :`<span style="font-family:var(--kr);font-size:10px;color:rgba(100,130,100,.65);font-weight:600;">(인증 ${_myMrFrom}~${_myMrTo})</span>`}
         </div>
-        <span style="font-family:var(--orb);font-size:9px;color:${isDone?'rgba(47,74,54,.7)':'rgba(61,72,64,.30)'};white-space:nowrap;">${isDone?'+'+rew.toLocaleString()+'원':''}</span>
-      </div>
-    </div>`;
+      </div>`;
+    } else {
+      html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${isDone?'#2F4A36':'#1A1F1C'};display:flex;align-items:center;gap:5px;">
+            <span style="font-size:12px;color:${isDone?'#2F4A36':'#9CA49A'};">${isDone?'✅':'○'}</span>${q.name}
+          </div>
+          <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
+            ${isDone?'<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(30,90,50,.85);">✅ 인증완료</span>':''}
+            <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${cheerClaimed?'#8B6C1A':hasCheer?'#6B4A9A':'#9CA49A'};">${cheerClaimed?'⭐ 응원 +2p 수령완료':hasCheer?'응원메시지 수신(미수령)':'응원 미완료'}</span>
+            ${hasRecEmpathy?'<span style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(42,144,128,.85);">💬 수고했어</span>':''}
+          </div>
+          <div style="margin-top:7px;display:flex;gap:6px;">
+            <button class="hist-cert-view-btn" data-date="${date}" data-qi="${qi}" style="flex:1;padding:8px 6px;background:rgba(47,74,54,.12);border:1.5px solid rgba(47,74,54,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(30,45,36,.85);cursor:pointer;text-align:center;">📋 인증보기</button>
+          </div>
+        </div>
+        ${q.certPhotoUrl?`<div style="margin-top:6px;cursor:pointer;" onclick="_showFullscreenPhoto('${q.certPhotoUrl}')"><img src="${q.certPhotoUrl}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid rgba(82,212,164,.25);"/></div>`:''}
+        ${hasRecEmpathy?`<div style="margin-top:5px;padding:6px 8px;background:rgba(42,144,128,.08);border:1px solid rgba(42,144,128,.20);border-radius:7px;font-family:var(--kr);font-size:9px;color:rgba(42,144,128,.85);font-weight:600;">💬 ${q.empathyFromNick||'파트너'}: "${q.empathyMsg}"</div>`:''}
+      </div>`;
+    }
   });
 
-  html += `</div>`; /* end card */
-  recordList.innerHTML = html;
+  if(myItems.length===0&&myCoopItems.length===0){
+    html+=`<div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.4);padding:6px 0;">내 작전 없음</div>`;
+  }
+  html+=`</div></div>`;
+
+  /* 상대 카드 */
+  if(partnerCoopItems.length>0||partnerSoloItems.length>0||partnerMrItem){
+    const _needsEmpathy=[...partnerCoopItems,...partnerSoloItems].some((q,_idx)=>{
+      const isCoopQ=partnerCoopItems.includes(q);
+      const pqi=_partnerQuests?_partnerQuests.indexOf(q):_idx;
+      const ckp=isCoopQ
+        ?`histEmpathy_${partnerData&&partnerData.uid}_${date}_coop_${q.qid||pqi}`
+        :`histEmpathy_${partnerData&&partnerData.uid}_${date}_${q.qid||pqi}`;
+      return !_getFlag(ckp);
+    });
+    const _cardKey=`oppCardCollapsed_${date}`;
+    const _isCollapsed=_getFlag(_cardKey)||(!_needsEmpathy);
+    html+=`<div id="oppCardWrap_${date}" style="margin-bottom:10px;">
+      <div onclick="_toggleOppCard('${date}')" style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:rgba(106,78,158,.10);border:2px solid rgba(106,78,158,.22);border-radius:${_isCollapsed?'14px':'14px 14px 0 0'};cursor:pointer;user-select:none;">
+        <div style="font-family:var(--title);font-size:13px;font-weight:900;color:rgba(70,30,130,.85);display:flex;align-items:center;gap:8px;">
+          👤 상대 카드
+          <span style="font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(106,78,158,.7);">(${pName})</span>
+        </div>
+        <span id="oppCardChevron_${date}" style="font-size:12px;color:rgba(106,78,158,.7);">${_isCollapsed?'▼':'▲'}</span>
+      </div>
+      <div id="oppCardBody_${date}" style="display:${_isCollapsed?'none':'block'};padding:12px;background:rgba(106,78,158,.05);border:2px solid rgba(106,78,158,.20);border-top:none;border-radius:0 0 14px 14px;">`;
+
+    /* 상대 아침점호 */
+    if(partnerMrItem){
+      const _pmr=partnerMrItem;
+      const _pmrH=_pmr.hour;
+      const _pmrDone=!!_pmr.completed;
+      const _pmrCertAt=_pmr.certifiedAt||null;
+      const _pmrCertTime=_pmrCertAt?String(new Date(_pmrCertAt).getHours()).padStart(2,'0')+':'+String(new Date(_pmrCertAt).getMinutes()).padStart(2,'0'):null;
+      const _pmrFrom=String(_pmrH).padStart(2,'0')+':00';
+      const _pmrTo=String(_pmrH).padStart(2,'0')+':59';
+      html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(255,165,80,.12);margin-bottom:4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+            <span style="font-size:12px;">☀️</span>
+            <span style="font-family:var(--kr);font-size:12px;font-weight:900;color:#1A1F1C;">아침점호 ${_pmrH}시</span>
+            ${_pmrDone&&_pmrCertTime
+              ?`<span style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_pmrCertTime} 인증완료</span>`
+              :`<span style="font-family:var(--kr);font-size:10px;color:rgba(180,150,80,.65);font-weight:600;">(인증 ${_pmrFrom}~${_pmrTo})</span>`}
+          </div>
+        </div>
+      </div>`;
+    }
+
+    /* 상대 협동 미션 */
+    partnerCoopItems.forEach((q,_)=>{
+      const pqi=_partnerQuests?_partnerQuests.indexOf(q):_;
+      const isDone=q.completed||q.stamped;
+      const partnerCheer=q.cheerMsg&&(q.cheerFromNick===(myNickname||'나')||q.cheerFromNick===myNickname);
+      const ckp=`histEmpathy_${partnerData&&partnerData.uid}_${date}_coop_${q.qid||pqi}`;
+      const empDone=_getFlag(ckp);
+      html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(61,72,64,.08);">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${isDone?'#4A2A7A':'#3D3050'};display:flex;align-items:center;gap:5px;">
+              <span style="font-size:12px;color:${isDone?'#5A3A8A':'#9CA49A'};">${isDone?'✅':'○'}</span>${q.name}
+              <span style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(42,77,181,.6);padding:1px 6px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.20);border-radius:5px;">협동</span>
+            </div>
+            ${isDone?`<div style="margin-top:4px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(82,180,130,.90);">${pName}님 미션이 완료되었습니다 👊</div>`:''}
+            <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
+              <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${partnerCheer?'#6B4A9A':'#9CA49A'};">${partnerCheer?'응원 +2p 획득':'응원 미완료'}</span>
+              ${empDone?`<span style="font-family:var(--kr);font-size:9px;font-weight:600;color:rgba(200,168,75,.85);">👊 수고했어 +1p 완료</span>`:''}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;margin-left:8px;">
+            ${empDone
+              ?`<div style="padding:7px 10px;background:rgba(200,168,75,.12);border:1.5px solid rgba(200,168,75,.30);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:#7A5C1E;white-space:nowrap;">👊 완료</div>`
+              :isDone
+                ?`<button class="hist-opp-emp-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="padding:7px 10px;background:rgba(106,78,158,.20);border:1.5px solid rgba(150,100,220,.60);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:#fff;cursor:pointer;white-space:nowrap;">👊 수고했어</button>`
+                :`<div style="padding:7px 10px;background:rgba(61,72,64,.08);border:1.5px solid rgba(61,72,64,.20);border-radius:9px;font-family:var(--kr);font-size:9px;color:rgba(61,72,64,.45);white-space:nowrap;">인증 후 가능</div>`}
+            <button class="hist-partner-cert-view-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="padding:6px 10px;background:rgba(106,78,158,.10);border:1.5px solid rgba(106,78,158,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(150,100,220,.85);cursor:pointer;white-space:nowrap;">🔍 인증보기</button>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    /* 상대 개인 미션 */
+    partnerSoloItems.forEach(q=>{
+      const pqi=_partnerQuests?_partnerQuests.indexOf(q):0;
+      const isDone=q.completed||q.stamped;
+      const myCheerSent=q.cheerFromNick&&(q.cheerFromNick===(myNickname||'상대방')||q.cheerFromNick===myNickname);
+      const ckp=`histEmpathy_${partnerData&&partnerData.uid}_${date}_${q.qid||pqi}`;
+      const empDone=_getFlag(ckp);
+      html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(106,78,158,.08);">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${isDone?'#4A2A7A':'#3D3050'};display:flex;align-items:center;gap:5px;">
+              <span style="font-size:12px;color:${isDone?'#5A3A8A':'#9CA49A'};">${isDone?'✅':'○'}</span>${q.name}
+            </div>
+            ${isDone?`<div style="margin-top:4px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(82,180,130,.90);">${pName}님 미션이 완료되었습니다 👊</div>`:''}
+            <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;">
+              <span style="font-family:var(--kr);font-size:9px;font-weight:600;color:${myCheerSent?'#6B4A9A':'#9CA49A'};">${myCheerSent?'응원 +2p 획득':'응원 미완료'}</span>
+              ${empDone?`<span style="font-family:var(--kr);font-size:9px;font-weight:600;color:rgba(200,168,75,.85);">👊 수고했어 +1p 완료</span>`:''}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;margin-left:8px;">
+            ${empDone
+              ?`<div style="padding:7px 10px;background:rgba(200,168,75,.12);border:1.5px solid rgba(200,168,75,.30);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:#7A5C1E;white-space:nowrap;">👊 완료</div>`
+              :isDone
+                ?`<button class="hist-opp-emp-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="padding:7px 10px;background:rgba(106,78,158,.20);border:1.5px solid rgba(150,100,220,.60);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:#fff;cursor:pointer;white-space:nowrap;">👊 수고했어</button>`
+                :`<div style="padding:7px 10px;background:rgba(61,72,64,.08);border:1.5px solid rgba(61,72,64,.20);border-radius:9px;font-family:var(--kr);font-size:9px;color:rgba(61,72,64,.45);white-space:nowrap;">인증 후 가능</div>`}
+            <button class="hist-partner-cert-view-btn" data-pqi="${pqi}" data-ck="${ckp}" data-date="${date}" style="padding:6px 10px;background:rgba(106,78,158,.10);border:1.5px solid rgba(106,78,158,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(150,100,220,.85);cursor:pointer;white-space:nowrap;">🔍 인증보기</button>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    html+=`</div></div>`;
+  }
+
+  /* DOM에 주입 후 이벤트 연결 */
+  recordList.innerHTML=html;
+
+  /* 내 인증보기 */
+  recordList.querySelectorAll('.hist-cert-view-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const d=btn.dataset.date, qi=parseInt(btn.dataset.qi);
+      const q=(allData[d]||[])[qi];
+      if(!q) return;
+      _showCertDetail(q,qi,d,false,null,null);
+    });
+  });
+
+  /* 상대 수고했어 버튼 */
+  recordList.querySelectorAll('.hist-opp-emp-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const _pqi=parseInt(btn.dataset.pqi);
+      const _ck=btn.dataset.ck;
+      const _dt=btn.dataset.date||date;
+      if(_getFlag(_ck)) return;
+      const _pq=_partnerQuests&&_partnerQuests[_pqi];
+      _openEmpathyPopup({
+        fromUid: partnerData&&partnerData.uid,
+        fromNick: partnerData&&partnerData.nickname||'상대방',
+        questName: (_pq&&_pq.name)||'작전',
+        questDate: _dt,
+        questIdx: _pqi,
+        certMemo: (_pq&&(_pq.certMemo||_pq.certNote))||null,
+        certPhotoUrl: (_pq&&_pq.certPhotoUrl)||null,
+        certMode: (_pq&&_pq.certMode)||null,
+        _isMyCert: false,
+      }, -1, _ck, btn);
+    });
+  });
+
+  /* 상대 인증보기 */
+  recordList.querySelectorAll('.hist-partner-cert-view-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const pqi=parseInt(btn.dataset.pqi);
+      const ck=btn.dataset.ck||'';
+      const todayStr3=dateStr(new Date(_virtualNow()));
+      let q;
+      if(date===todayStr3){
+        q=_partnerQuests&&_partnerQuests[pqi];
+      } else {
+        const cache=window['_partnerHist_'+date]||[];
+        q=cache[pqi];
+      }
+      if(!q){ showToast('상대방 작전 데이터를 불러오는 중입니다'); return; }
+      _showCertDetail(q,pqi,date,true,ck,btn);
+    });
+  });
 }
+
 
 /* ── 슬롯 채우기 ── */
 function _fillSlot(slotEl,qitemDiv,q,oi){
@@ -9631,7 +9834,7 @@ function _handleDeepLink(url) {
 /* ── 앱 업데이트 감지 & 실행 ── */
 let _pendingSWReg = null;
 
-const APP_VERSION = 'v2.4';
+const APP_VERSION = 'v2.5';
 const _VERCEL_URL='https://special-forces-diary.vercel.app/index.html';
 const _ETAG_STOR_KEY='sfDiary_lastETag';
 
