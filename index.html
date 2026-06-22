@@ -1513,9 +1513,20 @@ async function initFirebase(){
         if(n.type==='ops_register'){
           _fbUpdate(`coopNotif/${MY_UID}/${key}`,{_seen:true});
           if(typeof subscribePartnerOps==='function'){ _subscribedPartnerPath=''; subscribePartnerOps(); }
-          /* 아침점호 등록 알림은 팝업 없이 처리 */
+          /* 아침점호 등록 알림은 팝업 없이 처리 — 파트너 morningRoll 구독 갱신 */
           if(n.questName && n.questName.includes('아침점호')){
-            /* 조용히 처리 */
+            /* 상대 morningRoll 재구독으로 상대 카드 즉시 갱신 */
+            if(typeof _partnerMorningUnsub!=='undefined' && _partnerMorningUnsub){ try{_partnerMorningUnsub();}catch(e){} _partnerMorningUnsub=null; }
+            if(typeof _fbDb!=='undefined' && _fbDb && typeof partnerData!=='undefined' && partnerData && partnerData.uid){
+              const _barDate = n.questDate || dateStr(new Date(_virtualNow()));
+              const _mrPathP = 'users/'+partnerData.uid+'/morningRoll/'+_barDate;
+              _fbDb.ref(_mrPathP).on('value', snap=>{
+                _partnerMorningRoll = snap.exists() ? snap.val() : null;
+                if(typeof renderPartnerOps==='function') renderPartnerOps();
+                if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord();
+              });
+              _partnerMorningUnsub = ()=>{ _fbDb.ref(_mrPathP).off('value'); _partnerMorningRoll=null; };
+            }
           } else {
           const _notifDate = n.questDate || dateStr(new Date(_virtualNow()));
           const _notif04 = new Date(_notifDate+'T04:00:00').getTime();
@@ -1525,6 +1536,21 @@ async function initFirebase(){
             if(!window._pendingDelayedNotifs) window._pendingDelayedNotifs=[];
             window._pendingDelayedNotifs.push({...n, _notifKey:key, _showAfter:_notif04});
           }
+          }
+        } else if(n.type==='cheer_received'){
+          /* 응원메시지 수신 → 즉시 +2P 자동 지급 */
+          _fbUpdate(`coopNotif/${MY_UID}/${key}`,{_seen:true});
+          const _crKey = `cheerReceived_${MY_UID}_${n.questDate||selDate}`;
+          if(!_getFlag(_crKey)){
+            _setFlag(_crKey);
+            (async()=>{
+              await addPoints(2);
+              await _savePxPointLog(n.questDate||selDate,'응원메시지 수신',2);
+            })();
+            showToast(`💜 ${n.fromNick||'상대방'}님의 응원! +2P 보급상점`);
+            /* 내 cheerMsg 데이터 구독 갱신 */
+            if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord();
+            if(typeof renderQ==='function') renderQ();
           }
         } else if(n.type==='cheer_request'){
           /* 응원 요청 알림 → 04시 이후에만 팝업 */
@@ -5879,7 +5905,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             <div id="notifReason" style="font-family:var(--kr);font-size:11px;color:rgba(255,255,255,.8);"></div>
           </div>
           <div style="margin-bottom:16px;padding:12px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);border-radius:12px;">
-            <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.70);line-height:1.5;">팀원의 작전이 등록됐어요.<br><span style="color:rgba(155,120,212,.90);font-weight:700;font-size:10px;white-space:nowrap;">💜 작전카드 등록! 응원메시지를 보내주세요</span></div>
+            <div style="font-family:var(--kr);font-size:10px;color:rgba(255,255,255,.70);line-height:1.5;">팀원의 작전이 등록됐어요.<br><span style="color:rgba(82,212,164,.90);font-weight:700;font-size:10px;white-space:nowrap;">🤝 같은 작전에 도전해볼까요? 함께하면 더 강해집니다!</span></div>
           </div>
           <button onclick="confirmOpsNotifAndOpen()" style="width:100%;padding:13px;background:linear-gradient(135deg,rgba(106,78,158,.55),rgba(80,50,130,.65));border:1.5px solid rgba(155,120,212,.55);border-radius:12px;color:rgba(220,200,255,.95);font-family:var(--kr);font-size:13px;font-weight:800;cursor:pointer;">확인</button>
         </div>
@@ -5902,7 +5928,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div style="font-family:var(--title);font-size:15px;font-weight:900;color:rgba(82,212,164,.95);margin-bottom:10px;">같이하기 수락!</div>
           <div style="font-family:var(--kr);font-size:12px;color:rgba(255,255,255,.75);line-height:1.7;margin-bottom:22px;">
             <span id="coopAcceptedName" style="color:rgba(82,212,164,.9);font-weight:800;"></span>이(가) 같이하기를 수락했습니다.<br>
-            상대방 작전바에서 응원을 보내주세요! 💜
+            같이 작전을 완수해보세요! 💪
           </div>
           <button onclick="_closeCoopAcceptedPopup()" style="width:100%;padding:13px;background:rgba(82,212,164,.22);border:1.5px solid rgba(82,212,164,.55);border-radius:12px;color:rgba(82,212,164,.95);font-family:var(--kr);font-size:13px;font-weight:800;cursor:pointer;">확인</button>
         </div>
@@ -7671,21 +7697,8 @@ function renderQ(){
       const _sCanCert = _sCertNow >= _sCa;
       const _sRem = _sCanCert ? 0 : Math.ceil((_sCa - _sCertNow)/60000);
 
-      /* 응원 메시지 박스 */
+      /* 작전별 응원 메시지 박스 제거됨 (단일 응원 구조) */
       let cheerBox='';
-      if(q.cheerMsg){
-        if(!_sIsMyCheer){
-          cheerBox=`<div style="margin-bottom:10px;padding:10px 12px;background:rgba(106,78,158,.18);border:2px solid rgba(106,78,158,.55);border-radius:11px;">
-            <div style="font-family:var(--kr);font-size:9px;color:#6B4A9A;font-weight:800;margin-bottom:5px;">💜 응원 메시지</div>
-            <div style="font-family:var(--kr);font-size:12px;color:#2A1A3E;font-weight:700;line-height:1.55;">${q.cheerMsg}</div>
-          </div>`;
-        } else {
-          cheerBox=`<div style="margin-bottom:10px;padding:9px 12px;background:rgba(106,78,158,.08);border:1px solid rgba(106,78,158,.28);border-radius:10px;">
-            <div style="font-family:var(--kr);font-size:9px;color:rgba(106,78,158,.65);font-weight:700;margin-bottom:3px;">💜 내가 보낸 응원</div>
-            <div style="font-family:var(--kr);font-size:11px;color:#3D2060;font-weight:600;line-height:1.5;">${q.cheerMsg}</div>
-          </div>`;
-        }
-      }
 
       if(!q.stamped && !q.completed){
         let btnRowHtml = '';
@@ -7703,15 +7716,19 @@ function renderQ(){
           const pCertStatus = together
             ? `<div style="margin-top:6px;font-family:var(--kr);font-size:9px;color:#9CA49A;text-align:right;">${pName}: ${partnerCertified?'✅ 완료':'⏳ 대기'}</div>`
             : '';
-          const cheerReqRow = (!q.cheerMsg && together && partnerData && partnerData.uid)
-            ? `<div style="margin-bottom:8px;"><button class="coop-cheer-send-btn" style="width:100%;padding:10px 12px;background:rgba(106,78,158,.15);border:1.5px solid rgba(106,78,158,.42);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(180,130,255,.90);cursor:pointer;text-align:center;">💜 응원 요청</button></div>`
-            : '';
+          const _cheerDailySentKeyCoop = `cheerSentToday_${MY_UID}_${selDate}`;
+          const _cheerAlreadySentCoop = _getFlag(_cheerDailySentKeyCoop);
+          const cheerReqRow = (together && partnerData && partnerData.uid && !_cheerAlreadySentCoop)
+            ? `<div style="margin-bottom:8px;"><button class="coop-cheer-send-btn" style="width:100%;padding:10px 12px;background:rgba(106,78,158,.15);border:1.5px solid rgba(106,78,158,.42);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(180,130,255,.90);cursor:pointer;text-align:center;">💜 응원 보내기</button></div>`
+            : _cheerAlreadySentCoop ? `<div style="margin-bottom:8px;padding:8px 12px;background:rgba(106,78,158,.08);border:1px solid rgba(106,78,158,.22);border-radius:11px;font-family:var(--kr);font-size:10px;color:rgba(160,120,255,.70);text-align:center;">💜 오늘 응원 완료</div>` : '';
           btnRowHtml = `${cheerReqRow}<div style="display:flex;gap:8px;align-items:center;">${coopBadge}${coopCertBtn}</div>${pCertStatus}`;
         } else {
-          /* 개인: 응원요청(없을때) + 인증버튼 */
-          const reqBtn = !q.cheerMsg
-            ? `<button class="solo-cheer-req-btn" data-qi="${oi}" style="flex:1;padding:12px 8px;background:rgba(106,78,158,.18);border:1.5px solid rgba(106,78,158,.45);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(180,130,255,.90);cursor:pointer;text-align:center;">💜 응원 요청</button>`
-            : `<div style="flex:1;min-width:0;padding:12px 8px;background:rgba(61,72,64,.22);border:1.5px solid rgba(120,130,120,.40);border-radius:11px;text-align:center;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(180,190,175,.75);">💜 응원함</div>`;
+          /* 개인: 응원 보내기 버튼 (하루 1회 단일) */
+          const _cheerDailySentKey = `cheerSentToday_${MY_UID}_${selDate}`;
+          const _cheerAlreadySent = _getFlag(_cheerDailySentKey);
+          const reqBtn = _cheerAlreadySent
+            ? `<div style="flex:1;min-width:0;padding:12px 8px;background:rgba(61,72,64,.22);border:1.5px solid rgba(120,130,120,.40);border-radius:11px;text-align:center;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(180,190,175,.75);">💜 응원함</div>`
+            : `<button class="solo-cheer-req-btn" data-qi="${oi}" style="flex:1;padding:12px 8px;background:rgba(106,78,158,.18);border:1.5px solid rgba(106,78,158,.45);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(180,130,255,.90);cursor:pointer;text-align:center;">💜 응원 보내기</button>`;
           const certBtnHtml = _sCanCert
             ? `<button class="qbtn solo-complete-btn" style="flex:1;font-size:12px;padding:12px;background:rgba(47,74,54,.22);border:2px solid rgba(47,74,54,.65);color:#1E2D24;font-weight:800;border-radius:11px;">📸 인증하기</button>`
             : `<button class="qbtn solo-complete-btn" style="flex:1;font-size:11px;padding:11px;background:rgba(61,72,64,.05);border:1.5px solid rgba(61,72,64,.16);color:#9CA49A;border-radius:11px;cursor:pointer;">⏱ ${_sRem}분 후 인증</button>`;
@@ -7731,17 +7748,8 @@ function renderQ(){
             ? `<div style="margin-top:8px;"><button class="qbtn coop-bonus-btn" style="width:100%;font-size:11px;padding:10px 12px;background:rgba(180,90,20,.18);border:2px solid rgba(200,110,30,.60);color:rgba(220,110,30,.95);font-weight:800;">🎁 보상받기 +3,000원</button></div>`
             : q.bonusClaimed ? `<div style="margin-top:8px;padding:8px 10px;background:rgba(127,191,106,.1);border:1px solid rgba(127,191,106,.3);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.8);text-align:center;font-weight:700;">✅ 협동 보너스 수령 완료</div>` : '';
         }
-        /* 응원포인트 받기 버튼 — 완료 + 상대 응원 메시지 있을 때 */
-        /* 응원포인트 받기 버튼 — 완료 + cheerMsg 있으면 무조건 표시 */
-        const _cheerPointKey = `cheerPointClaimed_${MY_UID}_${selDate}_${q.qid||oi}`;
-        const _cheerPointClaimed = _getFlag(_cheerPointKey);
-        const _isMyCheerQ = q.cheerFromNick && (q.cheerFromNick===(myNickname||'나'));
-        const _hasCheerQ = !!(q.cheerMsg && !_isMyCheerQ);
-        const _ptsLabel = _hasCheerQ ? '+2p' : '+0p';
-        let cheerPointBtn = _cheerPointClaimed
-          ? `<div style="margin-top:10px;padding:12px;text-align:center;background:rgba(61,72,64,.08);border:1px solid rgba(61,72,64,.18);border-radius:12px;font-family:var(--kr);font-size:12px;font-weight:800;color:#3D4840;">✅ 받기완료</div>`
-          : `<button class="cheer-point-claim-btn" data-qi="${oi}" style="width:100%;margin-top:10px;padding:13px;background:linear-gradient(135deg,#F5E020,#E8C800);border:2px solid #C8A800;border-radius:12px;color:#3A2E00;font-family:var(--kr);font-size:12px;font-weight:900;cursor:pointer;letter-spacing:.3px;box-shadow:0 3px 14px rgba(230,190,0,.35);">⭐ 응원포인트 받기 ${_ptsLabel}</button>`;
-        soloCheerHtml = (cheerBox || completedExtra || cheerPointBtn) ? `<div class="solo-status-area" style="margin-top:10px;position:relative;z-index:5;">${cheerPointBtn}${cheerBox}${completedExtra}</div>` : '';
+        /* 완료 상태: cheerBox/받기버튼 제거 (C안: 수신 즉시 자동 +2P) */
+        soloCheerHtml = completedExtra ? `<div class="solo-status-area" style="margin-top:10px;position:relative;z-index:5;">${completedExtra}</div>` : '';
       }
     }
 
@@ -7943,17 +7951,15 @@ function renderQ(){
     const coopCheerReqBtn=div.querySelector('.coop-cheer-req-btn');
     if(coopCheerReqBtn){
       coopCheerReqBtn.addEventListener('click',async()=>{
+        const _cheerDailyKey=`cheerSentToday_${MY_UID}_${selDate}`;
+        if(_getFlag(_cheerDailyKey)){showToast('오늘 이미 응원했어요 (하루 1회)');return;}
         if(!partnerData||!partnerData.uid){showToast('파트너 연결이 필요합니다');return;}
-        try{
-          await _fbSet(`coopNotif/${partnerData.uid}/${MY_UID}_cr_${Date.now()}`,{
-            fromUid:MY_UID,fromNick:myNickname||'상대방',
-            questName:quests[oi].name,questDate:selDate,questIdx:oi,
-            type:'cheer_request',msg:'응원해주세요! 💪',createdAt:Date.now()
-          });
-          showToast('💜 응원 요청을 보냈어요!');
-          coopCheerReqBtn.textContent='💜 요청 완료';
-          coopCheerReqBtn.disabled=true;coopCheerReqBtn.style.opacity='.5';
-        }catch(e){showToast('전송 실패');}
+        const popup=document.getElementById('cheerMsgPopup');
+        if(popup){
+          document.getElementById('cheerTargetName').textContent=`💜 ${partnerData.nickname||'상대방'}에게 응원 메시지를 보내보세요`;
+          document.getElementById('cheerMsgInput').value='';
+          popup.style.display='flex';
+        }
       });
     }
     /* 개인 응원 요청 버튼 — 상대방에게 cheer_request 알림 전송만 수행 */
@@ -7961,55 +7967,24 @@ function renderQ(){
     if(soloCheerReqBtn){
       soloCheerReqBtn.addEventListener('click',async e=>{
         e.stopPropagation();
-        const qi2=parseInt(soloCheerReqBtn.dataset.qi);
-        /* 파트너 없으면 안내 */
-        if(!partnerData||!partnerData.uid){
-          showToast('💜 파트너 연결 후 응원 요청이 가능합니다');
-          return;
-        }
-        /* 이미 응원 메시지 있으면 중복 방지 */
-        if(quests[qi2]&&quests[qi2].cheerMsg){
-          showToast('이미 응원 메시지가 있습니다');
-          return;
-        }
-        /* 상대방에게 cheer_request 알림 전송 */
-        try{
-          await _fbSet(`coopNotif/${partnerData.uid}/${MY_UID}_sr_${Date.now()}`,{
-            fromUid:MY_UID,
-            fromNick:myNickname||'상대방',
-            questName:quests[qi2]?.name||'',
-            questDate:selDate,
-            questIdx:qi2,
-            type:'cheer_request',
-            msg:'응원해주세요! 💪',
-            createdAt:Date.now()
-          });
-          /* 버튼 비활성화 (중복 전송 방지) */
-          soloCheerReqBtn.textContent='📨 응원 요청 전송됨';
-          soloCheerReqBtn.disabled=true;
-          soloCheerReqBtn.style.opacity='0.55';
-          showToast('💜 응원 요청을 보냈어요!');
-        }catch(err){
-          showToast('전송 실패, 다시 시도해주세요');
+        const _cheerDailyKey=`cheerSentToday_${MY_UID}_${selDate}`;
+        if(_getFlag(_cheerDailyKey)){showToast('오늘 이미 응원했어요 (하루 1회)');return;}
+        if(!partnerData||!partnerData.uid){showToast('파트너 연결이 필요합니다');return;}
+        const popup=document.getElementById('cheerMsgPopup');
+        if(popup){
+          document.getElementById('cheerTargetName').textContent=`💜 ${partnerData.nickname||'상대방'}에게 응원 메시지를 보내보세요`;
+          document.getElementById('cheerMsgInput').value='';
+          popup.style.display='flex';
         }
       });
     }
+
+    
     /* 협동 보너스 버튼 */
     const coopBonusBtn=div.querySelector('.coop-bonus-btn');
     if(coopBonusBtn){coopBonusBtn.addEventListener('click',()=>{claimCoopBonus(oi);});}
     /* 응원포인트 받기 버튼 */
-    const cheerPointClaimBtn=div.querySelector('.cheer-point-claim-btn');
-    if(cheerPointClaimBtn){
-      cheerPointClaimBtn.addEventListener('click',async()=>{
-        const _key=`cheerPointClaimed_${MY_UID}_${selDate}_${q.qid||oi}`;
-        if(_getFlag(_key)){renderQ();return;}
-        _setFlag(_key);
-        showToast('✅ 받기완료!');
-        renderCal&&renderCal();
-        renderHist&&renderHist();
-        renderQ();
-      });
-    }
+    /* 응원포인트 받기 버튼 제거됨 (C안: 수신 즉시 자동 +2P) */
     /* 철회 버튼 */
     const doneBtn=div.querySelector('.qbtn.done');
     if(doneBtn){
@@ -8319,11 +8294,14 @@ function _renderDiaryDayRecord(){
       /* 아침점호 미등록 표시 + 같이하기 버튼 */
       const _safeMrData3=(typeof window._mrData!=='undefined')?window._mrData:null;
       const _mrTogether3=_safeMrData3&&_safeMrData3.together===partnerData.uid;
+      const _myMrRegistered3=!!(  _safeMrData3&&_safeMrData3.hour);
+      const _subLabel=_myMrRegistered3?'(상대 미등록)':'미등록';
+      const _togetherBtnLabel=_myMrRegistered3?'🤝 같이하기 초대':'🤝 같이하기';
       html+=`<div style="padding:7px 0;border-bottom:1px solid rgba(255,165,80,.10);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-family:var(--kr);font-size:10px;color:rgba(30,30,30,.55);font-weight:600;">☀️ 아침점호 미등록</span>
+        <span style="font-family:var(--kr);font-size:10px;color:rgba(30,30,30,.55);font-weight:600;">☀️ 아침점호 ${_subLabel}</span>
         ${_mrTogether3
           ?`<div style="padding:5px 9px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.22);border-radius:7px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(60,100,200,.70);">🤝 같이진행중</div>`
-          :`<button class="diary-mr-together-btn" style="padding:5px 9px;background:rgba(30,80,60,.10);border:1px solid rgba(42,100,75,.28);border-radius:7px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(30,80,55,.75);cursor:pointer;">🤝 같이하기</button>`}
+          :`<button class="diary-mr-together-btn" style="padding:5px 9px;background:rgba(30,80,60,.10);border:1px solid rgba(42,100,75,.28);border-radius:7px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(30,80,55,.75);cursor:pointer;">${_togetherBtnLabel}</button>`}
       </div>`;
     }
 
@@ -8437,67 +8415,20 @@ function _renderDiaryDayRecord(){
     });
   });
 
-  /* 오늘의 응원 전송 — 버튼 클릭 시 인라인 입력창 표시 */
+  /* 오늘의 응원 전송 버튼 — 팝업 열기만 */
   recordList.querySelectorAll('.diary-cheer-send-btn').forEach(btn=>{
     btn.addEventListener('click',async()=>{
-      const d=btn.dataset.date||date;
-      /* 이미 입력창이 열려있으면 전송 */
-      const existInp=document.getElementById('diaryCheerInput_'+d);
-      if(existInp){
-        const msg=(existInp.value||'').trim();
-        if(!msg){ showToast('응원 메시지를 입력하세요'); return; }
-        /* 아래 공통 전송 로직 진입 */
-        const _cheerDailyKey=`cheerSentToday_${MY_UID}_${d}`;
-        if(_getFlag(_cheerDailyKey)){ showToast('오늘 이미 응원했어요 (하루 1회)'); return; }
-        if(!partnerData||!partnerData.uid){ showToast('상대방이 연결되지 않았습니다'); return; }
-        btn.disabled=true; btn.textContent='전송 중...';
-        const _pqs=_partnerQuests||[];
-        const _targetQi=_pqs.length>0?0:-1;
-        _pendingOpsNotif={
-          fromUid:partnerData.uid, fromNick:partnerData.nickname||'상대방',
-          questName:_pqs[0]?_pqs[0].name:'', questDate:d, questIdx:_targetQi,
-          questReason:'', _isMorning:false,
-        };
-        const _cheerInput=document.getElementById('cheerMsgInput');
-        if(_cheerInput) _cheerInput.value=msg;
-        await submitCheerMsg();
-        _renderDiaryDayRecord();
-        return;
+      const _cheerDailyKey=`cheerSentToday_${MY_UID}_${selDate}`;
+      if(_getFlag(_cheerDailyKey)){ showToast('오늘 이미 응원했어요 (하루 1회)'); return; }
+      if(!partnerData||!partnerData.uid){ showToast('파트너 연결이 필요합니다'); return; }
+      /* cheerMsgPopup 열기 */
+      const popup=document.getElementById('cheerMsgPopup');
+      if(popup){
+        document.getElementById('cheerTargetName').textContent=`💜 ${partnerData.nickname||'상대방'}에게 응원 메시지를 보내보세요`;
+        document.getElementById('cheerMsgInput').value='';
+        popup.style.display='flex';
       }
-      /* 버튼을 입력창+전송버튼으로 교체 */
-      const _wrap=btn.parentElement;
-      if(_wrap){
-        _wrap.innerHTML=`<div style="display:flex;gap:6px;">
-          <input id="diaryCheerInput_${d}" type="text" maxlength="60" placeholder="${(partnerData&&partnerData.nickname)||'상대'}에게 응원 메시지를 남겨보세요" style="flex:1;padding:8px 10px;background:rgba(255,255,255,.07);border:1px solid rgba(106,78,158,.35);border-radius:8px;color:#1A1F1C;font-family:var(--kr);font-size:10px;outline:none;" autofocus/>
-          <button class="diary-cheer-send-btn" data-date="${d}" style="padding:8px 12px;background:rgba(106,78,158,.30);border:1.5px solid rgba(150,100,220,.60);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(80,30,160,.95);cursor:pointer;white-space:nowrap;">전송 +1P</button>
-        </div>`;
-        const _newInp=_wrap.querySelector('input');
-        if(_newInp){ _newInp.focus(); }
-        /* 새 버튼에 이벤트 재연결 */
-        const _newBtn=_wrap.querySelector('.diary-cheer-send-btn');
-        if(_newBtn) _newBtn.addEventListener('click',async()=>{
-          const _inp=document.getElementById('diaryCheerInput_'+d);
-          const msg=(_inp?_inp.value||'':'').trim();
-          if(!msg){ showToast('응원 메시지를 입력하세요'); return; }
-          const _cheerDailyKey=`cheerSentToday_${MY_UID}_${d}`;
-          if(_getFlag(_cheerDailyKey)){ showToast('오늘 이미 응원했어요 (하루 1회)'); return; }
-          if(!partnerData||!partnerData.uid){ showToast('상대방이 연결되지 않았습니다'); return; }
-          _newBtn.disabled=true; _newBtn.textContent='전송 중...';
-          const _pqs=_partnerQuests||[];
-          const _targetQi=_pqs.length>0?0:-1;
-          _pendingOpsNotif={
-            fromUid:partnerData.uid, fromNick:partnerData.nickname||'상대방',
-            questName:_pqs[0]?_pqs[0].name:'', questDate:d, questIdx:_targetQi,
-            questReason:'', _isMorning:false,
-          };
-          const _cheerInputEl=document.getElementById('cheerMsgInput');
-          if(_cheerInputEl) _cheerInputEl.value=msg;
-          await submitCheerMsg();
-          _renderDiaryDayRecord();
-        });
-      }
-      return;
-    }); /* diary-cheer-send-btn forEach 끝 */
+    });
   });
 
   /* 오늘의 응원 수정 버튼 */
@@ -8571,70 +8502,29 @@ function _renderDiaryDayRecord(){
 function _renderCheerMsgCard(){
   const card = document.getElementById('cheerMsgCard');
   if(!card) return;
-  /* 미완료 작전 중 상대가 보낸 응원메시지가 있는 것 수집 */
-  const _myNick = myNickname||'나';
-  const cheerItems = (quests||[]).filter(q=>{
-    if(q.completed && !q.stamped) return false; /* 완료작전 제외 */
-    if(!q.cheerMsg) return false;
-    const _isMyCheer = q.cheerFromNick && (q.cheerFromNick===_myNick);
-    return !_isMyCheer; /* 상대가 보낸 것만 */
-  });
-  /* 응원요청 가능한 작전 (cheerMsg 없고 미완료) */
-  const reqItems = (quests||[]).filter(q=>{
-    if(q.completed && !q.stamped) return false;
-    if(q.mode==='coop') return false; /* 협동은 제외 */
-    return !q.cheerMsg; /* 응원 없는 것 */
-  });
-  const hasCheer = cheerItems.length > 0;
-  const hasReq = reqItems.length > 0;
-  if(!hasCheer && !hasReq){ card.style.display='none'; return; }
-  card.style.display='block';
-  let html = '';
-  /* 응원메시지 — 번들 안 패딩 스타일, 아래 구분선 포함 */
-  if(hasCheer){
-    html += cheerItems.map(q=>{
-      const _cheerNm = q.cheerFromNick || (partnerData&&partnerData.nickname) || '상대방';
-      const oi = quests.indexOf(q);
-      return `<div style="padding:10px 12px;background:rgba(106,78,158,.10);border:1.5px solid rgba(106,78,158,.35);border-radius:11px;margin-bottom:6px;">
-        <div style="font-family:var(--kr);font-size:9px;color:#5A3A8A;font-weight:800;margin-bottom:5px;letter-spacing:.3px;">💜 ${_cheerNm}님의 응원메시지</div>
-        <div style="font-family:var(--kr);font-size:13px;color:#2A1040;font-weight:900;line-height:1.6;">${q.cheerMsg}</div>
-        <div style="margin-top:5px;font-family:var(--kr);font-size:9px;color:rgba(80,50,130,.50);">📌 ${q.name}</div>
-      </div>`;
-    }).join('');
-  }
-  /* 응원메시지가 있으면 "오늘의 응원메시지" 표시, 없으면 응원요청 버튼 */
-  if(hasCheer){
-    /* 응원메시지 있음 → 이미 위에서 표시됨, 요청 버튼 불필요 */
-  } else if(hasReq && partnerData && partnerData.uid){
-    const reqItem = reqItems[0];
-    const reqOi = quests.indexOf(reqItem);
-    html += `<div style="padding:8px 12px;background:rgba(106,78,158,.06);display:flex;align-items:center;gap:10px;">
-      <span style="font-family:var(--kr);font-size:10px;color:rgba(80,50,130,.55);flex:1;">응원이 필요하신가요?</span>
-      <button id="cheerCardReqBtn" data-qi="${reqOi}" style="padding:7px 13px;background:rgba(106,78,158,.15);border:1px solid rgba(106,78,158,.35);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:800;color:#4A2A7A;cursor:pointer;white-space:nowrap;">💜 응원 요청</button>
+  /* users/{MY_UID}/cheerMsg/{selDate} 경로에서 읽기 */
+  const _cheerPath = `users/${MY_UID}/cheerMsg/${selDate}`;
+  _fbGet(_cheerPath).then(snap=>{
+    if(!snap||!snap.exists()){
+      card.style.display='none';
+      card.innerHTML='';
+      return;
+    }
+    const d = snap.val();
+    if(!d||!d.msg){
+      card.style.display='none';
+      card.innerHTML='';
+      return;
+    }
+    const _fromNick = d.fromNick||'상대방';
+    card.style.display='block';
+    card.innerHTML=`<div style="padding:10px 12px;background:rgba(106,78,158,.10);border:1.5px solid rgba(106,78,158,.35);border-radius:11px;margin-bottom:6px;">
+      <div style="font-family:var(--kr);font-size:9px;color:#5A3A8A;font-weight:800;margin-bottom:5px;letter-spacing:.3px;">💜 ${_fromNick}님의 응원메시지</div>
+      <div style="font-family:var(--kr);font-size:13px;color:#2A1040;font-weight:900;line-height:1.6;">${d.msg}</div>
     </div>`;
-  }
-  card.innerHTML = html;
-  /* 응원요청 버튼 이벤트 */
-  const _reqBtn = card.querySelector('#cheerCardReqBtn');
-  if(_reqBtn){
-    _reqBtn.addEventListener('click', async e=>{
-      e.stopPropagation();
-      if(!partnerData||!partnerData.uid){showToast('💜 파트너 연결 후 응원 요청이 가능합니다');return;}
-      const _oi = parseInt(_reqBtn.dataset.qi);
-      const _q = quests[_oi];
-      if(!_q){return;}
-      try{
-        await _fbPush(`notifications/${partnerData.uid}`,{
-          type:'cheer_request',msg:'응원해주세요! 💪',
-          questName:_q.name,questIdx:_oi,questDate:selDate,
-          fromUid:MY_UID,fromNick:myNickname||'나',createdAt:Date.now()
-        });
-        _reqBtn.textContent='📨 응원 요청 전송됨';
-        _reqBtn.disabled=true;
-        showToast('💜 응원 요청을 보냈어요!');
-      }catch(e2){ showToast('❌ 전송 실패'); }
-    });
-  }
+  }).catch(()=>{
+    card.style.display='none';
+  });
 }
 
 function _fillSlot(slotEl,qitemDiv,q,oi){
@@ -8871,30 +8761,7 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
       renderQ();
     });
   }
-  const slotCheerPointBtn=slotEl.querySelector('.cheer-point-claim-btn');
-  if(slotCheerPointBtn){
-    slotCheerPointBtn.addEventListener('click',async e=>{
-      e.stopPropagation();
-      const _key=`cheerPointClaimed_${MY_UID}_${selDate}_${q.qid||oi}`;
-      if(_getFlag(_key)){renderQ();return;}
-      _setFlag(_key);
-      const _myNickH=myNickname||'나';
-      const _isMyCheerH=q.cheerFromNick&&(q.cheerFromNick===_myNickH);
-      const _hasCheerH=!!(q.cheerMsg&&!_isMyCheerH);
-      const _pts=_hasCheerH?2:0;
-      if(_pts>0){
-        await _addMyDayPt(selDate,_pts); /* 항상 작전기록에 적립 */
-        const _scap=calcRewardCap();
-        const _srawp=Object.values(getCycleData()).reduce((sum,items)=>sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||5000),0),0);
-        if(_srawp>=_scap.personalCap) await addPoints(_pts);
-      }
-      showToast('✅ 받기완료!');
-      renderCal&&renderCal();
-      renderHist&&renderHist();
-      renderQ();
-      /* 파트너 섹션 자동 펼침 제거됨 */
-    });
-  }
+  /* 슬롯 cheer-point-claim-btn 제거됨 (C안: 수신 즉시 자동 +2P) */
   const doneBtn=slotEl.querySelector('.qbtn.done');
   if(doneBtn){doneBtn.addEventListener('click',e=>{e.stopPropagation();quests[oi].completed=false;quests[oi].certifiedAt=null;if(!quests[oi].reward) quests[oi].reward=quests[oi].mode==='coop'&&quests[oi].bonusClaimed?8000:5000;saveQ();renderQ();updateHUD();});}
   slotEl.querySelectorAll('.qdel-btn').forEach(btn=>{
@@ -9481,7 +9348,11 @@ async function _loadDayPoints(){ /* no-op: 제거됨 */ }
 function _getMyDayPts(date){ return 0; }
 function _getMyCertDayPts(date){ return 0; }
 function _getPartnerDayPts(date){ return 0; }
-async function _addMyDayPt(date, n){ /* no-op: 제거됨 */ }
+async function _addMyDayPt(date, n){
+  if(!n||n<=0) return;
+  await addPoints(n);
+  await _savePxPointLog(date, '포인트', n);
+}
 
 /* 파트너 구독 — no-op */
 let _partnerDayPtUnsub = null;
@@ -10180,119 +10051,49 @@ function _doLogout(){
   location.reload();
 }
 async function submitCheerMsg(){
-  if(_assertNotBlackout()) return; /* 00:00~04:00 응원 전송 차단 */
+  if(_assertNotBlackout()) return;
   const msg = (document.getElementById('cheerMsgInput').value||'').trim();
-  const n = _pendingOpsNotif;
-  const popup=document.getElementById('cheerMsgPopup');
-  const isCoopMode = popup && popup._coopMode;
-
   if(!msg){showToast('응원 메시지를 입력하세요');return;}
 
-  /* 이슈8: 하루 한 개 제한 체크 */
   const _cheerDailyKey = `cheerSentToday_${MY_UID}_${selDate}`;
   if(_getFlag(_cheerDailyKey)){
     showToast('💜 오늘은 이미 응원메시지를 전송했습니다 (하루 1회)');
     closeCheerMsgPopup();
     return;
   }
+  if(!partnerData||!partnerData.uid){closeCheerMsgPopup();return;}
 
-  if(!isCoopMode){
-    if(!n||!n.fromUid){closeCheerMsgPopup();return;}
-    /* 아침점호 응원 */
-    if(n._isMorning){
-      try{
-        const mrCheerPath = `users/${n.fromUid}/morningRoll/${n.questDate}`;
-        await _fbUpdate(mrCheerPath, { cheerMsg: msg, cheerFromNick: myNickname||'상대방' });
-      }catch(e){}
-      /* 이슈8: 즉시 +1P (인증완료 여부 무관) */
-      try{
-        await addPoints(1);
-        await _savePxPointLog(n.questDate||selDate,'응원메시지',1);
-      }catch(e){}
-      _setFlag(_cheerDailyKey); /* 하루 1회 플래그 */
-      try{localStorage.setItem('cheerMsg_'+_cheerDailyKey, msg);}catch(e){}
-      closeCheerMsgPopup();
-      renderPartnerOps();
-      showToast('💜 응원 완료! 보급상점 +1P');
-      return;
-    }
-    /* 상대방 Firebase 경로에 cheerMsg 저장 */
-    try{
-      const path=_questPath(n.fromUid, n.questDate);
-      const snap=await _fbGet(path);
-      if(snap.exists()){
-        const arr=snap.val()||[];
-        const qi=typeof n.questIdx==='number'?n.questIdx:0;
-        if(arr[qi]){
-          arr[qi].cheerMsg=msg;
-          arr[qi].cheerFromNick=myNickname||'상대방';
-          await _fbSet(path,arr);
-        }
-      }
-    }catch(e){}
-    /* 이슈8: 즉시 +1P (인증완료 여부 무관) */
-    try{
-      await addPoints(1);
-      await _savePxPointLog(n.questDate||selDate,'응원메시지',1);
-    }catch(e){}
-    _setFlag(_cheerDailyKey); /* 하루 1회 플래그 */
-    try{localStorage.setItem('cheerMsg_'+_cheerDailyKey, msg);}catch(e){}
-    closeCheerMsgPopup();
-    renderPartnerOps();
-    showToast('💜 응원 완료! 보급상점 +1P');
-    _showKakaoShareBtn('cheer', n?.questName||'작전', myNickname||'나');
-    return;
-  }
-
-  /* ── ③ 협동작전 응원 모드 ── */
-  if(!n||!partnerData||!partnerData.uid){closeCheerMsgPopup();return;}
-  const qi=popup._coopQi||0;
-  const coopDate=n.questDate||selDate;
-
-  /* 내 Firebase에서 현재 값 읽어서 내 응원만 추가 (기존 cheerMsg 보존) */
   try{
-    const myPath=_questPath(MY_UID,selDate);
-    const mySnap=await _fbGet(myPath);
-    if(mySnap.exists()){
-      const myArr=mySnap.val()||[];
-      if(myArr[qi]){
-        myArr[qi].cheerMsg=msg;
-        myArr[qi].cheerFromNick=myNickname||'나';
-        await _fbSet(myPath,myArr);
-        /* 로컬도 동기화 */
-        if(quests[qi]){ quests[qi].cheerMsg=msg; quests[qi].cheerFromNick=myNickname||'나'; }
-        renderQ();
-      }
-    }
-  }catch(e){}
+    /* 상대 Firebase에 단일 응원메시지 저장 */
+    const _cheerPath = `users/${partnerData.uid}/cheerMsg/${selDate}`;
+    await _fbSet(_cheerPath, {
+      msg,
+      fromNick: myNickname||'상대방',
+      fromUid: MY_UID,
+      sentAt: Date.now()
+    });
 
-  /* 상대방 퀘스트: 상대가 보낸 응원이 이미 있으면 건드리지 않음 */
-  try{
-    const ppath=_questPath(partnerData.uid, coopDate);
-    const psnap=await _fbGet(ppath);
-    if(psnap.exists()){
-      const parr=psnap.val()||[];
-      const myQName=quests[qi]?.name;
-      const pidx=parr.findIndex(pq=>pq.mode==='coop'&&pq.name===myQName);
-      if(pidx>=0 && !parr[pidx].cheerMsg){
-        /* 상대에게 아직 응원이 없을 때만 저장 */
-        parr[pidx].cheerMsg=msg;
-        parr[pidx].cheerFromNick=myNickname||'나';
-        await _fbSet(ppath,parr);
-      }
-    }
-  }catch(e){}
-  if(popup){popup._coopMode=false;popup._coopQi=null;}
-  /* 이슈8: 즉시 +1P */
-  try{
+    /* 발신자 +1P */
     await addPoints(1);
-    await _savePxPointLog(n.questDate||selDate,'응원메시지',1);
-  }catch(e){}
-  _setFlag(_cheerDailyKey); /* 하루 1회 플래그 */
-  try{localStorage.setItem('cheerMsg_'+_cheerDailyKey, msg);}catch(e){}
+    await _savePxPointLog(selDate,'응원메시지 전송',1);
+
+    /* 수신자에게 알림 — 수신 즉시 +2P 처리 */
+    await _fbSet(`coopNotif/${partnerData.uid}/${MY_UID}_cheer_${Date.now()}`,{
+      type:'cheer_received',
+      fromUid: MY_UID,
+      fromNick: myNickname||'상대방',
+      msg,
+      questDate: selDate,
+      createdAt: Date.now()
+    });
+
+    _setFlag(_cheerDailyKey);
+  }catch(e){ showToast('❌ 전송 실패'); closeCheerMsgPopup(); return; }
+
   closeCheerMsgPopup();
-  renderPartnerOps();
-  showToast('💜 협동작전 응원 완료! 보급상점 +1P');
+  renderPartnerOps&&renderPartnerOps();
+  if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord();
+  showToast('💜 응원 완료! 보급상점 +1P');
 }
 
 /* 같이하기 → 내 퀘스트로 복사 등록 */
@@ -10464,10 +10265,18 @@ async function acceptOpsTogether(){
           mode: 'coop',
         });
       } else {
-        /* 미등록이면 상대 기상시간으로 내 morningRoll 신규 생성 */
+        /* 미등록이면 상대 기상시간 → 없으면 내 기상시간 → 없으면 아침점호 등록 팝업 유도 */
         const _pMrSnap = await _fbGet(`users/${n.fromUid}/morningRoll/${_mrTargetDate}`);
         const _pMr = _pMrSnap.exists() ? _pMrSnap.val() : null;
-        const _hour = (_pMr && _pMr.hour) || 6; /* 상대 기상시간 기본값 6시 */
+        /* 상대 시간 우선, 없으면 내 _mrData 시간 사용 */
+        const _myHour = (typeof window._mrData !== 'undefined' && window._mrData && window._mrData.hour) ? window._mrData.hour : null;
+        const _hour = (_pMr && _pMr.hour) || _myHour || null;
+        if(!_hour){
+          /* 내 점호도 미등록이면 아침점호 등록 먼저 안내 */
+          showToast('☀️ 아침점호를 먼저 등록해주세요!');
+          btn && (btn.disabled=false) && (btn.textContent='🤝 같이하기');
+          return;
+        }
         const _certFrom = new Date(`${_mrTargetDate}T${String(_hour).padStart(2,'0')}:00:00`).getTime();
         await _fbSet(`users/${MY_UID}/morningRoll/${_mrTargetDate}`, {
           hour: _hour,
@@ -15156,8 +14965,8 @@ function tmHQRenderHome(){
     const myM=_tmMyM(), oppM=_tmOppM();
     const _spMyCP=Object.values(_myDayPoints||{}).reduce((a,b)=>a+b,0);
     const _spOppCP=window._partnerTotalPts||0;
-    const myPct=Math.min(100,Math.round(_spMyCP/cfg.th*100));
-    const oppPct=Math.min(100,Math.round(_spOppCP/cfg.th*100));
+    const myPct=cfg.th>0?Math.min(100,Math.round(_spMyCP/cfg.th*100)):100;
+    const oppPct=cfg.th>0?Math.min(100,Math.round(_spOppCP/cfg.th*100)):100;
     const mySaved=!!window['tmHQMySaved'+n];
 
     /* 상자 상태 */
@@ -17306,35 +17115,20 @@ async function _mrSubmitCert(){
   renderQ();
 }
 
-/* ── 응원 요청 ── */
-async function _mrSendCheerReq(){
-  if(!partnerData||!partnerData.uid){ showToast('💜 파트너 연결 후 응원 요청이 가능합니다'); return; }
-  if(_mrData&&_mrData.cheerMsg){ showToast('이미 응원 메시지가 있습니다'); return; }
-  try{
-    await _fbSet(`coopNotif/${partnerData.uid}/${MY_UID}_mrsr_${Date.now()}`,{
-      fromUid:MY_UID, fromNick:myNickname||'나',
-      questName:'아침점호 ☀️', questDate:selDate,
-      type:'cheer_request', msg:'아침점호 응원해주세요! ☀️💪', createdAt:Date.now()
-    });
-    showToast('💜 응원 요청을 보냈어요!');
-  }catch(e){ showToast('전송 실패, 다시 시도해주세요'); }
+/* ── 응원 요청 → 공통 응원 팝업 열기 ── */
+function _mrSendCheerReq(){
+  const _cheerDailyKey = `cheerSentToday_${MY_UID}_${selDate}`;
+  if(_getFlag(_cheerDailyKey)){ showToast('오늘 이미 응원했어요 (하루 1회)'); return; }
+  if(!partnerData||!partnerData.uid){ showToast('파트너 연결이 필요합니다'); return; }
+  const popup=document.getElementById('cheerMsgPopup');
+  if(popup){
+    document.getElementById('cheerTargetName').textContent=`💜 ${partnerData.nickname||'상대방'}에게 응원 메시지를 보내보세요`;
+    document.getElementById('cheerMsgInput').value='';
+    popup.style.display='flex';
+  }
 }
 
-/* ── 응원포인트 받기 ── */
-async function _mrClaimPoints(){
-  const claimedKey = `mrCheerClaimed_${MY_UID}_${selDate}`;
-  if(_getFlag(claimedKey)){ showToast('이미 받기 완료됐습니다'); return; }
-  _setFlag(claimedKey);
-  const myNick = myNickname||'나';
-  const isMyCheer = _mrData&&_mrData.cheerFromNick&&_mrData.cheerFromNick===myNick;
-  const hasCheer = !!(_mrData&&_mrData.cheerMsg&&!isMyCheer);
-  if(hasCheer){
-    await _addMyDayPt(selDate,2);
-    await _savePxPointLog(selDate,'아침점호 응원',2);
-  }
-  _renderMorningSlot();
-  showToast('✅ 받기완료!');
-}
+/* _mrClaimPoints 제거됨 (C안: 수신 즉시 자동 +2P) */
 
 /* ── 아침점호 인증 완료 직후 보급상자 팝업 — 제거됨 (야구게임으로 통합) ── */
 async function _mrShowSupplyBox(){ /* 더 이상 사용하지 않음 */ }
@@ -17636,7 +17430,7 @@ async function bbSubmitGuess(){
       setTimeout(()=>{ _bbUnlockSpecial(); },600);
     } else {
       /* 이후 해독 → 5~10P (이슈13: 포인트는 적립하되 pxPointLog 기록 없음) */
-      const bonusPt=Math.floor(Math.random()*6)+5;
+      const bonusPt=Math.floor(Math.random()*5)+1;
       await addPoints(bonusPt);
       /* 이슈13: _savePxPointLog 호출 제거 */
       const subEl=document.getElementById('bbResultSub');
