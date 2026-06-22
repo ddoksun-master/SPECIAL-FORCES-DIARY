@@ -24,7 +24,7 @@
 
 :root{
   /* ══════════════════════════════════════════════════════════
-     특전사 작전수첩 v2.3
+     특전사 작전수첩 v2.4
      밝은 베이지 배경 × 짙은 올리브 그린 헤더
      ══════════════════════════════════════════════════════════
 
@@ -8130,19 +8130,38 @@ function _renderDiaryDayRecord(){
   }
   const items_with_mr = _mrItem ? [_mrItem, ...items] : items;
 
-  /* 미래날짜 04시 전: 예약 건수만 표시 */
+  /* 미래날짜 04시 전: 상대 예약도 포함해서 표시 */
   const _isFutureDate = date > todayStr2;
   const _date04ms = new Date(date+'T04:00:00').getTime();
   const _isBefore04 = _virtualNow() < _date04ms;
   if(_isFutureDate && _isBefore04){
-    const _resCount = items_with_mr.filter(q=>q&&q.reserved).length;
-    if(!_resCount){ wrap.style.display='none'; return; }
+    /* 상대 예약 로드 (캐시 없으면 Firebase에서 가져온 뒤 재렌더) */
+    const pCacheKeyFuture = '_partnerHist_'+date;
+    if(partnerData && partnerData.uid && !window[pCacheKeyFuture] && !window[pCacheKeyFuture+'_loading'] && _fbDb){
+      window[pCacheKeyFuture+'_loading']=true;
+      _fbDb.ref(_questPath(partnerData.uid,date)).once('value',snap=>{
+        window[pCacheKeyFuture]=snap.exists()?(snap.val()||[]):[];
+        window[pCacheKeyFuture+'_loading']=false;
+        _renderDiaryDayRecord();
+      });
+    }
+    const _partnerFutureItems = window[pCacheKeyFuture]||[];
+    const _myResCount = items_with_mr.filter(q=>q&&q.reserved).length;
+    const _partnerResCount = _partnerFutureItems.filter(q=>q&&q.reserved).length;
+    const _totalResCount = _myResCount + _partnerResCount;
+    if(!_totalResCount && !_partnerResCount){ wrap.style.display='none'; return; }
     wrap.style.display='block';
     if(lblEl) lblEl.textContent = date;
-    recordList.innerHTML=`<div style="padding:10px 14px;background:rgba(42,77,181,.06);border:1.5px dashed rgba(42,77,181,.22);border-radius:12px;display:flex;align-items:center;gap:10px;">
-      <span style="font-family:var(--orb);font-size:10px;color:rgba(78,130,220,.80);font-weight:700;">${date}</span>
-      <span style="font-family:var(--kr);font-size:10px;color:rgba(78,130,220,.70);">(예약 ${_resCount}건)</span>
-      <span style="font-family:var(--orb);font-size:9px;color:rgba(78,130,220,.45);margin-left:auto;">04:00 활성화</span>
+    /* 예약 내역 표시 */
+    const _myResNames = items_with_mr.filter(q=>q&&q.reserved).map(q=>`<span style="font-family:var(--kr);font-size:9px;color:rgba(78,130,220,.80);">나: ${q.name||'작전'}</span>`).join('');
+    const _pResNames = _partnerFutureItems.filter(q=>q&&q.reserved).map(q=>`<span style="font-family:var(--kr);font-size:9px;color:rgba(150,100,220,.80);">${(partnerData&&partnerData.nickname)||'상대'}: ${q.name||'작전'}</span>`).join('');
+    recordList.innerHTML=`<div style="padding:10px 14px;background:rgba(42,77,181,.06);border:1.5px dashed rgba(42,77,181,.22);border-radius:12px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:${(_myResNames||_pResNames)?'6px':'0'};">
+        <span style="font-family:var(--orb);font-size:10px;color:rgba(78,130,220,.80);font-weight:700;">${date}</span>
+        <span style="font-family:var(--kr);font-size:10px;color:rgba(78,130,220,.70);">(예약 ${_totalResCount}건)</span>
+        <span style="font-family:var(--orb);font-size:9px;color:rgba(78,130,220,.45);margin-left:auto;">04:00 활성화</span>
+      </div>
+      ${(_myResNames||_pResNames)?`<div style="display:flex;flex-direction:column;gap:3px;">${_myResNames}${_pResNames}</div>`:''}
     </div>`;
     return;
   }
@@ -9901,7 +9920,7 @@ function _handleDeepLink(url) {
 /* ── 앱 업데이트 감지 & 실행 ── */
 let _pendingSWReg = null;
 
-const APP_VERSION = 'v2.7';
+const APP_VERSION = 'v2.8';
 const _VERCEL_URL='https://special-forces-diary.vercel.app/index.html';
 const _ETAG_STOR_KEY='sfDiary_lastETag';
 
