@@ -358,9 +358,14 @@ html,body{
 .dtab-dt{font-size:12px;font-weight:700;color:#3D4840;line-height:1.2;}
 .dtab-pct{font-size:9px;font-weight:700;color:#5A6258;line-height:1;}
 
-.dtab.today .dtab-nm{color:rgba(255,255,255,.80);}
-.dtab.today .dtab-dt{color:#F0E8D8;font-weight:700;}
-.dtab.today .dtab-pct{color:rgba(255,255,255,.90);}
+.dtab.today{
+  background:rgba(248,245,239,.80);
+  border:2px solid #1E2D24;
+  box-shadow:0 0 0 1px rgba(30,45,36,.10);
+}
+.dtab.today .dtab-nm{color:#2F4A36;font-weight:800;}
+.dtab.today .dtab-dt{color:#1E2D24;font-weight:800;}
+.dtab.today .dtab-pct{color:#3D6B4A;}
 
 .dtab.sel{
   background:rgba(47,74,54,.15);
@@ -372,12 +377,12 @@ html,body{
 .dtab.sel .dtab-pct{color:#3D6B4A;}
 
 .dtab.today.sel{
-  background:#1E2D24;
-  border-color:#2F4A36;
-  box-shadow:0 2px 12px rgba(30,45,36,.25);
+  background:rgba(30,45,36,.08);
+  border:2px solid #1E2D24;
+  box-shadow:0 0 0 1px rgba(30,45,36,.15);
 }
-.dtab.today.sel .dtab-nm{color:rgba(255,255,255,.75);}
-.dtab.today.sel .dtab-dt{color:#F0E8D8;font-weight:800;}
+.dtab.today.sel .dtab-nm{color:#2F4A36;font-weight:800;}
+.dtab.today.sel .dtab-dt{color:#1E2D24;font-weight:800;}
 
 .dtab.sun .dtab-nm,.dtab.sun .dtab-dt{color:rgba(139,26,26,.55);}
 .dtab.sel.sun .dtab-nm,.dtab.sel.sun .dtab-dt{color:#8B1A1A;}
@@ -8661,10 +8666,8 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
     } else if(_sStamped){
       /* stamped: 응원 있든 없든 무조건 버튼 먼저 → 누르면 도장 */
       if(!_cheerPointClaimedForStamp){
-        const _pts = _hasPartnerCheer ? '+2p' : '+0p';
         soloCheerSlotHtml = `<div style="margin-top:8px;">${_hasPartnerCheer ? _cheerBox : ''}
-          <button class="cheer-point-claim-btn" data-qi="${oi}" style="width:100%;margin-top:${_hasPartnerCheer?'6':'0'}px;padding:12px;background:linear-gradient(135deg,#F5E020,#E8C800);border:2px solid #C8A800;border-radius:11px;color:#3A2E00;font-family:var(--kr);font-size:11px;font-weight:900;cursor:pointer;letter-spacing:.3px;box-shadow:0 3px 14px rgba(230,190,0,.35);">⭐ 응원포인트 받기 ${_pts}</button>
-          <button class="slot-cert-view-btn" data-qi="${oi}" style="width:100%;margin-top:6px;padding:9px;background:rgba(47,74,54,.12);border:1.5px solid rgba(47,74,54,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(30,45,36,.85);cursor:pointer;text-align:center;">📋 인증보기</button>
+          <button class="slot-cert-view-btn" data-qi="${oi}" style="width:100%;margin-top:${_hasPartnerCheer?'6':'0'}px;padding:9px;background:rgba(47,74,54,.12);border:1.5px solid rgba(47,74,54,.28);border-radius:9px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(30,45,36,.85);cursor:pointer;text-align:center;">📋 인증보기</button>
         </div>`;
       } else {
         /* 수령 완료 → 받기완료 배지 + 응원메시지 유지 + 내일 예약 버튼 */
