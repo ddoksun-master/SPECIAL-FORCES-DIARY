@@ -8109,11 +8109,8 @@ function renderQ(){
     ds.innerHTML=`<div class="done-title">🎉 작전성공!</div><div class="done-sub">금일 작전을 모두 수행했습니다</div>`;
   }else{ds.style.display='none';}
   updateHUD();
-  /* 아침점호 슬롯 재렌더 */
-  if(typeof _mrLoaded!=='undefined'){
-    if(_mrLoaded) _renderMorningSlot();
-    else reloadMorningRoll();
-  }
+  /* 아침점호 슬롯 재렌더 — 항상 reloadMorningRoll로 날짜 동기화 */
+  if(typeof reloadMorningRoll==='function') reloadMorningRoll();
   /* ── 응원메시지 카드 (아침점호 위 별도 카드로 표시) ── */
   _renderCheerMsgCard();
   /* 이슈10,11: 당일기준 작전기록 요약 */
@@ -10153,6 +10150,7 @@ async function submitCheerMsg(){
     });
 
     _setFlag(_cheerDailyKey);
+    try{ localStorage.setItem('cheerMsg_'+_cheerDailyKey, msg); }catch(e){}
   }catch(e){ showToast('❌ 전송 실패'); closeCheerMsgPopup(); return; }
 
   closeCheerMsgPopup();
