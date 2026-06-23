@@ -8962,7 +8962,6 @@ async function addPoints(pts){
   const next = cur + pts;
   await saveMyPoints(next);
   _refreshShopPoints(next);
-  showToast(`+${pts}P 적립! 총 ${next}P`);
   return next;
 }
 
@@ -9824,10 +9823,16 @@ async function _doDeleteData(){
         _fbDb.ref('users/'+MY_UID+'/certDayPoints').remove(),
         _fbDb.ref('users/'+MY_UID+'/coopPoints').remove(),
         _fbDb.ref('users/'+MY_UID+'/baseball').remove(),
+        _fbDb.ref('users/'+MY_UID+'/cheerMsg').remove(),
+        _fbDb.ref('users/'+MY_UID+'/bbSpecialAUnlocked').remove(),
+        _fbDb.ref('users/'+MY_UID+'/badgeCount').remove(),
+        _fbDb.ref('users/'+MY_UID+'/templateData').remove(),
         _fbDb.ref(`userData/${MY_UID}/shopPoints`).remove(),
-        _fbDb.ref(`userData/${MY_UID}/pxPoints`).remove(),
+        _fbDb.ref(`userData/${MY_UID}/shopPoints`).remove(),
         _fbDb.ref(`userData/${MY_UID}/pointReceiptLog`).remove(),
         _fbDb.ref(`userData/${MY_UID}/shopItems`).remove(),
+        _fbDb.ref('coopNotif/'+MY_UID).remove(),
+        _fbDb.ref('reserveNotif/'+MY_UID).remove(),
       ];
       /* 팀작전 공유 룸도 삭제 */
       if(partnerData&&partnerData.uid){
@@ -9835,6 +9840,16 @@ async function _doDeleteData(){
         _rmJobs.push(_fbDb.ref('teamMissions/'+_roomKey).remove());
       }
       await Promise.all(_rmJobs);
+      /* localStorage도 플래그 키 전부 제거 */
+      try{
+        const _keysToRemove=[];
+        for(let i=0;i<localStorage.length;i++){
+          const k=localStorage.key(i);
+          if(k&&(k.includes(MY_UID)||k.startsWith('cheer')||k.startsWith('reserve')))
+            _keysToRemove.push(k);
+        }
+        _keysToRemove.forEach(k=>localStorage.removeItem(k));
+      }catch(e){}
     }catch(e){}
     showToast('✅ 데이터 삭제 완료 (닉네임 유지)');
     sessionStorage.clear();
@@ -17484,7 +17499,7 @@ async function _bbRefreshUI(){
     if(inputArea) inputArea.style.display='none';
     _bbShowResult(last.s===4?'solved':'fail', last.guess, last.s, last.b);
     if(last.s!==4 && !extraUsed){
-      const pPath=MY_UID?`userData/${MY_UID}/pxPoints`:null;
+      const pPath=MY_UID?`userData/${MY_UID}/shopPoints`:null;
       if(pPath){
         const snap=await _fbGet(pPath);
         const pts=snap&&snap.exists()?(snap.val()||0):0;
@@ -17535,13 +17550,14 @@ function bbDigitKey(e,idx){
 
 /* ── 추가 기회 1P 사용 ── */
 async function bbUseExtraChance(){
-  const pPath=MY_UID?`userData/${MY_UID}/pxPoints`:null;
+  const pPath=MY_UID?`userData/${MY_UID}/shopPoints`:null;
   if(!pPath){ showToast('로그인이 필요합니다'); return; }
   const snap=await _fbGet(pPath);
   const pts=snap&&snap.exists()?(snap.val()||0):0;
   if(pts<1){ showToast('⭐ 포인트 부족 (1P 필요)'); return; }
   if(!confirm('보급상점 1P를 사용해 추가 기회를 얻을까요?')) return;
-  await _fbSet(pPath, pts-1);
+  await addPoints(-1);
+  await _savePxPointLog(selDate,'야구 추가기회 사용',-1);
   await _fbUpdate(BB_PATH(), { extraUsedDate:selDate });
   document.getElementById('bbExtraBtn').style.display='none';
   document.getElementById('bbResultArea').style.display='none';
@@ -17600,7 +17616,7 @@ async function bbSubmitGuess(){
       /* 이후 해독 → 5~10P (이슈13: 포인트는 적립하되 pxPointLog 기록 없음) */
       const bonusPt=Math.floor(Math.random()*5)+1;
       await addPoints(bonusPt);
-      /* 이슈13: _savePxPointLog 호출 제거 */
+      await _savePxPointLog(selDate,'야구 암호 해독',bonusPt);
       const subEl=document.getElementById('bbResultSub');
       if(subEl) subEl.innerHTML+=`<br><br><span style="color:rgba(255,215,100,.95);font-size:14px;font-weight:900;">+${bonusPt}P 보급상점 적립!</span>`;
       showToast(`🎯 암호 해독! +${bonusPt}P 보급상점!`);
@@ -17614,7 +17630,7 @@ async function bbSubmitGuess(){
     _bbRefreshHistoryOnly(hist);
     /* 추가기회 버튼 */
     if(!extraUsed){
-      const pPath2=MY_UID?`userData/${MY_UID}/pxPoints`:null;
+      const pPath2=MY_UID?`userData/${MY_UID}/shopPoints`:null;
       if(pPath2){
         const snap2=await _fbGet(pPath2);
         const pts2=snap2&&snap2.exists()?(snap2.val()||0):0;
