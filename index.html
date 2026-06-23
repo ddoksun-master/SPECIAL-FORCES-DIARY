@@ -8134,9 +8134,10 @@ function _renderDiaryDayRecord(){
 
   /* 아침점호 포함 */
   let _mrItem = null;
-  if(isToday && _safeMrData && _safeMrData.hour){
+  const _mrSubscribedForDate = (typeof _mrCurrentDate !== 'undefined') && _mrCurrentDate === date;
+  if(_mrSubscribedForDate && _safeMrData && _safeMrData.hour){
     _mrItem = { ..._safeMrData, name:`아침점호 ☀️ ${_safeMrData.hour}시`, category:'morning', mode:_safeMrData.mode||'solo', _isMorning:true };
-  } else if(!isToday){
+  } else if(!_mrSubscribedForDate){
     const _mrCacheKey = '_mrHistCache_'+date;
     if(window[_mrCacheKey]) _mrItem = window[_mrCacheKey];
     else if(_fbDb && MY_UID && !window[_mrCacheKey+'_loading']){
@@ -8212,11 +8213,12 @@ function _renderDiaryDayRecord(){
 
   /* 상대방 퀘스트 */
   let partnerCoopItems=[], partnerSoloItems=[], partnerMrItem=null;
+  const _partnerSubscribedForDate = (typeof _subscribedPartnerPath !== 'undefined') && _subscribedPartnerPath && _subscribedPartnerPath.includes('/'+date+'/');
   if(partnerData&&partnerData.uid){
-    if(isToday && _partnerQuests && _partnerQuests.length>0){
+    if(_partnerSubscribedForDate && _partnerQuests && _partnerQuests.length>=0){
       partnerCoopItems = _partnerQuests.filter(q=>q.mode==='coop');
       partnerSoloItems = _partnerQuests.filter(q=>q.mode!=='coop');
-    } else if(!isToday){
+    } else if(!_partnerSubscribedForDate){
       const pCacheKey='_partnerHist_'+date;
       if(window[pCacheKey]){
         partnerCoopItems = window[pCacheKey].filter(q=>q.mode==='coop');
@@ -8234,9 +8236,9 @@ function _renderDiaryDayRecord(){
     }
     /* 상대 아침점호 */
     const _safePMR = (typeof window._partnerMorningRoll !== 'undefined') ? window._partnerMorningRoll : null;
-    if(isToday && _safePMR && _safePMR.hour){
+    if(_partnerSubscribedForDate && _safePMR && _safePMR.hour){
       partnerMrItem = _safePMR;
-    } else if(!isToday){
+    } else if(!_partnerSubscribedForDate){
       const pMrKey='_pMrHistCache_'+date;
       if(window[pMrKey]) partnerMrItem = window[pMrKey].hour ? window[pMrKey] : null;
       else if(_fbDb && !window[pMrKey+'_loading']){
@@ -8482,28 +8484,21 @@ function _renderDiaryDayRecord(){
     btn.addEventListener('click',async()=>{
       const d=btn.dataset.date||date;
       const _cheerDailyKey=`cheerSentToday_${MY_UID}_${d}`;
-      /* flag 해제 → 오늘의 응원을 전하세요 💜 버튼으로 복원 */
+      /* flag 해제 */
       _unsetFlag(_cheerDailyKey);
       try{ localStorage.removeItem('cheerMsg_'+_cheerDailyKey); }catch(e){}
-      /* 상대방 퀘스트에서 내 cheerMsg 제거 */
+      /* 상대방 Firebase cheerMsg 경로 초기화 */
       if(partnerData&&partnerData.uid){
-        try{
-          const _pqs=_partnerQuests||[];
-          const _ppath=_questPath(partnerData.uid,d);
-          const _psnap=await _fbGet(_ppath);
-          if(_psnap.exists()){
-            const _parr=_psnap.val()||[];
-            let _changed=false;
-            _parr.forEach(pq=>{
-              if(pq.cheerFromNick===(myNickname||'나')){
-                pq.cheerMsg=null; pq.cheerFromNick=null; _changed=true;
-              }
-            });
-            if(_changed) await _fbSet(_ppath,_parr);
-          }
-        }catch(e){}
+        try{ await _fbDb.ref(`users/${partnerData.uid}/cheerMsg/${d}`).remove(); }catch(e){}
       }
-      _renderDiaryDayRecord();
+      /* 수정 모드로 팝업 바로 열기 */
+      _cheerEditMode = true;
+      const popup=document.getElementById('cheerMsgPopup');
+      if(popup){
+        document.getElementById('cheerTargetName').textContent=`(수정) 💜 ${partnerData&&partnerData.nickname||'상대방'}에게 응원 메시지를 보내보세요`;
+        document.getElementById('cheerMsgInput').value='';
+        popup.style.display='flex';
+      }
     });
   });
 
@@ -10112,17 +10107,20 @@ function _doLogout(){
   localStorage.removeItem('testerKey');
   location.reload();
 }
+let _cheerEditMode = false; /* 수정 모드 플래그 */
 async function submitCheerMsg(){
   if(_assertNotBlackout()) return;
   const msg = (document.getElementById('cheerMsgInput').value||'').trim();
   if(!msg){showToast('응원 메시지를 입력하세요');return;}
 
   const _cheerDailyKey = `cheerSentToday_${MY_UID}_${selDate}`;
-  if(_getFlag(_cheerDailyKey)){
+  if(!_cheerEditMode && _getFlag(_cheerDailyKey)){
     showToast('💜 오늘은 이미 응원메시지를 전송했습니다 (하루 1회)');
     closeCheerMsgPopup();
     return;
   }
+  const _isEdit = _cheerEditMode;
+  _cheerEditMode = false; /* 사용 후 초기화 */
   if(!partnerData||!partnerData.uid){closeCheerMsgPopup();return;}
 
   try{
@@ -10135,19 +10133,20 @@ async function submitCheerMsg(){
       sentAt: Date.now()
     });
 
-    /* 발신자 +2P */
-    await addPoints(2);
-    await _savePxPointLog(selDate,'응원메시지 전송',2);
-
-    /* 수신자에게 알림 — 수신 즉시 +2P 처리 */
-    await _fbSet(`coopNotif/${partnerData.uid}/${MY_UID}_cheer_${Date.now()}`,{
-      type:'cheer_received',
-      fromUid: MY_UID,
-      fromNick: myNickname||'상대방',
-      msg,
-      questDate: selDate,
-      createdAt: Date.now()
-    });
+    /* 발신자 +2P — 수정이면 지급 안 함 */
+    if(!_isEdit){
+      await addPoints(2);
+      await _savePxPointLog(selDate,'응원메시지 전송',2);
+      /* 수신자에게 알림 — 수신 즉시 +2P 처리 */
+      await _fbSet(`coopNotif/${partnerData.uid}/${MY_UID}_cheer_${Date.now()}`,{
+        type:'cheer_received',
+        fromUid: MY_UID,
+        fromNick: myNickname||'상대방',
+        msg,
+        questDate: selDate,
+        createdAt: Date.now()
+      });
+    }
 
     _setFlag(_cheerDailyKey);
     try{ localStorage.setItem('cheerMsg_'+_cheerDailyKey, msg); }catch(e){}
@@ -10156,7 +10155,7 @@ async function submitCheerMsg(){
   closeCheerMsgPopup();
   renderPartnerOps&&renderPartnerOps();
   if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord();
-  showToast('💜 응원 완료! 보급상점 +1P');
+  showToast(_isEdit ? '💜 응원 수정 완료!' : '💜 응원 완료! 보급상점 +2P');
 }
 
 /* 같이하기 → 내 퀘스트로 복사 등록 */
@@ -10343,7 +10342,7 @@ async function acceptOpsTogether(){
         const _certFrom = new Date(`${_mrTargetDate}T${String(_hour).padStart(2,'0')}:00:00`).getTime();
         await _fbSet(`users/${MY_UID}/morningRoll/${_mrTargetDate}`, {
           hour: _hour,
-          registeredAt: now,
+          registeredAt: isFutureDate ? _reg04 : now,
           completed: false,
           stamped: false,
           certAvailableAt: _certFrom,
@@ -17181,13 +17180,15 @@ async function confirmMorningReg(){
   const existing = await _fbGet(_mrPath(targetDate));
   if(existing.exists()){ showToast('이미 아침점호가 등록돼 있습니다'); return; }
   const certFrom = new Date(targetDate+`T${String(h).padStart(2,'0')}:00:00`).getTime();
+  const isFutureDate = targetDate > todayStr;
+  const _reg04 = new Date(targetDate+'T04:00:00').getTime();
   const data = {
     hour: h,
-    registeredAt: now,
+    registeredAt: isFutureDate ? _reg04 : now,
     completed: false,
     stamped: false,
     certAvailableAt: certFrom,
-    reserved: _isForTomorrow,
+    reserved: _isForTomorrow || isFutureDate,
     cheerMsg: null,
     cheerFromNick: null,
     certMode: null,
