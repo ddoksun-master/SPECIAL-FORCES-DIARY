@@ -1409,13 +1409,13 @@ const TESTER_UIDS={A:'tester_uid_A',B:'tester_uid_B'};
 const TESTER_NAMES={A:'테스터A',B:'테스터B'};
 let _testerKey=localStorage.getItem('testerKey')||null;
 
-function _fbRef(path){ return _fbDb.ref(path); }
-function _fbSet(path,val){ return _fbDb.ref(path).set(val); }
-function _fbGet(path){ return _fbDb.ref(path).get(); }
-function _fbUpdate(path,val){ return _fbDb.ref(path).update(val); }
-function _fbRemove(path){ return _fbDb.ref(path).remove(); }
-function _fbPush(path,val){ return _fbDb.ref(path).push(val); }
-function _fbOn(path,cb){ _fbDb.ref(path).on('value', cb); }
+function _fbRef(path){ if(!_fbDb||!path) return null; return _fbDb.ref(path); }
+function _fbSet(path,val){ if(!_fbDb||!path) return Promise.resolve(); return _fbDb.ref(path).set(val); }
+function _fbGet(path){ if(!_fbDb||!path) return Promise.resolve({exists:()=>false,val:()=>null}); return _fbDb.ref(path).get(); }
+function _fbUpdate(path,val){ if(!_fbDb||!path) return Promise.resolve(); return _fbDb.ref(path).update(val); }
+function _fbRemove(path){ if(!_fbDb||!path) return Promise.resolve(); return _fbDb.ref(path).remove(); }
+function _fbPush(path,val){ if(!_fbDb||!path) return Promise.resolve(); return _fbDb.ref(path).push(val); }
+function _fbOn(path,cb){ if(!_fbDb||!path) return; _fbDb.ref(path).on('value', cb); }
 
 /* ── UID (불변) ── */
 function _nicknameToUid(nick){
@@ -2459,11 +2459,22 @@ function updateGemBoxes(){
   const oppM=partnerData?partnerData.money:0;
   const activeN = window.teamData ? window.teamData.activeGemN : null;
 
+  /* 협동포인트 — 달성일 기준 현재 사이클 범위 내 포인트만 합산 */
+  const {start:_cpStart,end:_cpEnd}=getCycleRange();
+  const _myCP = Object.entries(_myDayPoints||{}).filter(([d])=>d>=_cpStart&&d<=_cpEnd).reduce((a,[,v])=>a+(v||0),0);
+  const _oppCP = Object.entries(_partnerDayPoints||{}).filter(([d])=>d>=_cpStart&&d<=_cpEnd).reduce((a,[,v])=>a+(v||0),0);
+
   /* 상대 금액 표시 항상 갱신 */
   const oppMoneyEl=document.getElementById('teamOppMoney');
   if(oppMoneyEl) oppMoneyEl.textContent=oppM.toLocaleString()+'원';
   const myMoneyEl=document.getElementById('teamMyMoney');
   if(myMoneyEl) myMoneyEl.textContent=myM.toLocaleString()+'원';
+
+  /* 협동포인트 표시 갱신 */
+  const myCoopPtsEl=document.getElementById('vsMyCoopPts');
+  if(myCoopPtsEl) myCoopPtsEl.textContent=_myCP+'P';
+  const oppCoopPtsEl=document.getElementById('vsOppCoopPts');
+  if(oppCoopPtsEl) oppCoopPtsEl.textContent=_oppCP+'P';
 
   /* 닉네임 레이블 갱신 */
   const myNickLbl=document.getElementById('vsMyNickLabel');
