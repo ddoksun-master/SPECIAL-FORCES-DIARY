@@ -2475,8 +2475,8 @@ function updateGemBoxes(){
   const vsOppNickEl=document.getElementById('vsOppNick');
   if(vsOppNickEl) vsOppNickEl.textContent=(partnerData&&partnerData.nickname)||'상대';
 
-  /* 특수작전 1~3 — money 기반 해금 */
-  [1,2,3].forEach(n=>{
+  /* 특수작전 1~4 — money 기반 해금 */
+  [1,2,3,4].forEach(n=>{
     const ok = _tmUnlocked(n);
     const th = TM[n] ? TM[n].th : 0;
     const lk=document.getElementById('gemLock'+n);
@@ -9013,7 +9013,7 @@ async function _grantCertPoints(certMode){
   if(partnerData&&partnerData.uid&&_fbDb){
     await new Promise(res=>{
       const _check=()=>{
-        const allSubDone=[1,2,3].every(n=>window['tmSub'+n]);
+        const allSubDone=[1,2,3,4].every(n=>window['tmSub'+n]);
         if(allSubDone){ res(); } else { setTimeout(_check,150); }
       };
       _check();
@@ -12981,7 +12981,7 @@ function renderStatsRevenueCard(){
     }
     /* 구 completedMissions (중복 방지) */
     cm.slice(-3).reverse().forEach(m=>{
-      const alreadyInHQ=[1,2,3].some(n=>(window['tmMyReward'+n]||0)>0 && m.n===n);
+      const alreadyInHQ=[1,2,3,4].some(n=>(window['tmMyReward'+n]||0)>0 && m.n===n);
       if(!alreadyInHQ) detailLines.push(`<div style="font-family:var(--kr);font-size:9px;color:rgba(200,168,75,.92);margin-top:2px;">✅ 특수작전${m.n}: +${(m.reward||0).toLocaleString()}원</div>`);
     });
     tmDetail.innerHTML=detailLines.join('');
@@ -13864,7 +13864,11 @@ function mpUpdateAbGemBox(n, state){
 
 /* 연결되면 AB 구독 시작 — acceptConnectRequest / 기존 리스너에서 호출 */
 function mpStartAllAbSubscriptions(){
-  [1,2,3].forEach(n=> mpSubscribeAb(n));
+  [1,2,3,4].forEach(n=>{
+    /* tbd 타입은 Firebase 구독 불필요 */
+    if(TM[n] && TM[n].thType==='tbd') return;
+    mpSubscribeAb(n);
+  });
 }
 
 /* 기존 빈 함수 유지 (호출부 에러 방지) */
@@ -13915,7 +13919,14 @@ const TM = {
        border:'rgba(251,191,36,.55)',glow:'rgba(251,191,36,.2)',
        bgCard:'rgba(40,25,2,.95)',   bgHeader:'linear-gradient(135deg,rgba(55,34,3,.9),rgba(35,20,2,.95))',
        topLine:'linear-gradient(90deg,transparent,rgba(251,191,36,.7),transparent)',
-       box:'rgba(251,191,36,.6)',  rewards:[20000,30000,40000] }
+       box:'rgba(251,191,36,.6)',  rewards:[20000,30000,40000] },
+  /* 스페셜임무B: 핑크 — 미정 (항상 잠금 유지) */
+  4: { th:Infinity, label:'스페셜임무B', path:'tm_special_b', thType:'tbd',
+       color:'rgba(244,114,182,1)',  colorDim:'rgba(236,72,153,1)',
+       border:'rgba(244,114,182,.45)',glow:'rgba(244,114,182,.15)',
+       bgCard:'rgba(40,8,28,.95)',   bgHeader:'linear-gradient(135deg,rgba(55,10,38,.9),rgba(35,5,25,.95))',
+       topLine:'linear-gradient(90deg,transparent,rgba(244,114,182,.6),transparent)',
+       box:'rgba(244,114,182,.5)',  rewards:[20000,30000,40000] }
 };
 
 const TM_QUESTIONS = [
@@ -13947,6 +13958,9 @@ function _tmMyM(){ return window.calcTotalPersonalMoney ? calcTotalPersonalMoney
 function _tmOppM(){ return partnerData ? (partnerData.money||0) : 0; }
 function _tmUnlocked(n){
   const cfg=TM[n];
+  if(!cfg) return false;
+  /* tbd: 미정 — 항상 잠금 */
+  if(cfg.thType==='tbd') return false;
   /* 스페셜임무A(n===3): 야구게임 4S 달성 여부로 판단 */
   if(n===3 || cfg.thType==='baseball'){
     return !!(window._bbSpecialAUnlocked);
@@ -13967,6 +13981,7 @@ function _tmUnlocked(n){
 ────────────────────────────────────────── */
 function tmBuildCard(n){
   const cfg  = TM[n];
+  if(!cfg || cfg.thType==='tbd') return;
   const isSpecial = n===3;
   const icon = isSpecial ? '💎' : '🔒';
   const lockedBg = isSpecial
@@ -14752,6 +14767,9 @@ function tmCloseReward(){
    Firebase 구독
 ────────────────────────────────────────── */
 function tmSubscribe(n){
+  const cfg = TM[n];
+  /* tbd 타입은 구독 없음 */
+  if(!cfg || cfg.thType==='tbd') return;
   const path = _tmPath(n);
   if(!path||!FB_READY||!_fbDb) return;
   if(window['tmSub'+n]) return;
@@ -14803,15 +14821,17 @@ function teamQAUpdateBox(){
 function teamQAOnConnect(){
   const wrap=document.getElementById('tmCardsWrap');
   if(wrap) wrap.style.display='none';
-  [1,2,3].forEach(n=>{
+  [1,2,3,4].forEach(n=>{
     window['tmSub'+n]=false;
     window['tmUnlockToasted'+n]=false;
+    /* tbd 타입은 Firebase 구독/카드 빌드 불필요 */
+    if(TM[n] && TM[n].thType==='tbd') return;
     tmBuildCard(n);
     tmSubscribe(n);
     tmRender(null,n);
   });
   const pName=_tmPN();
-  [1,2,3].forEach(n=>{
+  [1,2,3,4].forEach(n=>{
     const ol=document.getElementById('tmOppNameLock'+n);
     if(ol) ol.textContent=pName;
   });
@@ -14832,7 +14852,7 @@ function teamQAOnDisconnect(){
   if(wrap) wrap.style.display='none';
   const hq=document.getElementById('tmHQWrap');
   if(hq) hq.style.display='none';
-  [1,2,3].forEach(n=>{ window['tmSub'+n]=false; window['tmUnlockToasted'+n]=false; });
+  [1,2,3,4].forEach(n=>{ window['tmSub'+n]=false; window['tmUnlockToasted'+n]=false; });
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -15004,7 +15024,7 @@ function tmHQRenderHome(){
   if(!list) return;
 
   let unlockedCnt=0, doneCnt=0;
-  list.innerHTML = [1,2,3].map(n=>{
+  list.innerHTML = [1,2,3,4].map(n=>{
     const cfg=TM[n];
     const unlocked=_tmUnlocked(n);
     const done=!!window['tmRewardDone'+n];
@@ -15054,7 +15074,7 @@ function tmHQRenderHome(){
             ${badgeHtml}
           </div>
           ${done ? `<div style="font-family:var(--kr);font-size:9px;color:${cfg.color};">보상 획득 완료</div>` : `
-          <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.75);margin-bottom:6px;">${unlocked?'임무 진행 가능':cfg.thType==='baseball'?'암호점호 4S 달성':'해제 조건: '+(cfg.thType==="coop"?'20p~60p 랜덤':(cfg.th/10000).toFixed(0)+"만원")+' 달성'}</div>
+          <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.75);margin-bottom:6px;">${unlocked?'임무 진행 가능':cfg.thType==='tbd'?'🚧 준비중':cfg.thType==='baseball'?'암호점호 4S 달성':'해제 조건: '+(cfg.thType==="coop"?'20p~60p 랜덤':(cfg.th/10000).toFixed(0)+"만원")+' 달성'}</div>
           
           <div style="height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-bottom:2px;">
             <div style="height:100%;width:${myPct}%;background:linear-gradient(90deg,${cfg.color},${cfg.colorDim});border-radius:2px;transition:width .5s;"></div>
@@ -15100,7 +15120,7 @@ async function tmHQRenderRewardPanel(){
   const labels = {1:'특수임무1',2:'특수임무2',3:'스페셜임무A'};
 
   /* 각 임무 결과 로드 */
-  const items = await Promise.all([1,2,3].map(async n=>{
+  const items = await Promise.all([1,2,3,4].map(async n=>{
     const cfg = TM[n];
     const done = !!window['tmRewardDone'+n];
     const unlocked = _tmUnlocked(n);
