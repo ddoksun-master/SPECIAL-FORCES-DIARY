@@ -16929,16 +16929,14 @@ function _renderMorningSlot(){
 
   const canCert   = now >= certFrom && now <= certTo && !d.completed;
   const tooEarly  = now < certFrom && !d.completed;
-  const tooLate   = now > certTo   && !d.completed;
-  const failed    = now > day2359   && !d.completed;
+  const failed    = now > certTo   && !d.completed;
+  const tooLate   = false; /* failed로 통합 */
   const done      = !!d.completed;
 
   /* 상태 배지 */
   let statusBadge = '';
   if(done)       statusBadge = '';
-  else if(failed) statusBadge = `<span style="font-family:var(--kr);font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(139,26,26,.12);color:#8B1A1A;border:1px solid rgba(139,26,26,.28);">❌ 실패</span>`;
-  /* 인증가능 배지 제거됨 */
-  else            statusBadge = '';
+  else           statusBadge = '';
 
   /* 응원 메시지 */
   const myNick = myNickname||'나';
