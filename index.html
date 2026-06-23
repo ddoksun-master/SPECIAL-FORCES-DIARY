@@ -13920,8 +13920,8 @@ const TM = {
        bgCard:'rgba(30,8,60,.95)',   bgHeader:'linear-gradient(135deg,rgba(42,12,80,.9),rgba(25,6,50,.95))',
        topLine:'linear-gradient(90deg,transparent,rgba(167,139,250,.7),transparent)',
        box:'rgba(167,139,250,.5)', rewards:[20000,30000,40000] },
-  /* 스페셜임무A: 골드 — 협동포인트 달성 시 개방 */
-  3: { th:20,    label:'스페셜임무A', path:'tm_special_a', thType:'coop',
+  /* 스페셜임무A: 골드 — 기상미션 야구게임 첫 4S 달성 시 해금 */
+  3: { th:0,    label:'스페셜임무A', path:'tm_special_a', thType:'baseball',
        color:'rgba(251,191,36,1)',   colorDim:'rgba(245,158,11,1)',
        border:'rgba(251,191,36,.55)',glow:'rgba(251,191,36,.2)',
        bgCard:'rgba(40,25,2,.95)',   bgHeader:'linear-gradient(135deg,rgba(55,34,3,.9),rgba(35,20,2,.95))',
@@ -13959,6 +13959,8 @@ function _tmOppM(){ return partnerData ? (partnerData.money||0) : 0; }
 function _tmUnlocked(n){
   const cfg=TM[n];
   if(!cfg) return false;
+  /* baseball: 야구게임 첫 4S 달성 여부로 판단 */
+  if(cfg.thType==='baseball') return !!(window._bbSpecialAUnlocked);
   if(cfg.thType==='coop'){
     const myCP=Object.values(_myDayPoints||{}).reduce((a,b)=>a+b,0);
     const oppCP=window._partnerTotalPts||0;
@@ -15065,14 +15067,14 @@ function tmHQRenderHome(){
             ${badgeHtml}
           </div>
           ${done ? `<div style="font-family:var(--kr);font-size:9px;color:${cfg.color};">보상 획득 완료</div>` : `
-          <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.75);margin-bottom:6px;">${unlocked?'임무 진행 가능':cfg.thType==='coop'?'해제 조건: 20p~60p 랜덤 달성':'해제 조건: '+(cfg.th/10000).toFixed(0)+'만원 달성'}</div>
-          
+          <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.75);margin-bottom:6px;">${unlocked?'임무 진행 가능':cfg.thType==='baseball'?'암호점호 4S 달성 시 해금':cfg.thType==='coop'?'해제 조건: 20p~60p 랜덤 달성':'해제 조건: '+(cfg.th/10000).toFixed(0)+'만원 달성'}</div>
+          ${cfg.thType!=='baseball'?`
           <div style="height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-bottom:2px;">
             <div style="height:100%;width:${myPct}%;background:linear-gradient(90deg,${cfg.color},${cfg.colorDim});border-radius:2px;transition:width .5s;"></div>
           </div>
           <div style="height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;">
             <div style="height:100%;width:${oppPct}%;background:${cfg.color.replace('1)','0.45)')};border-radius:2px;transition:width .5s;"></div>
-          </div>`}
+          </div>`:''}` }
         </div>
         ${(!done&&unlocked)?`<div style="padding:0 12px;color:${cfg.color.replace('1)','.5)')};font-size:16px;flex-shrink:0;">›</div>`:''}
       </div>
@@ -15694,8 +15696,79 @@ function tmHQEnter(n){
   _tmHQBoxSel=null;
   const cfg=TM[n];
 
-  /* ★ 스페셜임무(n=3,4) — 특수임무와 동일한 Q&A+보물상자 흐름 */
-  /* 상대방이 박스 선택 후 양쪽 모두 reward_pick 완료 시에만 결과 표시 */
+  /* ★ 스페셜임무A(n=3) — Q&A 없이 바로 보물상자 3개 선택 화면 */
+  if(n===3){
+    if(window['tmRewardDone3']){
+      _tmHQShowView('tmHQResult');
+      _tmHQSetResultCard(3);
+      _tmHQApplyTheme(3);
+      return;
+    }
+    const rpath = _tmPath(3)+'/reward_pick';
+    if(!rpath){ showToast('⚠ 연결 필요'); return; }
+    _fbGet(rpath).then(rsnap=>{
+      const rd = rsnap && rsnap.exists() ? rsnap.val() : {};
+      const ok=_tmOK();
+      window['_tmHQOppPick3'] = rd[ok+'_pick'] !== undefined ? rd[ok+'_pick'] : null;
+      /* box_order: 없으면 2/3/4만원 3개 랜덤 셔플 */
+      if(rd.box_order && Array.isArray(rd.box_order) && rd.box_order.length===3){
+        _tmRewardBoxes = rd.box_order.map(amt=>({amt}));
+      } else {
+        const shuffled = _tmShuffleArray([20000,30000,40000]);
+        _tmRewardBoxes = shuffled.map(amt=>({amt}));
+        _fbUpdate(rpath, {box_order: shuffled}).catch(()=>{});
+      }
+      /* 이미 내가 선택했으면 대기 화면 */
+      const mk=_tmMK();
+      const myPickIdx = rd[mk+'_pick'];
+      if(myPickIdx !== undefined){
+        _tmHQShowView('tmHQWaiting');
+        _tmHQSetWaitCard(3, '선택완료', {});
+        _tmHQApplyTheme(3);
+        _tmHQSubForComplete(3);
+        return;
+      }
+      /* 바로 상세 화면 — Q&A 숨기고 보물상자만 */
+      _tmHQShowView('tmHQDetail');
+      _tmHQApplyTheme(3);
+      /* 질문 영역 숨김 */
+      const qbox=document.getElementById('tmHQQBox');
+      if(qbox) qbox.style.display='none';
+      /* 답글 영역 숨김 */
+      const myInput=document.getElementById('tmHQMyInput');
+      if(myInput) myInput.style.display='none';
+      const oppBox=document.getElementById('tmHQOppBox');
+      if(oppBox) oppBox.style.display='none';
+      /* 타이틀 */
+      const title=document.getElementById('tmHQDetailTitle');
+      if(title) title.textContent='스페셜임무A';
+      /* 안내 문구 */
+      const qt=document.getElementById('tmHQQText');
+      if(qt){ qt.closest && qt.closest('#tmHQQBox') ? null : null; }
+      /* 보물상자 렌더 */
+      _tmHQRenderBoxes(null);
+      /* 저장 버튼 초기화 */
+      tmHQCheckReady();
+      _tmHQSubForOppBox(3);
+    }).catch(()=>{
+      /* fallback: 바로 상자 화면 */
+      const shuffled = _tmShuffleArray([20000,30000,40000]);
+      _tmRewardBoxes = shuffled.map(amt=>({amt}));
+      _tmHQShowView('tmHQDetail');
+      _tmHQApplyTheme(3);
+      const qbox=document.getElementById('tmHQQBox');
+      if(qbox) qbox.style.display='none';
+      const myInput=document.getElementById('tmHQMyInput');
+      if(myInput) myInput.style.display='none';
+      const oppBox=document.getElementById('tmHQOppBox');
+      if(oppBox) oppBox.style.display='none';
+      const title=document.getElementById('tmHQDetailTitle');
+      if(title) title.textContent='스페셜임무A';
+      _tmHQRenderBoxes(null);
+      tmHQCheckReady();
+    });
+    return;
+  }
 
   _fbGet(_tmPath(n)).then(snap=>{
     const d=snap.exists()?snap.val():{};
@@ -16374,13 +16447,14 @@ function tmHQCheckReady(){
   const myDispVisible=document.getElementById('tmHQMyDisplay')?.style.display!=='none';
   const ansVal = ta ? ta.value.trim() : '';
   const hasAns = myDispVisible || ansVal.length>0;
-  const isSpecial=false;
-  const hasSel=isSpecial?true:(_tmHQBoxSel!==null);
+  /* 스페셜A(n=3)는 답글 불필요 */
+  const isSpecialA=(n===3);
+  const hasSel=(_tmHQBoxSel!==null);
   const saved=!!window['tmHQMySaved'+n];
 
-  /* 10글자 미만 힌트 (미션 1~3, 미저장 상태) */
+  /* 10글자 미만 힌트 (미션 1~2, 미저장 상태) */
   const hintEl = document.getElementById('tmHQAnsHint');
-  if(hintEl && !isSpecial && !myDispVisible){
+  if(hintEl && !isSpecialA && !myDispVisible){
     if(ansVal.length > 0 && ansVal.length < 10){
       hintEl.textContent = `⚠ 최소 10글자 이상 작성해주세요 (${ansVal.length}/10)`;
       hintEl.style.display='block';
@@ -16397,8 +16471,8 @@ function tmHQCheckReady(){
     btn.style.borderColor='rgba(255,255,255,.1)';
     return;
   }
-  /* 미션 1~3: 10글자 이상이어야 ready */
-  const ansOk = isSpecial ? hasAns : (myDispVisible || ansVal.length >= 10);
+  /* 스페셜A: 상자 선택만으로 ready / 나머지: 10글자 + 상자 선택 */
+  const ansOk = isSpecialA ? true : (myDispVisible || ansVal.length >= 10);
   const ready = ansOk && hasSel;
   btn.disabled=!ready;
   btn.style.cursor=ready?'pointer':'not-allowed';
@@ -16423,6 +16497,28 @@ async function tmHQSave(){
   const myDispVisible=document.getElementById('tmHQMyDisplay')?.style.display!=='none';
   const val=myDispVisible?(myDispTxt?.textContent||''):(ta?ta.value.trim():'');
 
+  /* 스페셜A(n=3): 답글 불필요, 상자 선택만 확인 */
+  if(n===3){
+    if(_tmHQBoxSel===null){ showToast('보물상자를 선택해주세요'); return; }
+    const path=_tmPath(3);
+    if(!path){ showToast('⚠ 연결 필요'); return; }
+    const mk=_tmMK();
+    try{
+      const rpath=path+'/reward_pick';
+      const uBox={}; uBox[mk+'_pick']=_tmHQBoxSel;
+      await _fbUpdate(rpath, uBox);
+      window['tmHQMySaved3']=true;
+      window['tmHQMyPickIdx3']=_tmHQBoxSel;
+      _tmHQShowView('tmHQWaiting');
+      _tmHQSetWaitCard(3, '선택완료', {});
+      _tmHQApplyTheme(3);
+      _tmHQSubForComplete(3);
+      tmHQRenderHome();
+      showToast('✅ 보물상자 선택 완료! 상대방을 기다립니다');
+    } catch(e){ showToast('⚠ 저장 실패'); }
+    return;
+  }
+
   if(!val){ showToast('답글을 입력해주세요'); return; }
   if(val.length < 10){ showToast('⚠ 답글은 최소 10글자 이상 작성해주세요'); return; }
   if(_tmHQBoxSel===null){ showToast('보물상자를 선택해주세요'); return; }
@@ -16435,7 +16531,6 @@ async function tmHQSave(){
   const uAns={}; uAns[mk]=val; uAns[mk+'_at']=Date.now(); uAns.question=q;
 
   try{
-    /* n=1,2,3,4 모두 동일: Q&A 저장 + reward_pick에 박스 선택 저장 */
     const rpath=path+'/reward_pick';
     const uBox={}; uBox[mk+'_pick']=_tmHQBoxSel;
     await _fbUpdate(path, uAns);
@@ -16451,7 +16546,6 @@ async function tmHQSave(){
     showToast('✅ 제출 완료! 상대방 수행을 기다립니다');
   } catch(e){ showToast('⚠ 저장 실패'); }
 }
-
 function _tmHQSetWaitCard(n, myAns, d){
   const cfg=TM[n];
   const wt=document.getElementById('tmHQWaitTitle');
@@ -17547,42 +17641,24 @@ function _bbRefreshHistoryOnly(hist){
   }).join('');
 }
 
-/* ── 스페셜임무A 해금 (야구게임 4S → 즉시 팀전 누적보상 적립) ── */
+/* ── 스페셜임무A 해금 (야구게임 첫 4S → 해금 플래그 세팅, 보상은 사령부에서 직접 선택) ── */
 async function _bbUnlockSpecial(){
-  const amounts=[20000,30000,40000];
-  const reward=amounts[Math.floor(Math.random()*amounts.length)];
-  const now=_virtualNow();
-
   try{
-    /* tmMyReward3 에 적립 (사령부 특수·스페셜 임무보상 경로) */
-    window['tmMyReward3'] = reward;
-    window['tmRewardDone3'] = true;
-
-    /* Firebase teamRoom 에 저장 */
-    if(FB_READY && _fbDb && window.partnerData && window.partnerData.uid){
-      const roomPath = window.PATH.teamRoom(MY_UID, partnerData.uid);
-      const rk = 'reward_' + _tmMK();
-      await _fbUpdate(roomPath + '/tm_special_a', { [rk]: reward });
-    }
-
-    /* 스페셜A 해금 플래그 Firebase 저장 */
+    /* 해금 플래그 Firebase 저장 */
     await _fbSet(`users/${MY_UID}/bbSpecialAUnlocked`, true);
     window._bbSpecialAUnlocked = true;
 
-    /* 포인트 수령이력 저장 (이후 4S 시 5~10P 보급상점 적립과 구분하기 위해 기록) */
-    /* 첫 4S는 돈(원)이라 포인트 이력에는 기록 안 함 */
-
-    if(window.renderHist) renderHist();
-    if(window.updateHUD) updateHUD();
+    /* 사령부 목록 갱신 */
+    if(window.tmHQRenderHome) tmHQRenderHome();
+    if(window.updateGemBoxes) updateGemBoxes();
     if(window.renderStatsRevenueCard) renderStatsRevenueCard();
-    if(window.renderTmPanel) renderTmPanel();
 
     /* 결과 메시지 업데이트 */
     const subEl=document.getElementById('bbResultSub');
-    if(subEl) subEl.innerHTML+=`<br><br><span style="color:rgba(255,215,100,.95);font-weight:900;font-size:13px;">⚡ 스페셜임무A 해금!</span><br><span style="color:rgba(255,215,100,.90);font-size:14px;font-weight:900;">+${reward.toLocaleString()}원 임무보상 적립!</span><br><span style="font-size:9px;color:rgba(255,255,255,.4);">사령부 특수·스페셜 임무보상에서 확인</span>`;
-    showToast(`⚡ 스페셜임무A 해금! +${reward.toLocaleString()}원 임무보상 적립!`);
+    if(subEl) subEl.innerHTML+=`<br><br><span style="color:rgba(255,215,100,.95);font-weight:900;font-size:13px;">⚡ 스페셜임무A 해금!</span><br><span style="color:rgba(255,255,255,.75);font-size:11px;">팀작전 사령부에서 보물상자를 선택하세요!</span>`;
+    showToast('⚡ 스페셜임무A 해금! 사령부에서 보물상자를 선택하세요!');
   }catch(e){
-    showToast('스페셜임무A 보상 적립 오류');
+    showToast('스페셜임무A 해금 오류');
   }
 }
 
