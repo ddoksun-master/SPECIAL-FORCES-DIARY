@@ -8176,7 +8176,7 @@ function _renderDiaryDayRecord(){
   const _date04ms = new Date(date+'T04:00:00').getTime();
   const _isBefore04 = _virtualNow() < _date04ms;
   if(_isFutureDate && _isBefore04){
-    /* 상대 예약 로드 (캐시 없으면 Firebase에서 가져온 뒤 재렌더) */
+    /* 미래날짜: 상대 예약 로드 */
     const pCacheKeyFuture = '_partnerHist_'+date;
     if(partnerData && partnerData.uid && !window[pCacheKeyFuture] && !window[pCacheKeyFuture+'_loading'] && _fbDb){
       window[pCacheKeyFuture+'_loading']=true;
@@ -8187,36 +8187,99 @@ function _renderDiaryDayRecord(){
       });
     }
     const _partnerFutureItems = window[pCacheKeyFuture]||[];
-    /* 상대 아침점호 예약 — 조건 체크 전에 먼저 로드 */
+    /* 상대 아침점호 예약 로드 */
     const _pMrFutureKey='_pMrHistCache_'+date;
     let _pMrFuture = window[_pMrFutureKey]||null;
-    const _myResCount = items_with_mr.filter(q=>q&&q.reserved).length;
-    const _partnerResCount = _partnerFutureItems.filter(q=>q&&q.reserved).length;
-    const _totalResCount = _myResCount + _partnerResCount;
-    if(!_partnerResCount && !(_pMrFuture&&_pMrFuture.hour)){ wrap.style.display='none'; return; }
-    wrap.style.display='block';
-    if(lblEl) lblEl.textContent = date;
-    /* 예약 내역 표시 */
-    /* 내 예약은 숨기고 상대 예약만 표시 */
-    const _pResNames = _partnerFutureItems.filter(q=>q&&q.reserved).map(q=>`<div style="font-family:var(--kr);font-size:9px;color:rgba(150,100,220,.80);padding:2px 0;">${(partnerData&&partnerData.nickname)||'상대'}: ${q.name||'작전'}</div>`).join('');
     if(!_pMrFuture && partnerData&&partnerData.uid && _fbDb && !window[_pMrFutureKey+'_loaded']){
       window[_pMrFutureKey+'_loaded']=true;
       _fbDb.ref('users/'+partnerData.uid+'/morningRoll/'+date).once('value',snap=>{
-        window[_pMrFutureKey]=snap.exists()&&snap.val()&&snap.val().hour?snap.val():{};
+        window[_pMrFutureKey]=snap.exists()&&snap.val()&&snap.val().hour?snap.val():null;
         _renderDiaryDayRecord();
       });
     }
-    const _pMrRow = (_pMrFuture&&_pMrFuture.hour)?`<div style="font-family:var(--kr);font-size:9px;color:rgba(100,180,255,.80);padding:2px 0;">${(partnerData&&partnerData.nickname)||'상대'}: 아침점호 ${_pMrFuture.hour}시</div>`:'';    const _myResNames = ''; /* 내 예약은 표시 안함 */
-    recordList.innerHTML=`<div style="padding:10px 14px;background:rgba(42,77,181,.06);border:1.5px dashed rgba(42,77,181,.22);border-radius:12px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:${(_myResNames||_pResNames)?'6px':'0'};">
-        <span style="font-family:var(--orb);font-size:10px;color:rgba(78,130,220,.80);font-weight:700;">${date}</span>
-        <span style="font-family:var(--kr);font-size:10px;color:rgba(78,130,220,.70);">(예약 ${_totalResCount}건)</span>
-        <span style="font-family:var(--orb);font-size:9px;color:rgba(78,130,220,.45);margin-left:auto;">04:00 활성화</span>
-      </div>
-      ${(_pResNames||_pMrRow)?`<div style="display:flex;flex-direction:column;gap:3px;">${_pResNames}${_pMrRow}</div>`:''}
-    </div>`;
+    /* 내 아침점호 예약 로드 */
+    const _myMrFutureKey='_myMrHistCache_'+date;
+    let _myMrFuture = window[_myMrFutureKey]||null;
+    if(!_myMrFuture && MY_UID && _fbDb && !window[_myMrFutureKey+'_loaded']){
+      window[_myMrFutureKey+'_loaded']=true;
+      _fbDb.ref(`users/${MY_UID}/morningRoll/${date}`).once('value',snap=>{
+        window[_myMrFutureKey]=snap.exists()&&snap.val()&&snap.val().hour?snap.val():null;
+        _renderDiaryDayRecord();
+      });
+    }
+
+    const _myResItems = items_with_mr.filter(q=>q&&q.reserved);
+    const _partnerResItems = _partnerFutureItems.filter(q=>q&&q.reserved);
+    const _hasAnyFutureData = _myResItems.length>0 || _partnerResItems.length>0 || (_myMrFuture&&_myMrFuture.hour) || (_pMrFuture&&_pMrFuture.hour) || (partnerData&&partnerData.uid);
+
+    if(!_hasAnyFutureData){ wrap.style.display='none'; return; }
+    wrap.style.display='block';
+    if(lblEl) lblEl.textContent = date;
+
+    const myNick2 = myNickname||'나';
+    const pName2 = (partnerData&&partnerData.nickname)||'파트너';
+    let futureHtml = '';
+
+    /* ── 내 카드 (미래날짜) ── */
+    futureHtml += `<div style="margin-bottom:8px;padding:10px 12px;background:rgba(47,74,54,.06);border:1.5px solid rgba(47,74,54,.20);border-radius:12px;">
+      <div style="font-family:var(--title);font-size:12px;font-weight:900;color:rgba(47,74,54,.75);margin-bottom:7px;display:flex;align-items:center;gap:6px;">
+        ⚔️ 내 작전
+        <span style="font-family:var(--orb);font-size:9px;color:rgba(78,130,220,.50);">04:00 활성화</span>
+      </div>`;
+    if(_myMrFuture&&_myMrFuture.hour){
+      futureHtml+=`<div style="padding:5px 0;border-bottom:1px solid rgba(255,165,80,.12);margin-bottom:4px;display:flex;align-items:center;gap:5px;">
+        <span style="font-size:11px;">☀️</span>
+        <span style="font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(100,180,255,.85);">아침점호 ${_myMrFuture.hour}시 예약</span>
+        ${_myMrFuture.together?'<span style="font-family:var(--kr);font-size:9px;color:rgba(100,150,255,.65);">🤝</span>':''}</div>`;
+    }
+    if(_myResItems.length>0){
+      _myResItems.forEach(q=>{
+        futureHtml+=`<div style="padding:5px 0;border-bottom:1px solid rgba(61,72,64,.08);display:flex;align-items:center;gap:5px;">
+          <span style="font-size:10px;color:rgba(78,130,220,.55);">📋</span>
+          <span style="font-family:var(--kr);font-size:11px;font-weight:700;color:#3D4840;">${q.name||'작전'}</span>
+          ${q.mode==='coop'?'<span style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(42,77,181,.6);padding:1px 5px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.18);border-radius:4px;">협동</span>':''}</div>`;
+      });
+    } else if(!(_myMrFuture&&_myMrFuture.hour)){
+      futureHtml+=`<div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.35);padding:4px 0;">등록된 예약 없음</div>`;
+    }
+    futureHtml += '</div>';
+
+    /* ── 상대 카드 (미래날짜) ── */
+    if(partnerData && partnerData.uid){
+      futureHtml += `<div style="padding:10px 12px;background:rgba(106,78,158,.05);border:1.5px solid rgba(106,78,158,.18);border-radius:12px;">
+        <div style="font-family:var(--title);font-size:12px;font-weight:900;color:rgba(70,30,130,.70);margin-bottom:7px;">
+          👤 상대 카드 <span style="font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(106,78,158,.55);">(${pName2})</span>
+        </div>`;
+      /* 아침점호 현황 나란히 */
+      futureHtml+=`<div style="margin-bottom:6px;padding:6px 0;border-bottom:1px solid rgba(255,165,80,.12);">
+        <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(255,165,80,.55);margin-bottom:4px;">☀️ 아침점호 예약</div>
+        <div style="display:flex;gap:6px;">
+          <div style="flex:1;padding:6px 8px;background:${(_myMrFuture&&_myMrFuture.hour)?'rgba(42,77,181,.08)':' rgba(61,72,64,.04)'};border:1px solid ${(_myMrFuture&&_myMrFuture.hour)?'rgba(42,77,181,.20)':' rgba(61,72,64,.14)'};border-radius:8px;">
+            <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(100,150,255,.55);margin-bottom:2px;">나</div>
+            <div style="font-family:var(--kr);font-size:11px;font-weight:800;color:${(_myMrFuture&&_myMrFuture.hour)?'rgba(100,180,255,.90)':' rgba(61,72,64,.30)'};">${(_myMrFuture&&_myMrFuture.hour)?_myMrFuture.hour+'시':'미등록'}</div>
+          </div>
+          <div style="flex:1;padding:6px 8px;background:${(_pMrFuture&&_pMrFuture.hour)?'rgba(106,78,158,.08)':' rgba(61,72,64,.04)'};border:1px solid ${(_pMrFuture&&_pMrFuture.hour)?'rgba(106,78,158,.20)':' rgba(61,72,64,.14)'};border-radius:8px;">
+            <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(150,100,220,.55);margin-bottom:2px;">${pName2}</div>
+            <div style="font-family:var(--kr);font-size:11px;font-weight:800;color:${(_pMrFuture&&_pMrFuture.hour)?'rgba(180,140,255,.90)':' rgba(61,72,64,.30)'};">${(_pMrFuture&&_pMrFuture.hour)?_pMrFuture.hour+'시':'미등록'}</div>
+          </div>
+        </div>
+      </div>`;
+      if(_partnerResItems.length>0){
+        _partnerResItems.forEach(q=>{
+          futureHtml+=`<div style="padding:5px 0;border-bottom:1px solid rgba(106,78,158,.08);display:flex;align-items:center;gap:5px;">
+            <span style="font-size:10px;color:rgba(106,78,158,.55);">📋</span>
+            <span style="font-family:var(--kr);font-size:11px;font-weight:700;color:#3D3050;">${q.name||'작전'}</span>
+            ${q.mode==='coop'?'<span style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(42,77,181,.6);padding:1px 5px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.18);border-radius:4px;">협동</span>':''}</div>`;
+        });
+      } else if(!(_pMrFuture&&_pMrFuture.hour)){
+        futureHtml+=`<div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.30);padding:4px 0;">등록된 예약 없음</div>`;
+      }
+      futureHtml+='</div>';
+    }
+    recordList.innerHTML = futureHtml;
     return;
   }
+
 
   /* 내 작전도 없고 파트너도 없으면 숨김 */
   const _hasPartner = !!(partnerData && partnerData.uid);
@@ -8339,41 +8402,76 @@ function _renderDiaryDayRecord(){
         </div>
         ${_cheerSentAlready
           ?`<div style="font-family:var(--kr);font-size:12px;font-weight:800;color:#2A1040;line-height:1.5;">${_sentCheerMsg||'✓ 응원 전송 완료'}</div>`
-          :`<button class="diary-cheer-send-btn" data-date="${date}" style="width:100%;padding:9px 12px;background:rgba(106,78,158,.15);border:1.5px solid rgba(150,100,220,.40);border-radius:9px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(100,60,180,.90);cursor:pointer;text-align:center;">💜 오늘의 응원을 전하세요 💜</button>`}
+          :`<button class="diary-cheer-send-btn" data-date="${date}" style="width:100%;padding:9px 12px;background:rgba(106,78,158,.15);border:1.5px solid rgba(150,100,220,.40);border-radius:9px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(100,60,180,.90);cursor:pointer;text-align:center;">💜 [${pName}]님에게 응원을 전하세요 💜</button>`}
       </div>`;
     }
 
-    /* ── 상대 아침점호 (맨 위) ── */
-    if(partnerMrItem){
+    /* ── 상대 카드 아침점호 섹션 (내 아침점호 + 상대 아침점호 함께 표시) ── */
+    {
+      /* 내 아침점호 데이터 */
+      const _myMr=(typeof window._mrData!=='undefined')?window._mrData:null;
+      const _myMrH=_myMr&&_myMr.hour;
+      const _myMrDone=_myMr&&!!_myMr.completed;
+      const _myMrCertAt=_myMr&&(_myMr.certifiedAt||null);
+      const _myMrCertTime=_myMrCertAt?String(new Date(_myMrCertAt).getHours()).padStart(2,'0')+':'+String(new Date(_myMrCertAt).getMinutes()).padStart(2,'0'):null;
+      const _myMrTogether=_myMr&&_myMr.together===partnerData.uid;
+
+      /* 상대 아침점호 데이터 */
       const _pmr=partnerMrItem;
-      const _pmrH=_pmr.hour;
-      const _pmrDone=!!_pmr.completed;
-      const _pmrCertAt=_pmr.certifiedAt||null;
+      const _pmrH=_pmr&&_pmr.hour;
+      const _pmrDone=_pmr&&!!_pmr.completed;
+      const _pmrCertAt=_pmr&&(_pmr.certifiedAt||null);
       const _pmrCertTime=_pmrCertAt?String(new Date(_pmrCertAt).getHours()).padStart(2,'0')+':'+String(new Date(_pmrCertAt).getMinutes()).padStart(2,'0'):null;
-      const _pmrFrom=String(_pmrH).padStart(2,'0')+':00';
-      const _pmrTo=String(_pmrH).padStart(2,'0')+':59';
-      /* 내 morningRoll과 같이하기 상태 확인 */
-      const _safeMrData2=(typeof window._mrData!=='undefined')?window._mrData:null;
-      const _mrTogether=_safeMrData2&&_safeMrData2.together===partnerData.uid;
-      html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(255,165,80,.15);margin-bottom:4px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;flex:1;">
-            <span style="font-size:13px;">☀️</span>
-            <span style="font-family:var(--kr);font-size:12px;font-weight:900;color:rgba(100,180,255,.95);">아침점호 ${_pmrH}시</span>
-            ${_pmrDone&&_pmrCertTime
-              ?`<span style="font-family:var(--kr);font-size:11px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_pmrCertTime} 인증</span>`
-              :`<span style="font-family:var(--kr);font-size:9px;color:rgba(180,150,80,.65);font-weight:600;">(${_pmrFrom}~${_pmrTo})</span>`}
-          </div>
-          ${_mrTogether
-            ?`<div style="padding:6px 10px;background:rgba(42,77,181,.10);border:1px solid rgba(42,77,181,.28);border-radius:8px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(100,150,255,.85);white-space:nowrap;">🤝 같이진행중</div>`
-            :''}
-        </div>
-      </div>`;
-    } else if(isToday && partnerData && partnerData.uid){
-      /* 아침점호 상대 미등록 — 표시만 (같이하기 없음) */
-      html+=`<div style="padding:7px 0;border-bottom:1px solid rgba(255,165,80,.10);margin-bottom:4px;">
-        <span style="font-family:var(--kr);font-size:10px;color:rgba(30,30,30,.45);font-weight:600;">☀️ 아침점호 미등록</span>
-      </div>`;
+
+      const _hasAnyMr = _myMrH || _pmrH || (isToday&&partnerData&&partnerData.uid);
+      if(_hasAnyMr){
+        html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(255,165,80,.15);margin-bottom:4px;">
+          <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(255,165,80,.60);margin-bottom:5px;">☀️ 아침점호 현황</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">`;
+
+        /* 내 아침점호 */
+        if(_myMrH){
+          const _myFrom=String(_myMrH).padStart(2,'0')+':00';
+          const _myTo=String(_myMrH).padStart(2,'0')+':59';
+          html+=`<div style="flex:1;min-width:120px;padding:7px 9px;background:${_myMrDone?'rgba(47,74,54,.18)':'rgba(42,77,181,.06)'};border:1px solid ${_myMrDone?'rgba(47,74,54,.40)':'rgba(42,77,181,.22)'};border-radius:9px;">
+            <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(100,150,255,.65);margin-bottom:3px;">나</div>
+            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+              <span style="font-family:var(--kr);font-size:11px;font-weight:900;color:rgba(100,180,255,.95);">${_myMrH}시</span>
+              ${_myMrDone&&_myMrCertTime
+                ?`<span style="font-family:var(--kr);font-size:10px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_myMrCertTime}</span>`
+                :`<span style="font-family:var(--orb);font-size:9px;color:rgba(180,150,80,.55);">${_myFrom}~${_myTo}</span>`}
+              ${_myMrTogether?`<span style="font-family:var(--kr);font-size:9px;color:rgba(100,150,255,.70);">🤝</span>`:''}
+            </div>
+          </div>`;
+        } else if(isToday){
+          html+=`<div style="flex:1;min-width:120px;padding:7px 9px;background:rgba(61,72,64,.05);border:1px dashed rgba(61,72,64,.18);border-radius:9px;">
+            <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(100,150,255,.45);margin-bottom:3px;">나</div>
+            <div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.35);">미등록</div>
+          </div>`;
+        }
+
+        /* 상대 아침점호 */
+        if(_pmrH){
+          const _pFrom=String(_pmrH).padStart(2,'0')+':00';
+          const _pTo=String(_pmrH).padStart(2,'0')+':59';
+          html+=`<div style="flex:1;min-width:120px;padding:7px 9px;background:${_pmrDone?'rgba(47,74,54,.12)':'rgba(106,78,158,.07)'};border:1px solid ${_pmrDone?'rgba(47,74,54,.32)':'rgba(106,78,158,.22)'};border-radius:9px;">
+            <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(150,100,220,.65);margin-bottom:3px;">${pName}</div>
+            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+              <span style="font-family:var(--kr);font-size:11px;font-weight:900;color:rgba(180,140,255,.95);">${_pmrH}시</span>
+              ${_pmrDone&&_pmrCertTime
+                ?`<span style="font-family:var(--kr);font-size:10px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_pmrCertTime}</span>`
+                :`<span style="font-family:var(--orb);font-size:9px;color:rgba(180,150,80,.55);">${_pFrom}~${_pTo}</span>`}
+            </div>
+          </div>`;
+        } else if(isToday){
+          html+=`<div style="flex:1;min-width:120px;padding:7px 9px;background:rgba(61,72,64,.05);border:1px dashed rgba(61,72,64,.18);border-radius:9px;">
+            <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(150,100,220,.45);margin-bottom:3px;">${pName}</div>
+            <div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.35);">미등록</div>
+          </div>`;
+        }
+
+        html+=`</div></div>`;
+      }
     }
 
     /* ── 상대 협동 미션 ── */
@@ -10279,12 +10377,15 @@ async function acceptOpsTogether(){
     }
   } catch(e){}
 
-  /* 이슈3,4: 같이하기 누른 시간(now)을 기준으로, 내 등록시간은 now 사용
-     이슈5: 다음날 작전이면 양쪽 모두 04:00 예약으로 통일 */
-  const _myRegisteredAt = _futureActivate ? _futureActivate : now;
-  const _myCertAvail = _futureActivate
-    ? _futureActivate  /* 04:00 활성화 — 등록 즉시 인증 가능 */
-    : now + (60*60*1000);
+  /* 협동작전 활성화 시각 — 항상 해당날 04:00 기준
+     당일이면 당일 04:00, 미래날짜면 해당날 04:00
+     (00시~03시 사이 같이하기를 눌러도 즉시 60분이 아닌 04:00 활성화) */
+  const _coopTargetDate = n.questDate || _today;
+  const _coopDay04 = new Date(_coopTargetDate + 'T04:00:00').getTime();
+  /* 04:00이 이미 지났으면 즉시 활성화(now), 아직이면 04:00 대기 */
+  const _coopActivateAt = (now >= _coopDay04) ? now : _coopDay04;
+  const _myRegisteredAt = _coopActivateAt;
+  const _myCertAvail = _coopActivateAt;
   /* syncedRegisteredAt/syncedCertAvail = 내가 쓸 registeredAt/certAvailableAt */
   const syncedCertAvail = _myCertAvail;
   const syncedRegisteredAt = _myRegisteredAt;
@@ -10312,12 +10413,10 @@ async function acceptOpsTogether(){
           arr[n.questIdx].together = MY_UID;
           arr[n.questIdx].togetherAcceptedAt = now;
           arr[n.questIdx].mode = 'coop';
-          /* 이슈5: 미래날짜 작전이면 상대방 등록시간도 04:00으로 통일 */
-          if(_futureActivate){
-            arr[n.questIdx].registeredAt = _futureActivate;
-            arr[n.questIdx].certAvailableAt = _futureActivate; /* 04:00 활성화 */
-            arr[n.questIdx].reserved = true;
-          }
+          /* 항상 04:00 기준 활성화 — 당일/미래 모두 */
+          arr[n.questIdx].registeredAt = _coopActivateAt;
+          arr[n.questIdx].certAvailableAt = _coopActivateAt;
+          if(_coopActivateAt > now) arr[n.questIdx].reserved = true;
           await _fbSet(path, arr);
         }
       }
@@ -10332,7 +10431,7 @@ async function acceptOpsTogether(){
         });
       }
     }catch(e){}
-    showToast(_futureActivate ? `🤝 ${n.questDate} 04:00 활성화! 같이하기 예약 완료 💪` : '🤝 같은 이름 작전을 같이하기로 전환했습니다! 💪');
+    showToast(_coopActivateAt > now ? `🤝 ${_coopTargetDate} 04:00 활성화! 같이하기 예약 완료 💪` : '🤝 같은 이름 작전을 같이하기로 전환했습니다! 💪');
     return;
   }
 
@@ -10375,12 +10474,10 @@ async function acceptOpsTogether(){
           arr[n.questIdx].together = MY_UID;
           arr[n.questIdx].togetherAcceptedAt = now;
           arr[n.questIdx].mode = 'coop';
-          /* 이슈5: 미래날짜 작전이면 상대방 등록시간도 04:00으로 통일 */
-          if(_futureActivate){
-            arr[n.questIdx].registeredAt = _futureActivate;
-            arr[n.questIdx].certAvailableAt = _futureActivate + (60*60*1000);
-            arr[n.questIdx].reserved = true;
-          }
+          /* 항상 04:00 기준 활성화 — 당일/미래 모두 */
+          arr[n.questIdx].registeredAt = _coopActivateAt;
+          arr[n.questIdx].certAvailableAt = _coopActivateAt;
+          if(_coopActivateAt > now) arr[n.questIdx].reserved = true;
           /* cheerMsg/cheerFromNick 절대 건드리지 않음 — 기존 값 완전 보존 */
           await _fbSet(path, arr);
         }
@@ -10471,7 +10568,7 @@ async function acceptOpsTogether(){
     }
   }catch(e){}
 
-  showToast(_futureActivate ? `🤝 ${n.questDate} 04:00 활성화! 같이하기 예약 완료 💪` : '🤝 같이하기 등록! 함께 완료해보세요 💪');
+  showToast(_coopActivateAt > now ? `🤝 ${_coopTargetDate} 04:00 활성화! 같이하기 예약 완료 💪` : '🤝 같이하기 등록! 함께 완료해보세요 💪');
 }
 
 /* ══ 인증 팝업 ══ */
@@ -10787,9 +10884,15 @@ function setVirtualTimeExact(){
     _subscribedPartnerPath = ''; _subscribedPartnerMrPath='';
     if(typeof subscribePartnerOps==='function') subscribePartnerOps();
     if(typeof subscribeMyOps==='function') subscribeMyOps();
+    /* 날짜 변경 시 아침점호 재구독 */
+    _mrCurrentDate = null;
+    if(typeof reloadMorningRoll==='function') reloadMorningRoll();
     renderDayTabs&&renderDayTabs();
     renderCal&&renderCal();
     showToast('📅 날짜 변경: '+selDate);
+  } else {
+    /* 날짜 동일해도 시간만 바뀐 경우 — 아침점호 슬롯 강제 재렌더 */
+    if(typeof _renderMorningSlot==='function') _renderMorningSlot();
   }
   showToast(`⏱ 가상 시간 → ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(isNaN(s)?0:s).padStart(2,'0')}`);
   renderQ();
@@ -10820,10 +10923,16 @@ function shiftVirtualTime(minutes){
     if(typeof subscribePartnerOps==='function') subscribePartnerOps();
     if(typeof subscribeMyOps==='function') subscribeMyOps();
     if(typeof _subscribePartnerDayPoints==='function') _subscribePartnerDayPoints();
+    /* 날짜 변경 시 아침점호 재구독 */
+    _mrCurrentDate = null;
+    if(typeof reloadMorningRoll==='function') reloadMorningRoll();
     renderDayTabs&&renderDayTabs();
     renderCal&&renderCal();
     updateHUD&&updateHUD();
     showToast('📅 날짜 변경: '+selDate);
+  } else {
+    /* 날짜 동일해도 시간 변경 시 아침점호 슬롯 강제 재렌더 */
+    if(typeof _renderMorningSlot==='function') _renderMorningSlot();
   }
   renderQ(); /* 인증 버튼 상태 갱신 */
   renderCal&&renderCal(); /* 캘린더 TODAY/cycle-start 색상 항상 갱신 */
@@ -10853,9 +10962,15 @@ function resetVirtualTime(){
     if(typeof subscribePartnerOps==='function') subscribePartnerOps();
     if(typeof subscribeMyOps==='function') subscribeMyOps();
     if(typeof _subscribePartnerDayPoints==='function') _subscribePartnerDayPoints();
+    /* 날짜 변경 시 아침점호 재구독 */
+    _mrCurrentDate = null;
+    if(typeof reloadMorningRoll==='function') reloadMorningRoll();
     renderDayTabs&&renderDayTabs();
     renderCal&&renderCal();
     updateHUD&&updateHUD();
+  } else {
+    /* 날짜 동일해도 시간 리셋 시 아침점호 슬롯 강제 재렌더 */
+    if(typeof _renderMorningSlot==='function') _renderMorningSlot();
   }
   renderQ();
   renderCal&&renderCal();
@@ -17206,7 +17321,7 @@ function _renderMorningSlot(){
       : _canReserve2
         ? `<button id="mrTomorrowResBtn" style="width:100%;margin-top:6px;padding:9px;background:linear-gradient(135deg,rgba(42,77,181,.18),rgba(30,60,150,.22));border:1.5px solid rgba(42,77,181,.45);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(100,140,255,.95);cursor:pointer;">📋 내일 아침점호 예약하기</button>`
         : '';
-    btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="width:100%;margin-top:${cheerBox?'6':'0'}px;padding:11px;text-align:center;background:rgba(61,72,64,.08);border:1px solid rgba(61,72,64,.18);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:#3D4840;">✅ 인증완료</div>${_reserveMrBtn}</div>`;
+    btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="width:100%;margin-top:${cheerBox?'6':'0'}px;padding:11px;text-align:center;background:rgba(61,72,64,.08);border:1px solid rgba(61,72,64,.18);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:#3D4840;">✅ 인증완료</div><button id="mrOpenBBBtn" onclick="openBaseballPopup(false)" style="width:100%;margin-top:6px;padding:9px;background:linear-gradient(135deg,rgba(20,60,45,.22),rgba(15,50,35,.28));border:1.5px solid rgba(42,144,128,.45);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(82,212,164,.95);cursor:pointer;">🔐 암호점호 열기</button>${_reserveMrBtn}</div>`;
   } else if(failed){
     btnArea = `<div style="margin-top:8px;padding:9px;background:rgba(180,40,40,.10);border:1px solid rgba(180,40,40,.30);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(200,60,60,.85);text-align:center;">❌ 오늘 아침점호 실패 — 내일 다시 도전!</div>`;
   }
