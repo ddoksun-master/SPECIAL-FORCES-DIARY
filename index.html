@@ -9274,7 +9274,10 @@ function addQToday(name, difficulty, cat, reason, modeOverride){
   const now=_virtualNow();
   const nr=5000; /* 기본 5,000원 */
   const _sel04=new Date(selDate+'T04:00:00').getTime();
-  const _regAt = selDate > todayStr ? _sel04 : now;
+  /* 가상시간 기준 오늘 날짜로 비교 — todayStr(실제시간)이 아닌 _vTodayStr 사용 */
+  const _vTodayStrReg = dateStr(new Date(_virtualNow()));
+  const _isFutureDateReg = selDate > _vTodayStrReg;
+  const _regAt = _isFutureDateReg ? _sel04 : now;
   const newQuest={
     qid: _genQuestId(selDate), /* 작전 고유 코드 — 플래그 키에 인덱스 대신 사용 */
     name, category:cat||difficulty, difficulty,
@@ -9283,10 +9286,16 @@ function addQToday(name, difficulty, cat, reason, modeOverride){
     stamped:false,
     mode:mode, /* 'solo' | 'coop' */
     registeredAt:_regAt,
-    reserved: selDate > todayStr, /* 미래날짜 등록이면 예약 플래그 */
+    reserved: _isFutureDateReg, /* 미래날짜 등록이면 예약 플래그 (가상시간 기준) */
     certAvailableAt:(()=>{
-      const _d04plus1h=_sel04+(60*60*1000);
-      return Math.max(_d04plus1h, _regAt+(60*60*1000));
+      const _d04plus1h = _sel04 + (60*60*1000);
+      if(_isFutureDateReg || now < _sel04){
+        /* 04:00 이전 or 미래날짜 예약 → 05:00 */
+        return _d04plus1h;
+      } else {
+        /* 04:00 이후 등록 → 등록시각+1h */
+        return now + (60*60*1000);
+      }
     })(),
     /* 협동모드 전용 필드 */
     ...(mode==='coop'?{
@@ -17669,6 +17678,9 @@ async function openBaseballPopup(fromCert){
   const resultArea=document.getElementById('bbResultArea');
   const inputArea=document.getElementById('bbInputArea');
   const extraBtn=document.getElementById('bbExtraBtn');
+  /* 제출 버튼 disabled 초기화 — 이전 제출로 비활성화된 상태 복원 */
+  const submitBtnInit=document.getElementById('bbSubmitBtn');
+  if(submitBtnInit){ submitBtnInit.disabled=false; submitBtnInit.style.opacity='1'; }
   if(resultArea) resultArea.style.display='none';
   if(inputArea) inputArea.style.display='block';
   if(extraBtn) extraBtn.style.display='none';
@@ -17687,14 +17699,18 @@ async function openBaseballPopup(fromCert){
 }
 
 async function closeBaseballPopup(){
-  /* 인증완료 후 야구 1회 미진행 시 닫기 차단 */
-  if(_mrData && _mrData.completed){
-    const _bbD = await _bbLoad();
-    const _hist = (_bbD && Array.isArray(_bbD.history)) ? _bbD.history : [];
-    const _todayPlayed = _hist.some(h=>h.date===selDate);
-    if(!_todayPlayed){
-      showToast('🔐 암호점호를 1회 진행해야 닫을 수 있어요!');
-      return;
+  /* 인증완료 후 야구 1회 미진행 시 닫기 차단
+     조건: _mrData.completed AND 인증날짜(certifiedAt)가 오늘(selDate)인 경우에만 */
+  if(_mrData && _mrData.completed && _mrData.certifiedAt){
+    const _certDate = dateStr(new Date(_mrData.certifiedAt));
+    if(_certDate === selDate){
+      const _bbD = await _bbLoad();
+      const _hist = (_bbD && Array.isArray(_bbD.history)) ? _bbD.history : [];
+      const _todayPlayed = _hist.some(h=>h.date===selDate);
+      if(!_todayPlayed){
+        showToast('🔐 암호점호를 1회 진행해야 닫을 수 있어요!');
+        return;
+      }
     }
   }
   const popup = document.getElementById('baseballPopup');
