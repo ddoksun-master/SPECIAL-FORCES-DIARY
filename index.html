@@ -1522,7 +1522,7 @@ async function initFirebase(){
         if(n._seen) return;
         if(n.type==='ops_register'){
           _fbUpdate(`coopNotif/${MY_UID}/${key}`,{_seen:true});
-          if(typeof subscribePartnerOps==='function'){ _subscribedPartnerPath=''; subscribePartnerOps(); }
+          if(typeof subscribePartnerOps==='function'){ _subscribedPartnerPath=''; _subscribedPartnerMrPath=''; subscribePartnerOps(); }
           /* 아침점호 등록 알림 — subscribePartnerOps()가 morningRoll 구독까지 처리하므로 별도 분기 불필요 */
           if(!(n.questName && n.questName.includes('아침점호'))){
           const _notifDate = n.questDate || dateStr(new Date(_virtualNow()));
@@ -9754,7 +9754,7 @@ function confirmOpsNotifAndOpen(){
   if(_sec) _sec.style.display='block';
   /* _partnerQuests가 비어있으면 구독 재설정 후 렌더 */
   if(!_partnerQuests||!_partnerQuests.length){
-    _subscribedPartnerPath=''; /* 강제 재구독 */
+    _subscribedPartnerPath=''; _subscribedPartnerMrPath=''; /* 강제 재구독 */
     if(typeof subscribePartnerOps==='function') subscribePartnerOps();
   } else {
     renderPartnerOps();
@@ -10778,7 +10778,7 @@ function setVirtualTimeExact(){
         updateHUD&&updateHUD();
       });
     }
-    _subscribedPartnerPath = '';
+    _subscribedPartnerPath = ''; _subscribedPartnerMrPath='';
     if(typeof subscribePartnerOps==='function') subscribePartnerOps();
     if(typeof subscribeMyOps==='function') subscribeMyOps();
     renderDayTabs&&renderDayTabs();
@@ -10810,7 +10810,7 @@ function shiftVirtualTime(minutes){
       });
     }
     /* 모든 구독 재설정 */
-    _subscribedPartnerPath = '';
+    _subscribedPartnerPath = ''; _subscribedPartnerMrPath='';
     if(typeof subscribePartnerOps==='function') subscribePartnerOps();
     if(typeof subscribeMyOps==='function') subscribeMyOps();
     if(typeof _subscribePartnerDayPoints==='function') _subscribePartnerDayPoints();
@@ -10843,7 +10843,7 @@ function resetVirtualTime(){
         updateHUD&&updateHUD();
       });
     }
-    _subscribedPartnerPath = '';
+    _subscribedPartnerPath = ''; _subscribedPartnerMrPath='';
     if(typeof subscribePartnerOps==='function') subscribePartnerOps();
     if(typeof subscribeMyOps==='function') subscribeMyOps();
     if(typeof _subscribePartnerDayPoints==='function') _subscribePartnerDayPoints();
@@ -10952,6 +10952,7 @@ let _partnerMorningRoll = null; /* 상대방 아침점호 데이터 */
 let _partnerMorningUnsub = null;
 let _partnerQuestUnsub = null;
 let _subscribedPartnerPath = ''; /* 현재 구독 중인 상대 작전 경로 */
+let _subscribedPartnerMrPath = ''; /* 현재 구독 중인 상대 morningRoll 경로 */
 let _myQuestUnsub = null; /* 내 퀘스트 실시간 구독 (상대방 응원 수신용) */
 
 /* 내 퀘스트 실시간 구독 — 상대방이 응원/공감 메시지 보내면 즉시 갱신 */
@@ -11073,30 +11074,34 @@ function subscribePartnerOps(){
   /* 선택된 날짜 기준 (날짜 탭 이동 시 해당 날짜 작전 표시) */
   const barDate = selDate || dateStr(new Date(_virtualNow()));
   const path = _questPath(partnerData.uid, barDate);
-  /* 이미 같은 경로 구독 중이면 스킵 */
-  if(_subscribedPartnerPath === path) return;
-  /* 기존 구독 해제 */
-  if(_partnerQuestUnsub){ try{_partnerQuestUnsub();}catch(e){} _partnerQuestUnsub=null; }
-  if(_partnerMorningUnsub){ try{_partnerMorningUnsub();}catch(e){} _partnerMorningUnsub=null; }
-  _subscribedPartnerPath = path;
-  _partnerQuests = []; /* ★ 날짜 변경 시 이전 데이터 즉시 초기화 */
-  _partnerMorningRoll = null;
-  /* 상대방 quests 구독 */
-  _fbDb.ref(path).on('value', snap=>{
-    _partnerQuests = snap.exists() ? (snap.val()||[]) : [];
-    renderPartnerOps();
-    /* 상대 카드(작전기록 패널)도 갱신 */
-    if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord();
-  });
-  _partnerQuestUnsub = ()=>{ _fbDb.ref(path).off('value'); _subscribedPartnerPath=''; };
-  /* 상대방 morningRoll 구독 */
   const mrPath = `users/${partnerData.uid}/morningRoll/${barDate}`;
-  _fbDb.ref(mrPath).on('value', snap=>{
-    _partnerMorningRoll = snap.exists() ? snap.val() : null;
-    renderPartnerOps();
-    if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord();
-  });
-  _partnerMorningUnsub = ()=>{ _fbDb.ref(mrPath).off('value'); _partnerMorningRoll=null; };
+
+  /* quests 구독 — 경로가 다를 때만 재구독 */
+  if(_subscribedPartnerPath !== path){
+    if(_partnerQuestUnsub){ try{_partnerQuestUnsub();}catch(e){} _partnerQuestUnsub=null; }
+    _subscribedPartnerPath = path;
+    _partnerQuests = []; /* ★ 날짜 변경 시 이전 데이터 즉시 초기화 */
+    _fbDb.ref(path).on('value', snap=>{
+      _partnerQuests = snap.exists() ? (snap.val()||[]) : [];
+      renderPartnerOps();
+      /* 상대 카드(작전기록 패널)도 갱신 */
+      if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord();
+    });
+    _partnerQuestUnsub = ()=>{ _fbDb.ref(path).off('value'); _subscribedPartnerPath=''; };
+  }
+
+  /* morningRoll 구독 — quests와 독립적으로, 경로가 다를 때만 재구독 */
+  if(_subscribedPartnerMrPath !== mrPath){
+    if(_partnerMorningUnsub){ try{_partnerMorningUnsub();}catch(e){} _partnerMorningUnsub=null; }
+    _subscribedPartnerMrPath = mrPath;
+    _partnerMorningRoll = null;
+    _fbDb.ref(mrPath).on('value', snap=>{
+      _partnerMorningRoll = snap.exists() ? snap.val() : null;
+      renderPartnerOps();
+      if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord();
+    });
+    _partnerMorningUnsub = ()=>{ _fbDb.ref(mrPath).off('value'); _partnerMorningRoll=null; _subscribedPartnerMrPath=''; };
+  }
   subscribeMyOps();
   _subscribePartnerDayPoints();
   _subscribePartnerCoopPoints();
@@ -11161,7 +11166,7 @@ function renderPartnerOps(){
       list.innerHTML=`<div style="padding:14px;text-align:center;font-family:var(--kr);font-size:11px;color:rgba(200,168,255,.45);">상대방 작전을 불러오는 중...</div>`;
       /* 구독이 안 됐으면 재구독 */
       if(!_subscribedPartnerPath){
-        _subscribedPartnerPath='';
+        _subscribedPartnerPath=''; _subscribedPartnerMrPath='';
         if(typeof subscribePartnerOps==='function') subscribePartnerOps();
       }
     } else {
