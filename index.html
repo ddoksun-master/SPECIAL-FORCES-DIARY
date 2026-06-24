@@ -14445,7 +14445,10 @@ function tmRender(qaData, n){
   tmShowState('open', n);
 
   /* 잠금해제 토스트 — 이미 완료된 미션에는 뜨지 않음 */
-  if(!window['tmUnlockToasted'+n] && !window['tmRewardDone'+n]){
+  /* 스페셜A(n===3): 내가 이미 보물상자를 선택했으면 토스트 안 뜸 */
+  const _rp = qaData && qaData.reward_pick;
+  const _myPickDone = isSpecial ? !!(_rp && _rp[_tmMK()+'_pick'] !== undefined) : false;
+  if(!window['tmUnlockToasted'+n] && !window['tmRewardDone'+n] && !_myPickDone){
     window['tmUnlockToasted'+n]=true;
     showToast('🎁 '+cfg.label+' 비밀상자가 열렸어요!');
   }
@@ -15057,6 +15060,7 @@ function teamQAOnConnect(){
   [1,2,3].forEach(n=>{
     window['tmSub'+n]=false;
     window['tmUnlockToasted'+n]=false;
+    window['_tmOppPickToasted'+n]=false;
     tmBuildCard(n);
     tmSubscribe(n);
     tmRender(null,n);
@@ -15083,7 +15087,7 @@ function teamQAOnDisconnect(){
   if(wrap) wrap.style.display='none';
   const hq=document.getElementById('tmHQWrap');
   if(hq) hq.style.display='none';
-  [1,2,3].forEach(n=>{ window['tmSub'+n]=false; window['tmUnlockToasted'+n]=false; });
+  [1,2,3].forEach(n=>{ window['tmSub'+n]=false; window['tmUnlockToasted'+n]=false; window['_tmOppPickToasted'+n]=false; });
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -16916,11 +16920,18 @@ function _tmHQSubForOppBox(n){
   _fbOn(rpath, snap=>{
     const d = snap.exists() ? snap.val() : {};
     const ok = _tmOK();
+    const mk = _tmMK();
     const oppIdx = d[ok+'_pick'];
+    const myIdx  = d[mk+'_pick'];
     window['_tmHQOppPick'+n] = oppIdx !== undefined ? oppIdx : null;
     /* box_order 동기화 — 상대방이 먼저 셔플 저장했을 때 내 쪽 반영 */
     if(d.box_order && Array.isArray(d.box_order) && d.box_order.length){
       _tmRewardBoxes = d.box_order.map(amt=>({amt}));
+    }
+    /* 내가 이미 선택한 상태에서 상대방이 선택 완료 → 스페셜A임무완료 토스트 */
+    if(oppIdx !== undefined && myIdx !== undefined && !window['_tmOppPickToasted'+n]){
+      window['_tmOppPickToasted'+n] = true;
+      showToast('🎉 '+TM[n].label+' 임무완료!');
     }
     /* 상세 화면이 열려있으면 즉시 반영 */
     const det = document.getElementById('tmHQDetail');
@@ -17221,6 +17232,13 @@ function _renderMorningSlot(){
         <div style="font-family:var(--kr);font-size:11px;color:#2A1A3E;font-weight:700;line-height:1.5;">${d.cheerMsg}</div>
       </div>` : '';
 
+  /* 야구점호 회차 계산 */
+  const _bbSolvedCount = (window._bbCacheData && window._bbCacheData.solvedCount) ? window._bbCacheData.solvedCount : 0;
+  const _bbCurrentRound = _bbSolvedCount + 1; /* 현재 진행 회차 */
+  const _bbRoundLabel = _bbSolvedCount > 0
+    ? `${_bbSolvedCount}회차 종료 · ${_bbCurrentRound}회차 진행`
+    : `${_bbCurrentRound}회차 진행`;
+
   /* 버튼 영역 */
   let btnArea = '';
   if(!done && !failed){
@@ -17247,10 +17265,10 @@ function _renderMorningSlot(){
     })();
     if(_bbPlayedToday){
       /* 오늘 이미 도전/완료 → 완료 표시 버튼 (탭하면 결과 확인 가능) */
-      btnArea = `<div style="margin-top:8px;">${cheerBox}<button id="mrOpenBBBtn" onclick="openBaseballPopup(false)" style="width:100%;margin-top:${cheerBox?'6':'0'}px;padding:11px;background:rgba(30,90,60,.14);border:1.5px solid rgba(42,144,128,.45);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(30,130,75,.95);cursor:pointer;">✅ 야구점호 진행 후 인증완료</button></div>`;
+      btnArea = `<div style="margin-top:8px;">${cheerBox}<button id="mrOpenBBBtn" onclick="openBaseballPopup(false)" style="width:100%;margin-top:${cheerBox?'6':'0'}px;padding:11px;background:linear-gradient(135deg,#1a4a35,#0e3326);border:1.5px solid rgba(42,144,128,.70);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:900;color:#e8fff6;cursor:pointer;text-shadow:0 1px 4px rgba(0,0,0,.4);">✅ 야구점호 완료</button></div>`;
     } else {
       /* 오늘 미실시 → 클릭 가능한 열기 버튼 */
-      btnArea = `<div style="margin-top:8px;">${cheerBox}<button id="mrOpenBBBtn" onclick="openBaseballPopup(false)" style="width:100%;margin-top:${cheerBox?'6':'0'}px;padding:11px;background:linear-gradient(135deg,rgba(20,60,45,.22),rgba(15,50,35,.28));border:1.5px solid rgba(42,144,128,.55);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(60,180,120,1.0);cursor:pointer;">🔐 야구점호 미실시 — 탭하여 시작</button></div>`;
+      btnArea = `<div style="margin-top:8px;">${cheerBox}<button id="mrOpenBBBtn" onclick="openBaseballPopup(false)" style="width:100%;margin-top:${cheerBox?'6':'0'}px;padding:11px;background:linear-gradient(135deg,rgba(20,60,45,.22),rgba(15,50,35,.28));border:1.5px solid rgba(42,144,128,.55);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(60,180,120,1.0);cursor:pointer;">🔐 야구점호 ${_bbRoundLabel} — 탭하여 시작</button></div>`;
     }
   } else if(failed){
     btnArea = `<div style="margin-top:8px;padding:9px;background:rgba(180,40,40,.10);border:1px solid rgba(180,40,40,.30);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(200,60,60,.85);text-align:center;">❌ 오늘 아침점호 실패 — 내일 다시 도전!</div>`;
@@ -17281,6 +17299,7 @@ function _renderMorningSlot(){
         <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#3A2C08;line-height:1.35;flex:1;min-width:0;">
           ☀️ 아침점호 ${h}시
           <span style="font-family:var(--kr);font-size:10px;font-weight:600;color:rgba(100,70,10,.55);margin-left:4px;">(인증 ${String(h).padStart(2,'0')}:00~${String(h).padStart(2,'0')}:59)</span>
+          <span style="display:inline-block;margin-left:6px;padding:1px 7px;background:rgba(42,144,128,.12);border:1px solid rgba(42,144,128,.35);border-radius:8px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(30,100,70,.80);">${_bbRoundLabel}</span>
         </div>
         ${_mrXBtn}
       </div>
@@ -17757,8 +17776,9 @@ async function _bbRefreshUI(){
   /* ── 회차 표시 업데이트 ── */
   const _roundEl = document.getElementById('bbRoundLabel');
   if(_roundEl){
-    const _round = (data.solvedCount||0) + 1;
-    _roundEl.textContent = `${_round}번째 도전`;
+    const _solvedCnt = (data.solvedCount||0);
+    const _round = _solvedCnt + 1;
+    _roundEl.textContent = _solvedCnt > 0 ? `${_solvedCnt}회차 종료 · ${_round}회차 진행` : `${_round}회차 진행`;
   }
 
   /* ── 이전 날짜 차단: lastSolvedDate 이후 날짜부터만 새 게임 가능 ──
