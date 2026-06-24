@@ -6771,13 +6771,13 @@ document.addEventListener('DOMContentLoaded',()=>{
             <div style="height:1px;background:rgba(255,255,255,.06);"></div>
             <div style="padding:20px 16px;text-align:center;">
               <div style="font-size:38px;margin-bottom:10px;">⏳</div>
-              <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(255,220,100,.95);margin-bottom:5px;">상대방 수행 대기중</div>
-              <div id="tmHQWaitSub" style="font-family:var(--kr);font-size:9px;color:rgba(255,220,130,.90);line-height:1.7;margin-bottom:16px;font-weight:700;"></div>
+              <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(100,60,5,.92);margin-bottom:5px;">상대방 수행 대기중</div>
+              <div id="tmHQWaitSub" style="font-family:var(--kr);font-size:9px;color:rgba(110,70,8,.85);line-height:1.7;margin-bottom:16px;font-weight:700;"></div>
               <div style="padding:12px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;text-align:left;">
                 <div style="font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.4);margin-bottom:5px;">▎ 제출한 답글</div>
                 <div id="tmHQWaitMyAns" style="font-family:var(--kr);font-size:10px;color:rgba(240,240,240,.95);font-weight:700;margin-bottom:8px;word-break:break-word;"></div>
                 <div style="font-family:var(--orb);font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.75);margin-bottom:4px;">▎ 선택한 보물상자</div>
-                <div id="tmHQWaitMyBox" style="font-family:var(--kr);font-size:10px;color:rgba(255,220,100,.8);font-weight:700;"></div>
+                <div id="tmHQWaitMyBox" style="font-family:var(--kr);font-size:10px;color:rgba(120,70,5,.90);font-weight:800;"></div>
               </div>
             </div>
           </div>
@@ -17228,8 +17228,19 @@ function _renderMorningSlot(){
     const certBtn = `<button id="mrCertBtn" style="width:100%;padding:11px 8px;${certStyle}font-family:var(--kr);font-size:10px;font-weight:700;border-radius:10px;cursor:pointer;">${certLabel}</button>`;
     btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="display:flex;gap:8px;">${certBtn}</div></div>`;
   } else if(done){
-    /* 완료 — 인증완료 배지 + 암호점호 열기 버튼만 */
-    btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="width:100%;margin-top:${cheerBox?'6':'0'}px;padding:11px;text-align:center;background:rgba(61,72,64,.08);border:1px solid rgba(61,72,64,.18);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:#3D4840;">✅ 인증완료</div><button id="mrOpenBBBtn" onclick="openBaseballPopup(false)" style="width:100%;margin-top:6px;padding:9px;background:linear-gradient(135deg,rgba(20,60,45,.22),rgba(15,50,35,.28));border:1.5px solid rgba(42,144,128,.55);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(60,180,120,1.0);cursor:pointer;">🔐 암호점호 열기</button></div>`;
+    /* 완료 — 인증완료 배지 + 암호점호 열기 버튼 + 야구점호 실시 여부 배지 */
+    const _bbPlayedToday = (()=>{
+      try{
+        const _bbD = window._bbCacheData;
+        if(!_bbD) return false;
+        const _hist = Array.isArray(_bbD.history) ? _bbD.history : [];
+        return _hist.some(hh=>hh.date===selDate);
+      }catch(e){ return false; }
+    })();
+    const _bbStatusBadge = _bbPlayedToday
+      ? `<div style="margin-top:5px;padding:6px 10px;text-align:center;background:rgba(30,100,60,.12);border:1px solid rgba(42,144,128,.40);border-radius:9px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(30,120,70,.90);">✅ 암호점호 실시 완료</div>`
+      : `<div style="margin-top:5px;padding:6px 10px;text-align:center;background:rgba(180,120,20,.09);border:1px dashed rgba(180,130,30,.35);border-radius:9px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(140,90,10,.80);">🔐 암호점호 미실시</div>`;
+    btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="width:100%;margin-top:${cheerBox?'6':'0'}px;padding:11px;text-align:center;background:rgba(61,72,64,.08);border:1px solid rgba(61,72,64,.18);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:#3D4840;">✅ 인증완료</div><button id="mrOpenBBBtn" onclick="openBaseballPopup(false)" style="width:100%;margin-top:6px;padding:9px;background:linear-gradient(135deg,rgba(20,60,45,.22),rgba(15,50,35,.28));border:1.5px solid rgba(42,144,128,.55);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(60,180,120,1.0);cursor:pointer;">🔐 암호점호 열기</button>${_bbStatusBadge}</div>`;
   } else if(failed){
     btnArea = `<div style="margin-top:8px;padding:9px;background:rgba(180,40,40,.10);border:1px solid rgba(180,40,40,.30);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(200,60,60,.85);text-align:center;">❌ 오늘 아침점호 실패 — 내일 다시 도전!</div>`;
   }
@@ -17699,20 +17710,8 @@ async function openBaseballPopup(fromCert){
 }
 
 async function closeBaseballPopup(){
-  /* 인증완료 후 야구 1회 미진행 시 닫기 차단
-     조건: _mrData.completed AND 인증날짜(certifiedAt)가 오늘(selDate)인 경우에만 */
-  if(_mrData && _mrData.completed && _mrData.certifiedAt){
-    const _certDate = dateStr(new Date(_mrData.certifiedAt));
-    if(_certDate === selDate){
-      const _bbD = await _bbLoad();
-      const _hist = (_bbD && Array.isArray(_bbD.history)) ? _bbD.history : [];
-      const _todayPlayed = _hist.some(h=>h.date===selDate);
-      if(!_todayPlayed){
-        showToast('🔐 암호점호를 1회 진행해야 닫을 수 있어요!');
-        return;
-      }
-    }
-  }
+  /* 닫기 전 bb 데이터 캐시 갱신 → _renderMorningSlot에서 야구점호 상태 정확히 표시 */
+  try{ const _fresh = await _bbLoad(); if(_fresh) window._bbCacheData = _fresh; }catch(e){}
   const popup = document.getElementById('baseballPopup');
   if(popup) popup.style.display='none';
   _renderMorningSlot();
@@ -17736,6 +17735,7 @@ async function _bbInitData(){
 async function _bbRefreshUI(){
   const data = await _bbLoad();
   if(!data) return;
+  window._bbCacheData = data; /* _renderMorningSlot에서 동기 접근용 캐시 */
   const hist = Array.isArray(data.history) ? data.history : [];
   const histEl = document.getElementById('bbHistoryList');
   const inputArea = document.getElementById('bbInputArea');
@@ -17880,7 +17880,7 @@ async function bbSubmitGuess(){
     if(isFirstSolve){
       /* 첫 해독 → 스페셜임무 해금 + 포인트 이력 기록 */
       const subEl=document.getElementById('bbResultSub');
-      if(subEl) subEl.innerHTML+=`<br><br><span style="color:rgba(255,215,100,.95);font-weight:900;font-size:12px;">🌟 스페셜임무 해금!</span><br><span style="font-size:9px;color:rgba(255,255,255,.45);">팀작전 탭에서 확인하세요</span>`;
+      /* 스페셜임무 해금 메시지 제거 — _bbUnlockSpecial에서 ⚡ 스페셜임무A 해금 메시지가 표시됨 */
       await _savePxPointLog(selDate,'야구 첫 암호 해독 (스페셜임무 해금)',0).catch(()=>{});
       setTimeout(()=>{ _bbUnlockSpecial(); },600);
     } else {
