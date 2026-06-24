@@ -8254,9 +8254,14 @@ function _renderDiaryDayRecord(){
     }
     /* 상대 아침점호 */
     const _safePMR = (typeof window._partnerMorningRoll !== 'undefined') ? window._partnerMorningRoll : null;
+    /* morningRoll 전용 구독 경로 기준으로 판단 (quests 경로와 독립) */
     const _partnerMrSubscribed = (typeof _subscribedPartnerMrPath !== 'undefined') && _subscribedPartnerMrPath && _subscribedPartnerMrPath.includes('/'+date);
     if(_partnerMrSubscribed && _safePMR && _safePMR.hour){
+      /* 구독 완료 + 데이터 도착 */
       partnerMrItem = _safePMR;
+    } else if(_partnerMrSubscribed && _safePMR === null){
+      /* 구독 중이지만 아직 Firebase 응답 미도착 — 잠시 후 재렌더 */
+      setTimeout(()=>{ if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord(); }, 300);
     } else if(!_partnerMrSubscribed){
       const pMrKey='_pMrHistCache_'+date;
       if(window[pMrKey]) partnerMrItem = window[pMrKey].hour ? window[pMrKey] : null;
