@@ -1523,21 +1523,8 @@ async function initFirebase(){
         if(n.type==='ops_register'){
           _fbUpdate(`coopNotif/${MY_UID}/${key}`,{_seen:true});
           if(typeof subscribePartnerOps==='function'){ _subscribedPartnerPath=''; subscribePartnerOps(); }
-          /* 아침점호 등록 알림은 팝업 없이 처리 — 파트너 morningRoll 구독 갱신 */
-          if(n.questName && n.questName.includes('아침점호')){
-            /* 상대 morningRoll 재구독으로 상대 카드 즉시 갱신 */
-            if(typeof _partnerMorningUnsub!=='undefined' && _partnerMorningUnsub){ try{_partnerMorningUnsub();}catch(e){} _partnerMorningUnsub=null; }
-            if(typeof _fbDb!=='undefined' && _fbDb && typeof partnerData!=='undefined' && partnerData && partnerData.uid){
-              const _barDate = n.questDate || dateStr(new Date(_virtualNow()));
-              const _mrPathP = 'users/'+partnerData.uid+'/morningRoll/'+_barDate;
-              _fbDb.ref(_mrPathP).on('value', snap=>{
-                _partnerMorningRoll = snap.exists() ? snap.val() : null;
-                if(typeof renderPartnerOps==='function') renderPartnerOps();
-                if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord();
-              });
-              _partnerMorningUnsub = ()=>{ _fbDb.ref(_mrPathP).off('value'); _partnerMorningRoll=null; };
-            }
-          } else {
+          /* 아침점호 등록 알림 — subscribePartnerOps()가 morningRoll 구독까지 처리하므로 별도 분기 불필요 */
+          if(!(n.questName && n.questName.includes('아침점호'))){
           const _notifDate = n.questDate || dateStr(new Date(_virtualNow()));
           const _notif04 = new Date(_notifDate+'T04:00:00').getTime();
           if(_virtualNow() >= _notif04){
@@ -8517,10 +8504,8 @@ function _renderDiaryDayRecord(){
     btn.addEventListener('click',async()=>{
       const d=btn.dataset.date||date;
       const _cheerDailyKey=`cheerSentToday_${MY_UID}_${d}`;
-      /* flag만 해제 (Firebase cheerMsg는 삭제하지 않음 — 기존 메시지 유지) */
       _unsetFlag(_cheerDailyKey);
       try{ localStorage.removeItem('cheerMsg_'+_cheerDailyKey); }catch(e){}
-      /* 수정 모드로 팝업 열기 — 기존 메시지 로드 */
       _cheerEditMode = true;
       const popup=document.getElementById('cheerMsgPopup');
       if(popup){
@@ -8537,9 +8522,8 @@ function _renderDiaryDayRecord(){
           if(_cheerEditMode){
             _cheerEditMode=false;
             _setFlag(_cheerDailyKey);
-            if(_prevMsg&&partnerData&&partnerData.uid){
+            if(_prevMsg&&partnerData&&partnerData.uid)
               _fbSet(`users/${partnerData.uid}/cheerMsg/${d}`,{msg:_prevMsg,fromNick:myNickname||'상대방',fromUid:MY_UID,sentAt:Date.now()}).catch(()=>{});
-            }
           }
           if(_sb) _sb.textContent='전송 +2P 보급상점';
           popup._onCloseRestore=null;
@@ -10205,18 +10189,12 @@ async function submitCheerMsg(){
     return;
   }
   const _isEdit = _cheerEditMode;
-  _cheerEditMode = false; /* 사용 후 초기화 */
-  /* 복원 콜백 해제 + 버튼 텍스트 원상복구 */
-  const _popup2=document.getElementById('cheerMsgPopup');
-  if(_popup2){
-    _popup2._onCloseRestore=null;
-    const _sb2=_popup2.querySelector('button[onclick="submitCheerMsg()"]');
-    if(_sb2) _sb2.textContent='전송 +2P 보급상점';
-  }
+  _cheerEditMode = false;
+  const _pp=document.getElementById('cheerMsgPopup');
+  if(_pp){ _pp._onCloseRestore=null; const _sb=_pp.querySelector('button[onclick="submitCheerMsg()"]'); if(_sb) _sb.textContent='전송 +2P 보급상점'; }
   if(!partnerData||!partnerData.uid){closeCheerMsgPopup();return;}
 
   try{
-    /* 상대 Firebase에 단일 응원메시지 저장 (수정도 remove 없이 바로 set — 즉시 반영) */
     const _cheerPath = `users/${partnerData.uid}/cheerMsg/${selDate}`;
     await _fbSet(_cheerPath, {
       msg,
@@ -11007,7 +10985,6 @@ function subscribeMyOps(){
   if(_myMorningUnsub){ try{_myMorningUnsub();}catch(e){} _myMorningUnsub=null; }
   if(_cheerMsgUnsub){ try{_cheerMsgUnsub();}catch(e){} _cheerMsgUnsub=null; }
   if(!MY_UID||!_fbDb) return;
-  /* cheerMsg 실시간 구독 — 상대가 보내거나 수정하면 즉시 카드 갱신 */
   const _cmPath = `users/${MY_UID}/cheerMsg/${selDate}`;
   _fbDb.ref(_cmPath).on('value', ()=>{ if(typeof _renderCheerMsgCard==='function') _renderCheerMsgCard(); });
   _cheerMsgUnsub = ()=>{ _fbDb.ref(_cmPath).off('value'); };
@@ -11117,6 +11094,7 @@ function subscribePartnerOps(){
   _fbDb.ref(mrPath).on('value', snap=>{
     _partnerMorningRoll = snap.exists() ? snap.val() : null;
     renderPartnerOps();
+    if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord();
   });
   _partnerMorningUnsub = ()=>{ _fbDb.ref(mrPath).off('value'); _partnerMorningRoll=null; };
   subscribeMyOps();
