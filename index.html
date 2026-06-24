@@ -6040,7 +6040,11 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div style="font-family:var(--orb);font-size:9px;letter-spacing:2.5px;color:rgba(82,212,164,.65);margin-bottom:3px;text-align:center;">🔐 CIPHER ROLL CALL</div>
           <div style="font-family:var(--kr);font-size:15px;font-weight:900;color:rgba(200,240,220,.97);text-align:center;margin-bottom:2px;">암호점호</div>
           <!-- 인증 시간 표시 -->
-          <div id="bbCertTimeLabel" style="font-family:var(--orb);font-size:11px;font-weight:900;color:rgba(82,212,164,.85);text-align:center;margin-bottom:4px;"></div>
+          <div id="bbCertTimeLabel" style="font-family:var(--orb);font-size:11px;font-weight:900;color:rgba(82,212,164,.85);text-align:center;margin-bottom:2px;"></div>
+          <!-- 회차 표시 -->
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:4px;">
+            <span id="bbRoundLabel" style="font-family:var(--orb);font-size:10px;font-weight:900;color:rgba(200,168,75,.85);letter-spacing:.5px;"></span>
+          </div>
           <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.35);text-align:center;margin-bottom:14px;">4자리(1~9, 중복없음) · 하루 1번 도전</div>
 
           <!-- 누적 기록 -->
@@ -17228,19 +17232,26 @@ function _renderMorningSlot(){
     const certBtn = `<button id="mrCertBtn" style="width:100%;padding:11px 8px;${certStyle}font-family:var(--kr);font-size:10px;font-weight:700;border-radius:10px;cursor:pointer;">${certLabel}</button>`;
     btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="display:flex;gap:8px;">${certBtn}</div></div>`;
   } else if(done){
-    /* 완료 — 인증완료 배지 + 암호점호 열기 버튼 + 야구점호 실시 여부 배지 */
+    /* 완료 — 야구점호 미실시/완료 단일 버튼으로 통합 */
     const _bbPlayedToday = (()=>{
       try{
         const _bbD = window._bbCacheData;
         if(!_bbD) return false;
+        /* historyAll에서도 오늘 날짜 완료 확인 (4S 성공 시 history 초기화되므로) */
         const _hist = Array.isArray(_bbD.history) ? _bbD.history : [];
-        return _hist.some(hh=>hh.date===selDate);
+        const _histAll = Array.isArray(_bbD.historyAll) ? _bbD.historyAll : [];
+        const solvedToday = _histAll.some(hh=>hh.date===selDate && hh.s===4);
+        const triedToday  = _hist.some(hh=>hh.date===selDate);
+        return solvedToday || triedToday;
       }catch(e){ return false; }
     })();
-    const _bbStatusBadge = _bbPlayedToday
-      ? `<div style="margin-top:5px;padding:6px 10px;text-align:center;background:rgba(30,100,60,.12);border:1px solid rgba(42,144,128,.40);border-radius:9px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(30,120,70,.90);">✅ 암호점호 실시 완료</div>`
-      : `<div style="margin-top:5px;padding:6px 10px;text-align:center;background:rgba(180,120,20,.09);border:1px dashed rgba(180,130,30,.35);border-radius:9px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(140,90,10,.80);">🔐 암호점호 미실시</div>`;
-    btnArea = `<div style="margin-top:8px;">${cheerBox}<div style="width:100%;margin-top:${cheerBox?'6':'0'}px;padding:11px;text-align:center;background:rgba(61,72,64,.08);border:1px solid rgba(61,72,64,.18);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:#3D4840;">✅ 인증완료</div><button id="mrOpenBBBtn" onclick="openBaseballPopup(false)" style="width:100%;margin-top:6px;padding:9px;background:linear-gradient(135deg,rgba(20,60,45,.22),rgba(15,50,35,.28));border:1.5px solid rgba(42,144,128,.55);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(60,180,120,1.0);cursor:pointer;">🔐 암호점호 열기</button>${_bbStatusBadge}</div>`;
+    if(_bbPlayedToday){
+      /* 오늘 이미 도전/완료 → 완료 표시 버튼 (탭하면 결과 확인 가능) */
+      btnArea = `<div style="margin-top:8px;">${cheerBox}<button id="mrOpenBBBtn" onclick="openBaseballPopup(false)" style="width:100%;margin-top:${cheerBox?'6':'0'}px;padding:11px;background:rgba(30,90,60,.14);border:1.5px solid rgba(42,144,128,.45);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(30,130,75,.95);cursor:pointer;">✅ 야구점호 진행 후 인증완료</button></div>`;
+    } else {
+      /* 오늘 미실시 → 클릭 가능한 열기 버튼 */
+      btnArea = `<div style="margin-top:8px;">${cheerBox}<button id="mrOpenBBBtn" onclick="openBaseballPopup(false)" style="width:100%;margin-top:${cheerBox?'6':'0'}px;padding:11px;background:linear-gradient(135deg,rgba(20,60,45,.22),rgba(15,50,35,.28));border:1.5px solid rgba(42,144,128,.55);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(60,180,120,1.0);cursor:pointer;">🔐 야구점호 미실시 — 탭하여 시작</button></div>`;
+    }
   } else if(failed){
     btnArea = `<div style="margin-top:8px;padding:9px;background:rgba(180,40,40,.10);border:1px solid rgba(180,40,40,.30);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(200,60,60,.85);text-align:center;">❌ 오늘 아침점호 실패 — 내일 다시 도전!</div>`;
   }
@@ -17737,10 +17748,34 @@ async function _bbRefreshUI(){
   if(!data) return;
   window._bbCacheData = data; /* _renderMorningSlot에서 동기 접근용 캐시 */
   const hist = Array.isArray(data.history) ? data.history : [];
+  const histAll = Array.isArray(data.historyAll) ? data.historyAll : [];
   const histEl = document.getElementById('bbHistoryList');
   const inputArea = document.getElementById('bbInputArea');
   const resultArea = document.getElementById('bbResultArea');
   const extraBtn = document.getElementById('bbExtraBtn');
+
+  /* ── 회차 표시 업데이트 ── */
+  const _roundEl = document.getElementById('bbRoundLabel');
+  if(_roundEl){
+    const _round = (data.solvedCount||0) + 1;
+    _roundEl.textContent = `${_round}번째 도전`;
+  }
+
+  /* ── 이전 날짜 차단: lastSolvedDate 이후 날짜부터만 새 게임 가능 ──
+     lastSolvedDate가 있고 selDate가 그보다 이전이면 과거 게임은 이미 종료 */
+  if(data.lastSolvedDate && selDate < data.lastSolvedDate){
+    if(inputArea) inputArea.style.display='none';
+    if(resultArea){
+      resultArea.style.cssText='display:block;margin-bottom:12px;padding:14px;background:rgba(60,60,60,.12);border:1px solid rgba(180,180,180,.20);border-radius:14px;text-align:center;';
+      const emojiEl=document.getElementById('bbResultEmoji');
+      const titleEl=document.getElementById('bbResultTitle');
+      const subEl=document.getElementById('bbResultSub');
+      if(emojiEl){emojiEl.textContent='📅';emojiEl.style.cssText='font-size:36px;margin-bottom:6px;';}
+      if(titleEl){titleEl.textContent='이미 종료된 날짜';titleEl.style.color='rgba(200,200,200,.70)';}
+      if(subEl) subEl.innerHTML=`<span style="font-size:9px;color:rgba(255,255,255,.35);">${data.lastSolvedDate} 이후 날짜에서 진행 가능합니다</span>`;
+    }
+    return;
+  }
 
   /* 누적 기록 */
   if(hist.length===0){
@@ -17759,22 +17794,30 @@ async function _bbRefreshUI(){
   }
 
   const todayEntries=hist.filter(h=>h.date===selDate);
-  const todayTried=todayEntries.length>0;
+  /* 4S 성공 시 history 초기화되므로 histAll에서도 오늘 성공 여부 확인 */
+  const solvedTodayInAll = histAll.some(h=>h.date===selDate && h.s===4);
+  const todayTried=todayEntries.length>0 || solvedTodayInAll;
   const extraUsed=!!(data.extraUsedDate&&data.extraUsedDate===selDate);
 
   if(todayTried){
-    const last=todayEntries[todayEntries.length-1];
-    if(inputArea) inputArea.style.display='none';
-    _bbShowResult(last.s===4?'solved':'fail', last.guess, last.s, last.b);
-    if(last.s!==4 && !extraUsed){
-      const pPath=MY_UID?`userData/${MY_UID}/shopPoints`:null;
-      if(pPath){
-        const snap=await _fbGet(pPath);
-        const pts=snap&&snap.exists()?(snap.val()||0):0;
-        if(pts>=1&&extraBtn) extraBtn.style.display='block';
+    if(solvedTodayInAll && todayEntries.length===0){
+      /* histAll에만 기록 — 이미 4S 성공한 날 */
+      const solvedEntry = histAll.filter(h=>h.date===selDate && h.s===4).pop();
+      if(inputArea) inputArea.style.display='none';
+      _bbShowResult('solved', solvedEntry?solvedEntry.guess:'????');
+    } else {
+      const last=todayEntries[todayEntries.length-1];
+      if(inputArea) inputArea.style.display='none';
+      _bbShowResult(last.s===4?'solved':'fail', last.guess, last.s, last.b);
+      if(last.s!==4 && !extraUsed){
+        const pPath=MY_UID?`userData/${MY_UID}/shopPoints`:null;
+        if(pPath){
+          const snap=await _fbGet(pPath);
+          const pts=snap&&snap.exists()?(snap.val()||0):0;
+          if(pts>=1&&extraBtn) extraBtn.style.display='block';
+        }
       }
     }
-
   }
 }
 
