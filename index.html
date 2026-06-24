@@ -5825,11 +5825,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div id="qInputHint" style="display:none;margin-bottom:8px;padding:7px 10px;background:rgba(255,100,80,.10);border:1px solid rgba(255,100,80,.30);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(255,140,120,.90);">✏️ 최소 5자 이상 구체적으로 입력해주세요 (예: 아침 러닝 30분 하기)</div>
           <button onclick="addOpsToday()" style="width:100%;padding:14px;background:linear-gradient(135deg,rgba(40,130,80,.92),rgba(20,80,50,.94));border:1.5px solid rgba(82,212,164,.45);border-radius:12px;color:#A8F0C8;font-size:13px;font-weight:800;font-family:var(--kr);cursor:pointer;transition:.15s;letter-spacing:.3px;">💾 저장</button>
 
-          <!-- 내일 아침점호 예약 버튼 (조건부 표시) -->
-          <div id="cboxMorningResWrap" style="display:none;margin-top:10px;">
-            <div style="text-align:center;font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.28);margin-bottom:6px;">— 또는 —</div>
-            <button id="cboxMorningResBtn" onclick="closeCbox();(function(){const _d=new Date(_virtualNow());_d.setDate(_d.getDate()+1);_openMorningRegPopupForDate(dateStr(_d));})();" style="width:100%;padding:12px;background:linear-gradient(135deg,rgba(42,77,181,.18),rgba(30,60,150,.22));border:1.5px solid rgba(42,77,181,.40);border-radius:12px;color:rgba(100,140,255,.95);font-size:12px;font-weight:800;font-family:var(--kr);cursor:pointer;transition:.15s;">☀️ 내일 아침점호 예약하기</button>
-          </div>
+
 
           <!-- 숨김 호환 필드 -->
           <select id="diffSel" style="display:none;"><option value="easy">easy</option><option value="medium">medium</option><option value="hard">hard</option></select>
@@ -8248,7 +8244,7 @@ function _renderDiaryDayRecord(){
 
   /* 상대방 퀘스트 */
   let partnerCoopItems=[], partnerSoloItems=[], partnerMrItem=null;
-  const _partnerSubscribedForDate = (typeof _subscribedPartnerPath !== 'undefined') && _subscribedPartnerPath && _subscribedPartnerPath.includes('/'+date+'/');
+  const _partnerSubscribedForDate = (typeof _subscribedPartnerPath !== 'undefined') && _subscribedPartnerPath && _subscribedPartnerPath.includes('/'+date);
   if(partnerData&&partnerData.uid){
     if(_partnerSubscribedForDate && _partnerQuests && _partnerQuests.length>=0){
       partnerCoopItems = _partnerQuests.filter(q=>q.mode==='coop');
@@ -8521,42 +8517,32 @@ function _renderDiaryDayRecord(){
     btn.addEventListener('click',async()=>{
       const d=btn.dataset.date||date;
       const _cheerDailyKey=`cheerSentToday_${MY_UID}_${d}`;
-      /* flag만 해제 (Firebase cheerMsg는 삭제 안 함 — 기존 메시지 유지) */
+      /* flag만 해제 (Firebase cheerMsg는 삭제하지 않음 — 기존 메시지 유지) */
       _unsetFlag(_cheerDailyKey);
       try{ localStorage.removeItem('cheerMsg_'+_cheerDailyKey); }catch(e){}
-      /* 수정 모드로 팝업 바로 열기 — 기존 메시지 로드 */
+      /* 수정 모드로 팝업 열기 — 기존 메시지 로드 */
       _cheerEditMode = true;
       const popup=document.getElementById('cheerMsgPopup');
       if(popup){
         document.getElementById('cheerTargetName').textContent=`💜 응원 메시지 수정`;
-        /* 기존 메시지 미리 채우기 */
-        let _prevMsg = '';
+        let _prevMsg='';
         try{
-          const _prevSnap = await _fbDb.ref(`users/${partnerData.uid}/cheerMsg/${d}`).once('value');
-          if(_prevSnap&&_prevSnap.exists()&&_prevSnap.val()&&_prevSnap.val().msg){
-            _prevMsg = _prevSnap.val().msg;
-          }
+          const _ps=await _fbDb.ref(`users/${partnerData.uid}/cheerMsg/${d}`).once('value');
+          if(_ps&&_ps.exists()&&_ps.val()&&_ps.val().msg) _prevMsg=_ps.val().msg;
         }catch(e){}
         document.getElementById('cheerMsgInput').value=_prevMsg;
-        /* 수정 모드 버튼 텍스트 변경 */
-        const _submitBtn = popup.querySelector('button[onclick="submitCheerMsg()"]');
-        if(_submitBtn) _submitBtn.textContent = '✅ 수정 완료';
-        /* 닫기 시 복원 콜백 등록 */
-        popup._onCloseRestore = ()=>{
-          /* 전송하지 않고 닫으면: flag 복원, Firebase 복원, edit 모드 해제 */
+        const _sb=popup.querySelector('button[onclick="submitCheerMsg()"]');
+        if(_sb) _sb.textContent='✅ 수정 완료';
+        popup._onCloseRestore=()=>{
           if(_cheerEditMode){
-            _cheerEditMode = false;
+            _cheerEditMode=false;
             _setFlag(_cheerDailyKey);
-            /* Firebase에 기존 메시지 복원 */
-            if(_prevMsg && partnerData&&partnerData.uid){
-              _fbSet(`users/${partnerData.uid}/cheerMsg/${d}`,{
-                msg:_prevMsg, fromNick:myNickname||'상대방', fromUid:MY_UID, sentAt:Date.now()
-              }).catch(()=>{});
+            if(_prevMsg&&partnerData&&partnerData.uid){
+              _fbSet(`users/${partnerData.uid}/cheerMsg/${d}`,{msg:_prevMsg,fromNick:myNickname||'상대방',fromUid:MY_UID,sentAt:Date.now()}).catch(()=>{});
             }
           }
-          /* 버튼 텍스트 원상복구 */
-          if(_submitBtn) _submitBtn.textContent = '전송 +2P 보급상점';
-          popup._onCloseRestore = null;
+          if(_sb) _sb.textContent='전송 +2P 보급상점';
+          popup._onCloseRestore=null;
         };
         popup.style.display='flex';
       }
@@ -9614,16 +9600,7 @@ function openOpsRegPopup(){
   }
   selectOpsCategory('health');
   popup.style.display = 'flex';
-  /* 내일 아침점호 예약 버튼: 오늘 날짜 뷰이고 아직 내일 예약 없을 때만 표시 */
-  const _mrResWrap = document.getElementById('cboxMorningResWrap');
-  if(_mrResWrap){
-    const _todayForMr = dateStr(new Date(_virtualNow()));
-    const _tomorrowForMr = dateStr(new Date(_virtualNow()+86400000));
-    const _mrTomorrowData = window['_mrHistCache_'+_tomorrowForMr];
-    const _hasMrTomorrowRes = _mrTomorrowData && _mrTomorrowData.hour;
-    /* 내일 아침점호 예약 없으면 버튼 노출 */
-    _mrResWrap.style.display = (!_hasMrTomorrowRes) ? 'block' : 'none';
-  }
+
   setTimeout(()=>{ const inp=document.getElementById('qInput'); if(inp) inp.focus(); }, 80);
 }
 
@@ -10229,17 +10206,17 @@ async function submitCheerMsg(){
   }
   const _isEdit = _cheerEditMode;
   _cheerEditMode = false; /* 사용 후 초기화 */
-  /* 복원 콜백 해제 (정상 전송이므로 복원 불필요) + 버튼 텍스트 원상복구 */
-  const _popup = document.getElementById('cheerMsgPopup');
-  if(_popup){
-    _popup._onCloseRestore = null;
-    const _sb = _popup.querySelector('button[onclick="submitCheerMsg()"]');
-    if(_sb) _sb.textContent = '전송 +2P 보급상점';
+  /* 복원 콜백 해제 + 버튼 텍스트 원상복구 */
+  const _popup2=document.getElementById('cheerMsgPopup');
+  if(_popup2){
+    _popup2._onCloseRestore=null;
+    const _sb2=_popup2.querySelector('button[onclick="submitCheerMsg()"]');
+    if(_sb2) _sb2.textContent='전송 +2P 보급상점';
   }
   if(!partnerData||!partnerData.uid){closeCheerMsgPopup();return;}
 
   try{
-    /* 상대 Firebase에 단일 응원메시지 저장 (수정도 remove 없이 바로 set → 지연 없음) */
+    /* 상대 Firebase에 단일 응원메시지 저장 (수정도 remove 없이 바로 set — 즉시 반영) */
     const _cheerPath = `users/${partnerData.uid}/cheerMsg/${selDate}`;
     await _fbSet(_cheerPath, {
       msg,
@@ -11024,18 +11001,16 @@ function _applyPartnerFieldsToQuests(fbData){
   });
   allData[selDate] = quests;
 }
-let _cheerMsgUnsub = null; /* 내 cheerMsg 실시간 구독 해제 함수 */
+let _cheerMsgUnsub = null;
 function subscribeMyOps(){
   if(_myQuestUnsub){ try{_myQuestUnsub();}catch(e){} _myQuestUnsub=null; }
   if(_myMorningUnsub){ try{_myMorningUnsub();}catch(e){} _myMorningUnsub=null; }
-  /* cheerMsg 실시간 구독 — 상대가 보내거나 수정할 때 즉시 카드 갱신 */
   if(_cheerMsgUnsub){ try{_cheerMsgUnsub();}catch(e){} _cheerMsgUnsub=null; }
-  if(MY_UID&&_fbDb){
-    const _cmPath = `users/${MY_UID}/cheerMsg/${selDate}`;
-    _fbDb.ref(_cmPath).on('value', ()=>{ _renderCheerMsgCard(); });
-    _cheerMsgUnsub = ()=>{ _fbDb.ref(_cmPath).off('value'); };
-  }
   if(!MY_UID||!_fbDb) return;
+  /* cheerMsg 실시간 구독 — 상대가 보내거나 수정하면 즉시 카드 갱신 */
+  const _cmPath = `users/${MY_UID}/cheerMsg/${selDate}`;
+  _fbDb.ref(_cmPath).on('value', ()=>{ if(typeof _renderCheerMsgCard==='function') _renderCheerMsgCard(); });
+  _cheerMsgUnsub = ()=>{ _fbDb.ref(_cmPath).off('value'); };
   const path = _questPath(MY_UID, selDate);
   /* BUG-25: selDate===todayStr이면 _subscribeQuests가 이미 같은 경로 구독 중
      부분 필드 동기화만 필요하므로 중복 .on() 대신 once()로 처리 */
