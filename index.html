@@ -11024,9 +11024,17 @@ function _applyPartnerFieldsToQuests(fbData){
   });
   allData[selDate] = quests;
 }
+let _cheerMsgUnsub = null; /* 내 cheerMsg 실시간 구독 해제 함수 */
 function subscribeMyOps(){
   if(_myQuestUnsub){ try{_myQuestUnsub();}catch(e){} _myQuestUnsub=null; }
   if(_myMorningUnsub){ try{_myMorningUnsub();}catch(e){} _myMorningUnsub=null; }
+  /* cheerMsg 실시간 구독 — 상대가 보내거나 수정할 때 즉시 카드 갱신 */
+  if(_cheerMsgUnsub){ try{_cheerMsgUnsub();}catch(e){} _cheerMsgUnsub=null; }
+  if(MY_UID&&_fbDb){
+    const _cmPath = `users/${MY_UID}/cheerMsg/${selDate}`;
+    _fbDb.ref(_cmPath).on('value', ()=>{ _renderCheerMsgCard(); });
+    _cheerMsgUnsub = ()=>{ _fbDb.ref(_cmPath).off('value'); };
+  }
   if(!MY_UID||!_fbDb) return;
   const path = _questPath(MY_UID, selDate);
   /* BUG-25: selDate===todayStr이면 _subscribeQuests가 이미 같은 경로 구독 중
