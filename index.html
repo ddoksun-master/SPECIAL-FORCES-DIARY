@@ -8248,7 +8248,7 @@ function _renderDiaryDayRecord(){
 
   /* 상대방 퀘스트 */
   let partnerCoopItems=[], partnerSoloItems=[], partnerMrItem=null;
-  const _partnerSubscribedForDate = (typeof _subscribedPartnerPath !== 'undefined') && _subscribedPartnerPath && _subscribedPartnerPath.includes('/'+date);
+  const _partnerSubscribedForDate = (typeof _subscribedPartnerPath !== 'undefined') && _subscribedPartnerPath && _subscribedPartnerPath.includes('/'+date+'/');
   if(partnerData&&partnerData.uid){
     if(_partnerSubscribedForDate && _partnerQuests && _partnerQuests.length>=0){
       partnerCoopItems = _partnerQuests.filter(q=>q.mode==='coop');
@@ -8521,19 +8521,43 @@ function _renderDiaryDayRecord(){
     btn.addEventListener('click',async()=>{
       const d=btn.dataset.date||date;
       const _cheerDailyKey=`cheerSentToday_${MY_UID}_${d}`;
-      /* flag 해제 */
+      /* flag만 해제 (Firebase cheerMsg는 삭제 안 함 — 기존 메시지 유지) */
       _unsetFlag(_cheerDailyKey);
       try{ localStorage.removeItem('cheerMsg_'+_cheerDailyKey); }catch(e){}
-      /* 상대방 Firebase cheerMsg 경로 초기화 */
-      if(partnerData&&partnerData.uid){
-        try{ await _fbDb.ref(`users/${partnerData.uid}/cheerMsg/${d}`).remove(); }catch(e){}
-      }
-      /* 수정 모드로 팝업 바로 열기 */
+      /* 수정 모드로 팝업 바로 열기 — 기존 메시지 로드 */
       _cheerEditMode = true;
       const popup=document.getElementById('cheerMsgPopup');
       if(popup){
-        document.getElementById('cheerTargetName').textContent=`(수정) 💜 ${partnerData&&partnerData.nickname||'상대방'}에게 응원 메시지를 보내보세요`;
-        document.getElementById('cheerMsgInput').value='';
+        document.getElementById('cheerTargetName').textContent=`💜 응원 메시지 수정`;
+        /* 기존 메시지 미리 채우기 */
+        let _prevMsg = '';
+        try{
+          const _prevSnap = await _fbDb.ref(`users/${partnerData.uid}/cheerMsg/${d}`).once('value');
+          if(_prevSnap&&_prevSnap.exists()&&_prevSnap.val()&&_prevSnap.val().msg){
+            _prevMsg = _prevSnap.val().msg;
+          }
+        }catch(e){}
+        document.getElementById('cheerMsgInput').value=_prevMsg;
+        /* 수정 모드 버튼 텍스트 변경 */
+        const _submitBtn = popup.querySelector('button[onclick="submitCheerMsg()"]');
+        if(_submitBtn) _submitBtn.textContent = '✅ 수정 완료';
+        /* 닫기 시 복원 콜백 등록 */
+        popup._onCloseRestore = ()=>{
+          /* 전송하지 않고 닫으면: flag 복원, Firebase 복원, edit 모드 해제 */
+          if(_cheerEditMode){
+            _cheerEditMode = false;
+            _setFlag(_cheerDailyKey);
+            /* Firebase에 기존 메시지 복원 */
+            if(_prevMsg && partnerData&&partnerData.uid){
+              _fbSet(`users/${partnerData.uid}/cheerMsg/${d}`,{
+                msg:_prevMsg, fromNick:myNickname||'상대방', fromUid:MY_UID, sentAt:Date.now()
+              }).catch(()=>{});
+            }
+          }
+          /* 버튼 텍스트 원상복구 */
+          if(_submitBtn) _submitBtn.textContent = '전송 +2P 보급상점';
+          popup._onCloseRestore = null;
+        };
         popup.style.display='flex';
       }
     });
@@ -9794,7 +9818,10 @@ function sendOpsCheer(){
   popup.style.display='flex';
 }
 function closeCheerMsgPopup(){
-  document.getElementById('cheerMsgPopup').style.display='none';
+  const popup=document.getElementById('cheerMsgPopup');
+  if(!popup) return;
+  if(typeof popup._onCloseRestore==='function') popup._onCloseRestore();
+  popup.style.display='none';
 }
 
 /* 같이하기 수락 안내 팝업 */
@@ -10202,10 +10229,17 @@ async function submitCheerMsg(){
   }
   const _isEdit = _cheerEditMode;
   _cheerEditMode = false; /* 사용 후 초기화 */
+  /* 복원 콜백 해제 (정상 전송이므로 복원 불필요) + 버튼 텍스트 원상복구 */
+  const _popup = document.getElementById('cheerMsgPopup');
+  if(_popup){
+    _popup._onCloseRestore = null;
+    const _sb = _popup.querySelector('button[onclick="submitCheerMsg()"]');
+    if(_sb) _sb.textContent = '전송 +2P 보급상점';
+  }
   if(!partnerData||!partnerData.uid){closeCheerMsgPopup();return;}
 
   try{
-    /* 상대 Firebase에 단일 응원메시지 저장 */
+    /* 상대 Firebase에 단일 응원메시지 저장 (수정도 remove 없이 바로 set → 지연 없음) */
     const _cheerPath = `users/${partnerData.uid}/cheerMsg/${selDate}`;
     await _fbSet(_cheerPath, {
       msg,
