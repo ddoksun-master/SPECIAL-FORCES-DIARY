@@ -7739,6 +7739,11 @@ function renderQ(){
       const _sCa = q.certAvailableAt||0;
       const _sCanCert = _sCertNow >= _sCa;
       const _sRem = _sCanCert ? 0 : Math.ceil((_sCa - _sCertNow)/60000);
+      /* 04시 예약 여부: certAvailableAt이 당일 04:00~04:59 사이면 "04시 예약 활성화" 표시 */
+      const _s04ms = new Date((q.questDate||selDate)+'T04:00:00').getTime();
+      const _s05ms = new Date((q.questDate||selDate)+'T05:00:00').getTime();
+      const _sIs04Reserve = !_sCanCert && (_sCa >= _s04ms) && (_sCa < _s05ms + 3600000);
+      const _sWaitLabel = _sIs04Reserve ? '📋 04시 예약 활성화' : `⏱ ${_sRem}분 후 인증`;
 
       /* 작전별 응원 메시지 박스 제거됨 (단일 응원 구조) */
       let cheerBox='';
@@ -7755,7 +7760,7 @@ function renderQ(){
             : `<div style="display:flex;align-items:center;gap:5px;padding:5px 10px;background:rgba(200,168,75,.10);border:1px solid rgba(200,168,75,.28);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(200,168,75,.98);"><span style="width:5px;height:5px;border-radius:50%;background:rgba(200,168,75,.8);animation:blink 1.2s infinite;display:inline-block;"></span>${pName} 수락 대기중</div>`;
           const coopCertBtn = _sCanCert
             ? `<button class="qbtn coop-cert-btn" style="flex:1;font-size:12px;padding:12px;background:rgba(47,74,54,.22);border:2px solid rgba(47,74,54,.60);color:#1E2D24;font-weight:800;border-radius:11px;">📸 인증하기</button>`
-            : `<button class="qbtn coop-cert-btn" style="flex:1;font-size:11px;padding:11px;background:rgba(61,72,64,.06);border:1.5px solid rgba(61,72,64,.18);color:#9CA49A;border-radius:11px;cursor:pointer;">⏱ ${_sRem}분 후 인증</button>`;
+            : `<button class="qbtn coop-cert-btn" style="flex:1;font-size:11px;padding:11px;background:rgba(61,72,64,.06);border:1.5px solid rgba(61,72,64,.18);color:#9CA49A;border-radius:11px;cursor:pointer;">${_sWaitLabel}</button>`;
           const pCertStatus = together
             ? `<div style="margin-top:6px;font-family:var(--kr);font-size:9px;color:#9CA49A;text-align:right;">${pName}: ${partnerCertified?'✅ 완료':'⏳ 대기'}</div>`
             : '';
@@ -7774,7 +7779,7 @@ function renderQ(){
             : `<button class="solo-cheer-req-btn" data-qi="${oi}" style="flex:1;padding:12px 8px;background:rgba(106,78,158,.18);border:1.5px solid rgba(106,78,158,.45);border-radius:11px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(180,130,255,.90);cursor:pointer;text-align:center;">💜 오늘의 응원을 전하세요 💜</button>`;
           const certBtnHtml = _sCanCert
             ? `<button class="qbtn solo-complete-btn" style="flex:1;font-size:12px;padding:12px;background:rgba(47,74,54,.22);border:2px solid rgba(47,74,54,.65);color:#1E2D24;font-weight:800;border-radius:11px;">📸 인증하기</button>`
-            : `<button class="qbtn solo-complete-btn" style="flex:1;font-size:11px;padding:11px;background:rgba(61,72,64,.05);border:1.5px solid rgba(61,72,64,.16);color:#9CA49A;border-radius:11px;cursor:pointer;">⏱ ${_sRem}분 후 인증</button>`;
+            : `<button class="qbtn solo-complete-btn" style="flex:1;font-size:11px;padding:11px;background:rgba(61,72,64,.05);border:1.5px solid rgba(61,72,64,.16);color:#9CA49A;border-radius:11px;cursor:pointer;">${_sWaitLabel}</button>`;
           btnRowHtml = `<div style="display:flex;gap:6px;min-width:0;">${reqBtn}${certBtnHtml}</div>`;
         }
 
@@ -7964,7 +7969,10 @@ function renderQ(){
       soloCompleteBtn.addEventListener('click',()=>{
         const now2=_virtualNow();
         if(now2<(quests[oi].certAvailableAt||0)){
-          const remain=Math.ceil(((quests[oi].certAvailableAt||0)-now2)/60000);
+          const _ca2=quests[oi].certAvailableAt||0;
+          const _d04=new Date(selDate+'T04:00:00').getTime();
+          if(_ca2>=_d04 && _ca2<_d04+7200000){ showToast('📋 04시 예약 활성화 — 05시부터 인증 가능합니다'); return; }
+          const remain=Math.ceil((_ca2-now2)/60000);
           showToast('⏱ 인증 가능까지 '+remain+'분 남았습니다');return;
         }
         openCertPopup(oi);
@@ -8187,30 +8195,10 @@ function _renderDiaryDayRecord(){
       });
     }
     const _partnerFutureItems = window[pCacheKeyFuture]||[];
-    /* 상대 아침점호 예약 로드 */
-    const _pMrFutureKey='_pMrHistCache_'+date;
-    let _pMrFuture = window[_pMrFutureKey]||null;
-    if(!_pMrFuture && partnerData&&partnerData.uid && _fbDb && !window[_pMrFutureKey+'_loaded']){
-      window[_pMrFutureKey+'_loaded']=true;
-      _fbDb.ref('users/'+partnerData.uid+'/morningRoll/'+date).once('value',snap=>{
-        window[_pMrFutureKey]=snap.exists()&&snap.val()&&snap.val().hour?snap.val():null;
-        _renderDiaryDayRecord();
-      });
-    }
-    /* 내 아침점호 예약 로드 */
-    const _myMrFutureKey='_myMrHistCache_'+date;
-    let _myMrFuture = window[_myMrFutureKey]||null;
-    if(!_myMrFuture && MY_UID && _fbDb && !window[_myMrFutureKey+'_loaded']){
-      window[_myMrFutureKey+'_loaded']=true;
-      _fbDb.ref(`users/${MY_UID}/morningRoll/${date}`).once('value',snap=>{
-        window[_myMrFutureKey]=snap.exists()&&snap.val()&&snap.val().hour?snap.val():null;
-        _renderDiaryDayRecord();
-      });
-    }
 
     const _myResItems = items_with_mr.filter(q=>q&&q.reserved);
     const _partnerResItems = _partnerFutureItems.filter(q=>q&&q.reserved);
-    const _hasAnyFutureData = _myResItems.length>0 || _partnerResItems.length>0 || (_myMrFuture&&_myMrFuture.hour) || (_pMrFuture&&_pMrFuture.hour) || (partnerData&&partnerData.uid);
+    const _hasAnyFutureData = _myResItems.length>0 || _partnerResItems.length>0 || (partnerData&&partnerData.uid);
 
     if(!_hasAnyFutureData){ wrap.style.display='none'; return; }
     wrap.style.display='block';
@@ -8226,12 +8214,6 @@ function _renderDiaryDayRecord(){
         ⚔️ 내 작전
         <span style="font-family:var(--orb);font-size:9px;color:rgba(78,130,220,.50);">04:00 활성화</span>
       </div>`;
-    if(_myMrFuture&&_myMrFuture.hour){
-      futureHtml+=`<div style="padding:5px 0;border-bottom:1px solid rgba(255,165,80,.12);margin-bottom:4px;display:flex;align-items:center;gap:5px;">
-        <span style="font-size:11px;">☀️</span>
-        <span style="font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(100,180,255,.85);">아침점호 ${_myMrFuture.hour}시 예약</span>
-        ${_myMrFuture.together?'<span style="font-family:var(--kr);font-size:9px;color:rgba(100,150,255,.65);">🤝</span>':''}</div>`;
-    }
     if(_myResItems.length>0){
       _myResItems.forEach(q=>{
         futureHtml+=`<div style="padding:5px 0;border-bottom:1px solid rgba(61,72,64,.08);display:flex;align-items:center;gap:5px;">
@@ -8239,7 +8221,7 @@ function _renderDiaryDayRecord(){
           <span style="font-family:var(--kr);font-size:11px;font-weight:700;color:#3D4840;">${q.name||'작전'}</span>
           ${q.mode==='coop'?'<span style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(42,77,181,.6);padding:1px 5px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.18);border-radius:4px;">협동</span>':''}</div>`;
       });
-    } else if(!(_myMrFuture&&_myMrFuture.hour)){
+    } else {
       futureHtml+=`<div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.35);padding:4px 0;">등록된 예약 없음</div>`;
     }
     futureHtml += '</div>';
@@ -8250,20 +8232,6 @@ function _renderDiaryDayRecord(){
         <div style="font-family:var(--title);font-size:12px;font-weight:900;color:rgba(70,30,130,.70);margin-bottom:7px;">
           👤 상대 카드 <span style="font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(106,78,158,.55);">(${pName2})</span>
         </div>`;
-      /* 아침점호 현황 나란히 */
-      futureHtml+=`<div style="margin-bottom:6px;padding:6px 0;border-bottom:1px solid rgba(255,165,80,.12);">
-        <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(255,165,80,.55);margin-bottom:4px;">☀️ 아침점호 예약</div>
-        <div style="display:flex;gap:6px;">
-          <div style="flex:1;padding:6px 8px;background:${(_myMrFuture&&_myMrFuture.hour)?'rgba(42,77,181,.08)':' rgba(61,72,64,.04)'};border:1px solid ${(_myMrFuture&&_myMrFuture.hour)?'rgba(42,77,181,.20)':' rgba(61,72,64,.14)'};border-radius:8px;">
-            <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(100,150,255,.55);margin-bottom:2px;">나</div>
-            <div style="font-family:var(--kr);font-size:11px;font-weight:800;color:${(_myMrFuture&&_myMrFuture.hour)?'rgba(100,180,255,.90)':' rgba(61,72,64,.30)'};">${(_myMrFuture&&_myMrFuture.hour)?_myMrFuture.hour+'시':'미등록'}</div>
-          </div>
-          <div style="flex:1;padding:6px 8px;background:${(_pMrFuture&&_pMrFuture.hour)?'rgba(106,78,158,.08)':' rgba(61,72,64,.04)'};border:1px solid ${(_pMrFuture&&_pMrFuture.hour)?'rgba(106,78,158,.20)':' rgba(61,72,64,.14)'};border-radius:8px;">
-            <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(150,100,220,.55);margin-bottom:2px;">${pName2}</div>
-            <div style="font-family:var(--kr);font-size:11px;font-weight:800;color:${(_pMrFuture&&_pMrFuture.hour)?'rgba(180,140,255,.90)':' rgba(61,72,64,.30)'};">${(_pMrFuture&&_pMrFuture.hour)?_pMrFuture.hour+'시':'미등록'}</div>
-          </div>
-        </div>
-      </div>`;
       if(_partnerResItems.length>0){
         _partnerResItems.forEach(q=>{
           futureHtml+=`<div style="padding:5px 0;border-bottom:1px solid rgba(106,78,158,.08);display:flex;align-items:center;gap:5px;">
@@ -8271,7 +8239,7 @@ function _renderDiaryDayRecord(){
             <span style="font-family:var(--kr);font-size:11px;font-weight:700;color:#3D3050;">${q.name||'작전'}</span>
             ${q.mode==='coop'?'<span style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(42,77,181,.6);padding:1px 5px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.18);border-radius:4px;">협동</span>':''}</div>`;
         });
-      } else if(!(_pMrFuture&&_pMrFuture.hour)){
+      } else {
         futureHtml+=`<div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.30);padding:4px 0;">등록된 예약 없음</div>`;
       }
       futureHtml+='</div>';
@@ -8293,7 +8261,7 @@ function _renderDiaryDayRecord(){
   const myCoopItems = items_with_mr.filter(q=>q.mode==='coop');
 
   /* 상대방 퀘스트 */
-  let partnerCoopItems=[], partnerSoloItems=[], partnerMrItem=null;
+  let partnerCoopItems=[], partnerSoloItems=[];
   const _partnerSubscribedForDate = (typeof _subscribedPartnerPath !== 'undefined') && _subscribedPartnerPath && _subscribedPartnerPath.includes('/'+date);
   if(partnerData&&partnerData.uid){
     if(_partnerSubscribedForDate && _partnerQuests && _partnerQuests.length>=0){
@@ -8315,28 +8283,6 @@ function _renderDiaryDayRecord(){
         return;
       }
     }
-    /* 상대 아침점호 */
-    const _safePMR = (typeof window._partnerMorningRoll !== 'undefined') ? window._partnerMorningRoll : null;
-    /* morningRoll 전용 구독 경로 기준으로 판단 (quests 경로와 독립) */
-    const _partnerMrSubscribed = (typeof _subscribedPartnerMrPath !== 'undefined') && _subscribedPartnerMrPath && _subscribedPartnerMrPath.includes('/'+date);
-    if(_partnerMrSubscribed && _safePMR && _safePMR.hour){
-      /* 구독 완료 + 데이터 도착 */
-      partnerMrItem = _safePMR;
-    } else if(_partnerMrSubscribed && _safePMR === null){
-      /* 구독 중이지만 아직 Firebase 응답 미도착 — 잠시 후 재렌더 */
-      setTimeout(()=>{ if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord(); }, 300);
-    } else if(!_partnerMrSubscribed){
-      const pMrKey='_pMrHistCache_'+date;
-      if(window[pMrKey]) partnerMrItem = window[pMrKey].hour ? window[pMrKey] : null;
-      else if(_fbDb && !window[pMrKey+'_loading']){
-        window[pMrKey+'_loading']=true;
-        _fbDb.ref('users/'+partnerData.uid+'/morningRoll/'+date).once('value',snap=>{
-          window[pMrKey]=snap.exists()&&snap.val()&&snap.val().hour ? snap.val() : {};
-          window[pMrKey+'_loading']=false;
-          _renderDiaryDayRecord();
-        });
-      }
-    }
   }
 
   /* ── HTML 빌드 ── */
@@ -8355,7 +8301,7 @@ function _renderDiaryDayRecord(){
     /* 상대 카드 — 아침점호 맨 위, 오늘의응원 입력창, 같이하기 버튼 */
   /* 날짜별 올바른 파트너 배열 */
   const _pQArrDiary = _partnerSubscribedForDate ? (_partnerQuests||[]) : (window['_partnerHist_'+date]||[]);
-  if(partnerCoopItems.length>0||partnerSoloItems.length>0||partnerMrItem||isToday){
+  if(partnerCoopItems.length>0||partnerSoloItems.length>0||isToday){
     const _needsEmpathy=[...partnerCoopItems,...partnerSoloItems].some((q,_idx)=>{
       const isCoopQ=partnerCoopItems.includes(q);
       const pqi=_pQArrDiary.indexOf(q);
@@ -8404,74 +8350,6 @@ function _renderDiaryDayRecord(){
           ?`<div style="font-family:var(--kr);font-size:12px;font-weight:800;color:#2A1040;line-height:1.5;">${_sentCheerMsg||'✓ 응원 전송 완료'}</div>`
           :`<button class="diary-cheer-send-btn" data-date="${date}" style="width:100%;padding:9px 12px;background:rgba(106,78,158,.15);border:1.5px solid rgba(150,100,220,.40);border-radius:9px;font-family:var(--kr);font-size:11px;font-weight:800;color:rgba(100,60,180,.90);cursor:pointer;text-align:center;">💜 [${pName}]님에게 응원을 전하세요 💜</button>`}
       </div>`;
-    }
-
-    /* ── 상대 카드 아침점호 섹션 (내 아침점호 + 상대 아침점호 함께 표시) ── */
-    {
-      /* 내 아침점호 데이터 */
-      const _myMr=(typeof window._mrData!=='undefined')?window._mrData:null;
-      const _myMrH=_myMr&&_myMr.hour;
-      const _myMrDone=_myMr&&!!_myMr.completed;
-      const _myMrCertAt=_myMr&&(_myMr.certifiedAt||null);
-      const _myMrCertTime=_myMrCertAt?String(new Date(_myMrCertAt).getHours()).padStart(2,'0')+':'+String(new Date(_myMrCertAt).getMinutes()).padStart(2,'0'):null;
-      const _myMrTogether=_myMr&&_myMr.together===partnerData.uid;
-
-      /* 상대 아침점호 데이터 */
-      const _pmr=partnerMrItem;
-      const _pmrH=_pmr&&_pmr.hour;
-      const _pmrDone=_pmr&&!!_pmr.completed;
-      const _pmrCertAt=_pmr&&(_pmr.certifiedAt||null);
-      const _pmrCertTime=_pmrCertAt?String(new Date(_pmrCertAt).getHours()).padStart(2,'0')+':'+String(new Date(_pmrCertAt).getMinutes()).padStart(2,'0'):null;
-
-      const _hasAnyMr = _myMrH || _pmrH || (isToday&&partnerData&&partnerData.uid);
-      if(_hasAnyMr){
-        html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(255,165,80,.15);margin-bottom:4px;">
-          <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(255,165,80,.60);margin-bottom:5px;">☀️ 아침점호 현황</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">`;
-
-        /* 내 아침점호 */
-        if(_myMrH){
-          const _myFrom=String(_myMrH).padStart(2,'0')+':00';
-          const _myTo=String(_myMrH).padStart(2,'0')+':59';
-          html+=`<div style="flex:1;min-width:120px;padding:7px 9px;background:${_myMrDone?'rgba(47,74,54,.18)':'rgba(42,77,181,.06)'};border:1px solid ${_myMrDone?'rgba(47,74,54,.40)':'rgba(42,77,181,.22)'};border-radius:9px;">
-            <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(100,150,255,.65);margin-bottom:3px;">나</div>
-            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
-              <span style="font-family:var(--kr);font-size:11px;font-weight:900;color:rgba(100,180,255,.95);">${_myMrH}시</span>
-              ${_myMrDone&&_myMrCertTime
-                ?`<span style="font-family:var(--kr);font-size:10px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_myMrCertTime}</span>`
-                :`<span style="font-family:var(--orb);font-size:9px;color:rgba(180,150,80,.55);">${_myFrom}~${_myTo}</span>`}
-              ${_myMrTogether?`<span style="font-family:var(--kr);font-size:9px;color:rgba(100,150,255,.70);">🤝</span>`:''}
-            </div>
-          </div>`;
-        } else if(isToday){
-          html+=`<div style="flex:1;min-width:120px;padding:7px 9px;background:rgba(61,72,64,.05);border:1px dashed rgba(61,72,64,.18);border-radius:9px;">
-            <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(100,150,255,.45);margin-bottom:3px;">나</div>
-            <div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.35);">미등록</div>
-          </div>`;
-        }
-
-        /* 상대 아침점호 */
-        if(_pmrH){
-          const _pFrom=String(_pmrH).padStart(2,'0')+':00';
-          const _pTo=String(_pmrH).padStart(2,'0')+':59';
-          html+=`<div style="flex:1;min-width:120px;padding:7px 9px;background:${_pmrDone?'rgba(47,74,54,.12)':'rgba(106,78,158,.07)'};border:1px solid ${_pmrDone?'rgba(47,74,54,.32)':'rgba(106,78,158,.22)'};border-radius:9px;">
-            <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(150,100,220,.65);margin-bottom:3px;">${pName}</div>
-            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
-              <span style="font-family:var(--kr);font-size:11px;font-weight:900;color:rgba(180,140,255,.95);">${_pmrH}시</span>
-              ${_pmrDone&&_pmrCertTime
-                ?`<span style="font-family:var(--kr);font-size:10px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_pmrCertTime}</span>`
-                :`<span style="font-family:var(--orb);font-size:9px;color:rgba(180,150,80,.55);">${_pFrom}~${_pTo}</span>`}
-            </div>
-          </div>`;
-        } else if(isToday){
-          html+=`<div style="flex:1;min-width:120px;padding:7px 9px;background:rgba(61,72,64,.05);border:1px dashed rgba(61,72,64,.18);border-radius:9px;">
-            <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(150,100,220,.45);margin-bottom:3px;">${pName}</div>
-            <div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.35);">미등록</div>
-          </div>`;
-        }
-
-        html+=`</div></div>`;
-      }
     }
 
     /* ── 상대 협동 미션 ── */
@@ -8734,6 +8612,10 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
   /* 인증 버튼 계산 (rightHtml은 협동작전 전용으로만 사용) */
   const _sNow=_virtualNow(), _sCa=q.certAvailableAt||0, _sCanCert=_sNow>=_sCa;
   const _sRem=_sCanCert?0:Math.ceil((_sCa-_sNow)/60000);
+  /* 04시 예약 활성화 표시: certAvailableAt이 당일 04:00 기준이면 분 대신 안내 문구 */
+  const _s04msSlot = new Date(selDate+'T04:00:00').getTime();
+  const _sIs04ResSlot = !_sCanCert && _sCa >= _s04msSlot && _sCa < _s04msSlot + 7200000;
+  const _sWaitLabelSlot = _sIs04ResSlot ? '📋 04시 예약 활성화' : `⏱ ${_sRem}분 후 인증`;
   let rightHtml='';
 
   /* 응원 있든 없든 무조건 버튼 수령 완료 후에만 도장 표시 */
@@ -8773,7 +8655,7 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
     if(!_sStamped && !q.completed){
       if(!isCoop){
         /* 개인 — 인증하기만 (응원요청+메시지는 위 응원메시지 카드로 이동) */
-        const _certLabel = _sCanCert ? '📸 인증하기' : `⏱ ${_sRem}분 후 인증`;
+        const _certLabel = _sCanCert ? '📸 인증하기' : _sWaitLabelSlot;
         const _certBtn = `<button class="slot-cert-btn solo-complete-btn" style="width:100%;padding:11px 8px;${_sCanCert?_certStyleActive:_certStyleWait}font-family:var(--kr);font-size:10px;font-weight:700;border-radius:10px;cursor:pointer;text-align:center;">${_certLabel}</button>`;
         soloCheerSlotHtml = `<div style="margin-top:8px;">${_certBtn}</div>`;
       } else {
@@ -8782,7 +8664,7 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
         const coopBadge = together
           ? `<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:11px 8px;background:rgba(42,77,181,.10);border:1.5px solid rgba(42,77,181,.28);border-radius:10px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(80,130,240,.88);">🤝 협동작전중</div>`
           : `<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:11px 8px;background:rgba(200,168,75,.08);border:1.5px solid rgba(200,168,75,.22);border-radius:10px;font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(200,168,75,.72);">수락 대기중</div>`;
-        const _certLabel = _sCanCert ? '📸 인증하기' : `⏱ ${_sRem}분 후 인증`;
+        const _certLabel = _sCanCert ? '📸 인증하기' : _sWaitLabelSlot;
         const _certBtn = `<button class="slot-cert-btn coop-cert-btn" style="flex:1;padding:11px 8px;${_sCanCert?_certStyleActive:_certStyleWait}font-family:var(--kr);font-size:10px;font-weight:700;border-radius:10px;cursor:pointer;text-align:center;">${_certLabel}</button>`;
         const pCertStatus = together
           ? `<div style="margin-top:5px;font-family:var(--kr);font-size:9px;color:#9CA49A;text-align:right;">${(partnerData&&partnerData.nickname)||'파트너'}: ${q.partnerCertified?'✅ 완료':'⏳ 대기'}</div>`
@@ -8836,7 +8718,7 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
     e.stopPropagation();
     if(_isNotYetActive){showToast('⏳ 오전 4시에 활성화됩니다');return;}
     if(_isFailed){showToast('❌ 임무실패 — 인증불가');return;}
-    const n=_virtualNow();if(n<(quests[oi].certAvailableAt||0)){showToast('⏱ 인증 가능까지 '+Math.ceil(((quests[oi].certAvailableAt||0)-n)/60000)+'분 남았습니다');return;}openCertPopup(oi);
+    const n=_virtualNow();if(n<(quests[oi].certAvailableAt||0)){const _ca3=quests[oi].certAvailableAt||0;const _d04s=new Date(selDate+'T04:00:00').getTime();if(_ca3>=_d04s&&_ca3<_d04s+7200000){showToast('📋 04시 예약 활성화 — 05시부터 인증 가능합니다');return;}showToast('⏱ 인증 가능까지 '+Math.ceil((_ca3-n)/60000)+'분 남았습니다');return;}openCertPopup(oi);
   });}
   /* 인증보기 버튼 — 슬롯 내 */
   const slotCertViewBtn=slotEl.querySelector('.slot-cert-view-btn');
@@ -9469,7 +9351,10 @@ async function certifyCoopQuest(qi){
   const q=quests[qi];
   const now=_virtualNow();
   if(now<(q.certAvailableAt||0)){
-    const remain=Math.ceil(((q.certAvailableAt||0)-now)/60000);
+    const _ca4=q.certAvailableAt||0;
+    const _d04c=new Date(selDate+'T04:00:00').getTime();
+    if(_ca4>=_d04c&&_ca4<_d04c+7200000){ showToast('📋 04시 예약 활성화 — 05시부터 인증 가능합니다');return; }
+    const remain=Math.ceil((_ca4-now)/60000);
     showToast('⏱ 인증 가능까지 '+remain+'분 남았습니다');return;
   }
   quests[qi].stamped=true;
@@ -10710,7 +10595,10 @@ async function submitCert(){
   const now = _virtualNow();
 
   if(now<(quests[qi].certAvailableAt||0)){
-    const remain=Math.ceil(((quests[qi].certAvailableAt||0)-now)/60000);
+    const _ca5=quests[qi].certAvailableAt||0;
+    const _d04p=new Date(selDate+'T04:00:00').getTime();
+    if(_ca5>=_d04p&&_ca5<_d04p+7200000){ showToast('📋 04시 예약 활성화 — 05시부터 인증 가능합니다'); return; }
+    const remain=Math.ceil((_ca5-now)/60000);
     showToast('⏱ 인증 가능까지 '+remain+'분 남았습니다');
     return;
   }
@@ -10846,6 +10734,8 @@ function _updateTclkDisplay(){
     const ca = q.certAvailableAt||0;
     const remain = ca - now;
     if(remain<=0) return `<span style="color:rgba(82,212,164,.8);">✅ OP-${String(i+1).padStart(3,'0')} ${q.name} — 인증 가능</span>`;
+    const _d04t=new Date(selDate+'T04:00:00').getTime();
+    if(ca>=_d04t&&ca<_d04t+7200000) return `<span>📋 OP-${String(i+1).padStart(3,'0')} ${q.name} — 04시 예약 활성화</span>`;
     return `<span>⏳ OP-${String(i+1).padStart(3,'0')} ${q.name} — ${Math.ceil(remain/60000)}분 후</span>`;
   }).filter(Boolean);
   document.getElementById('tclkQuestStatus').innerHTML = lines.length ? lines.join('<br>') : '<span style="opacity:.35;">등록된 작전 없음</span>';
@@ -11003,9 +10893,15 @@ setInterval(()=>{
       }
     } else {
       const rem = ca - now;
-      const remMin = Math.floor(rem/60000);
-      const remSec = Math.floor((rem%60000)/1000);
-      const label = remMin > 0 ? '⏱ ' + remMin + '분 후 인증' : '⏱ ' + remSec + '초 후 인증';
+      const _d04rt = new Date(selDate+'T04:00:00').getTime();
+      let label;
+      if(ca>=_d04rt && ca<_d04rt+7200000){
+        label = '📋 04시 예약 활성화';
+      } else {
+        const remMin = Math.floor(rem/60000);
+        const remSec = Math.floor((rem%60000)/1000);
+        label = remMin > 0 ? '⏱ ' + remMin + '분 후 인증' : '⏱ ' + remSec + '초 후 인증';
+      }
       btn.textContent = label;
       btn.style.background = 'rgba(61,72,64,.04)';
       btn.style.border = '1.5px solid rgba(61,72,64,.14)';
@@ -12036,7 +11932,6 @@ function _renderHistInner(){
     /* 상대방 퀘스트 — 오늘은 실시간, 과거는 Firebase에서 로드 */
     let partnerCoopItems=[];
     let partnerSoloItems=[];
-    let partnerMrItem=null; /* 상대 아침점호 */
     if(partnerData&&partnerData.uid){
       if(isToday&&_partnerQuests&&_partnerQuests.length>0){
         partnerCoopItems=_partnerQuests.filter(q=>q.mode==='coop');
@@ -12058,29 +11953,13 @@ function _renderHistInner(){
           return; /* ★ 이미 로딩 중이면 중복 entry 방지 */
         }
       }
-      /* 상대 아침점호 — 오늘은 _partnerMorningRoll, 과거는 별도 캐시 */
-      if(isToday && _partnerMorningRoll && _partnerMorningRoll.hour){
-        partnerMrItem = _partnerMorningRoll;
-      } else if(!isToday){
-        const pMrKey='_pMrHistCache_'+date;
-        if(window[pMrKey]){
-          partnerMrItem = window[pMrKey].hour ? window[pMrKey] : null;
-        } else if(_fbDb&&!window[pMrKey+'_loading']){
-          window[pMrKey+'_loading']=true;
-          _fbDb.ref('users/'+partnerData.uid+'/morningRoll/'+date).once('value',snap=>{
-            window[pMrKey]=snap.exists()&&snap.val()&&snap.val().hour ? snap.val() : {};
-            window[pMrKey+'_loading']=false;
-            setTimeout(()=>renderHist(),0);
-          });
-        }
-      }
     }
 
 
     /* ══ 상대 카드 ══ */
     /* 날짜별 올바른 파트너 배열 참조 — 오늘은 _partnerQuests, 과거는 캐시 */
     const _pQArr = isToday ? (_partnerQuests||[]) : (window['_partnerHist_'+date]||[]);
-    if(partnerCoopItems.length>0||partnerSoloItems.length>0||partnerMrItem){
+    if(partnerCoopItems.length>0||partnerSoloItems.length>0){
       /* 공감 필요한 미션 있는지 확인 → 있으면 펼침, 없으면 접힘 */
       const _needsEmpathy = [...partnerCoopItems, ...partnerSoloItems].some((q, _idx)=>{
         const isCoopQ = partnerCoopItems.includes(q);
@@ -12102,31 +11981,6 @@ function _renderHistInner(){
           <span id="oppCardChevron_${date}" style="font-size:12px;color:rgba(106,78,158,.7);transition:transform .25s;">${_chevron}</span>
         </div>
         <div id="oppCardBody_${date}" style="display:${_isCollapsed?'none':'block'};padding:12px;background:rgba(106,78,158,.05);border:2px solid rgba(106,78,158,.20);border-top:none;border-radius:0 0 14px 14px;">`;
-
-      /* ── 상대 아침점호 ── */
-      if(partnerMrItem){
-        const _pmr = partnerMrItem;
-        const _pmrH = _pmr.hour;
-        const _pmrDone = !!_pmr.completed;
-        const _pmrCertAt = _pmr.certifiedAt || null;
-        const _pmrCertTime = _pmrCertAt
-          ? String(new Date(_pmrCertAt).getHours()).padStart(2,'0')+':'+String(new Date(_pmrCertAt).getMinutes()).padStart(2,'0')
-          : null;
-        const _pmrFrom = String(_pmrH).padStart(2,'0')+':00';
-        const _pmrTo   = String(_pmrH).padStart(2,'0')+':59';
-        html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(255,165,80,.12);margin-bottom:4px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
-            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-              <span style="font-size:12px;">☀️</span>
-              <span style="font-family:var(--kr);font-size:12px;font-weight:900;color:rgba(60,140,220,.95);">아침점호 ${_pmrH}시</span>
-              ${_pmrDone && _pmrCertTime
-                ? `<span style="font-family:var(--kr);font-size:13px;font-weight:900;color:rgba(30,80,50,.90);">✅ ${_pmrCertTime} 인증완료</span>`
-                : `<span style="font-family:var(--kr);font-size:10px;color:rgba(180,150,80,.65);font-weight:600;">(인증 ${_pmrFrom}~${_pmrTo})</span>`
-              }
-            </div>
-          </div>
-        </div>`;
-      }
 
       /* 상대 협동 미션 */
       partnerCoopItems.forEach((q,_coopIdx)=>{
