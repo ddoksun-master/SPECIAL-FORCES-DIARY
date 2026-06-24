@@ -8254,9 +8254,10 @@ function _renderDiaryDayRecord(){
     }
     /* 상대 아침점호 */
     const _safePMR = (typeof window._partnerMorningRoll !== 'undefined') ? window._partnerMorningRoll : null;
-    if(_partnerSubscribedForDate && _safePMR && _safePMR.hour){
+    const _partnerMrSubscribed = (typeof _subscribedPartnerMrPath !== 'undefined') && _subscribedPartnerMrPath && _subscribedPartnerMrPath.includes('/'+date);
+    if(_partnerMrSubscribed && _safePMR && _safePMR.hour){
       partnerMrItem = _safePMR;
-    } else if(!_partnerSubscribedForDate){
+    } else if(!_partnerMrSubscribed){
       const pMrKey='_pMrHistCache_'+date;
       if(window[pMrKey]) partnerMrItem = window[pMrKey].hour ? window[pMrKey] : null;
       else if(_fbDb && !window[pMrKey+'_loading']){
