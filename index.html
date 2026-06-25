@@ -7442,7 +7442,27 @@ function _subscribeQuests(uid,date){
   _fbDb.ref(_questPath(uid,date)).on('value',snap=>{
     const data=snap.exists()?(snap.val()||[]):[];
     allData[date]=data;
-    if(selDate===date){quests=data;renderQ();updateHUD();}
+    if(selDate===date){
+      quests=data;
+      /* 협동작전 자동 보너스: partnerCertified=true + 내가 완료 + 미수령 → 자동 지급 */
+      data.forEach((q,i)=>{
+        if(q&&q.mode==='coop'&&q.completed&&q.partnerCertified&&!q.bonusClaimed){
+          quests[i].bonusClaimed=true;
+          quests[i].reward=8000;
+          /* 보급상점 +3P 자동 적립 */
+          Promise.resolve().then(async()=>{
+            try{
+              await addPoints(3);
+              await _savePxPointLog(date||selDate,'협동작전 보너스',3);
+              showToast('🎉 협동 성공! +3,000원 자동 지급 (총 8,000원) · 보급상점 +3P');
+            }catch(e){}
+          });
+          /* Firebase에 bonusClaimed 저장 */
+          if(_fbDb&&MY_UID) _fbDb.ref(_questPath(MY_UID,date)).set(quests);
+        }
+      });
+      renderQ();updateHUD();
+    }
   });
 }
 
@@ -9150,8 +9170,8 @@ async function _grantCertPoints(certMode){
   const rawPersonal = Object.values(getCycleData()).reduce((sum,items)=>
     sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||5000),0),0
   );
-  /* 15만원 미달성 시 메모/사진 포인트 없음 */
-  if(rawPersonal < cap.personalCap) return;
+  /* 메모/사진 1P는 15만원 달성 여부와 무관하게 항상 적립 */
+  /* (rawPersonal < cap.personalCap 조건 제거됨) */
 
   /* 더블포인트 패스 보유 시 2배 */
   const items = await loadShopItems();
@@ -9481,7 +9501,12 @@ async function claimCoopBonus(qi){
   quests[qi].bonusClaimed=true;
   quests[qi].reward=8000; /* 협동 보너스 포함: 5000+3000 */
   saveQ();renderQ();updateHUD();
-  showToast('🎉 협동 성공! +3,000원 추가 (총 8,000원)');
+  /* 협동 보너스 보급상점 포인트 적립 (기존 누락 수정) */
+  try{
+    await addPoints(3);
+    await _savePxPointLog(selDate, '협동작전 보너스', 3);
+  }catch(e){}
+  showToast('🎉 협동 성공! +3,000원 추가 (총 8,000원) · 보급상점 +3P');
 }
 
 /* 응원 메시지 전송 */
@@ -10106,7 +10131,7 @@ function _handleDeepLink(url) {
 /* ── 앱 업데이트 감지 & 실행 ── */
 let _pendingSWReg = null;
 
-const APP_VERSION = 'v3.0';
+const APP_VERSION = '6.25.05.10';
 const _VERCEL_URL='https://special-forces-diary.vercel.app/index.html';
 const _ETAG_STOR_KEY='sfDiary_lastETag';
 
@@ -17370,6 +17395,8 @@ let _mrMainCb = null;
 async function initMorningRoll(uid){
   if(!uid||!_fbDb) return;
   _mrCurrentDate = selDate;
+  /* 야구점호 캐시 미리 로드 — 첫 렌더 시 "탭하여 시작" 오표시 방지 */
+  try{ const _bbFresh = await _bbLoad(); if(_bbFresh) window._bbCacheData = _bbFresh; }catch(e){}
   _mrMainCb = snap=>{ _mrData = snap.exists() ? snap.val() : null; _renderMorningSlot(); };
   _fbDb.ref(_mrPath(selDate)).on('value', _mrMainCb);
 }
