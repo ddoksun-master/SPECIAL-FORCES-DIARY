@@ -1577,20 +1577,11 @@ async function initFirebase(){
           }
           }
         } else if(n.type==='cheer_received'){
-          /* 응원메시지 수신 → 즉시 +2P 자동 지급 */
+          /* 응원메시지 수신 — 포인트 없음 (전송자만 +2P) */
           _fbUpdate(`coopNotif/${MY_UID}/${key}`,{_seen:true});
-          const _crKey = `cheerReceived_${MY_UID}_${n.questDate||selDate}`;
-          if(!_getFlag(_crKey)){
-            _setFlag(_crKey);
-            (async()=>{
-              await addPoints(2);
-              await _savePxPointLog(n.questDate||selDate,'응원메시지 수신',2);
-            })();
-            showToast(`💜 ${n.fromNick||'상대방'}님의 응원! +2P 보급상점`);
-            /* 내 cheerMsg 데이터 구독 갱신 */
-            if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord();
-            if(typeof renderQ==='function') renderQ();
-          }
+          showToast(`💜 ${n.fromNick||'상대방'}님의 응원!`);
+          if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord();
+          if(typeof renderQ==='function') renderQ();
         } else if(n.type==='cheer_request'){
           /* 응원 요청 알림 → 04시 이후에만 팝업 */
           _fbUpdate(`coopNotif/${MY_UID}/${key}`,{_seen:true});
@@ -7406,7 +7397,7 @@ async function _initQuestsFromFb(){
   if(!_fbDb) return;
   const uid=MY_UID;
   /* cycleDay + templateData + teamData + flags + dayPoints Firebase 로드 */
-  await Promise.all([_loadCycleDay(), _loadTemplateData(), _loadTeamData(), _loadUserFlags(), _loadDayPoints()]);
+  await Promise.all([_loadCycleDay(), _loadTemplateData(), _loadTeamData(), _loadUserFlags()]); /* P4: _loadDayPoints 호출 제거 */
   /* 사이클 시작일부터 오늘까지 전체 로드 — 최대 35일 (사이클 최대 31일 + 여유) */
   const dates=[];
   const _today = new Date(_virtualNow());
@@ -7444,23 +7435,19 @@ function _subscribeQuests(uid,date){
     allData[date]=data;
     if(selDate===date){
       quests=data;
-      /* 협동작전 자동 보너스: partnerCertified=true + 내가 완료 + 미수령 → 자동 지급 */
+      /* 협동작전 자동 완료 처리: 둘 다 인증 완료 시 reward=8000 자동 세팅 (포인트 없음) */
+      let _coopAutoUpdated = false;
       data.forEach((q,i)=>{
-        if(q&&q.mode==='coop'&&q.completed&&q.partnerCertified&&!q.bonusClaimed){
-          quests[i].bonusClaimed=true;
-          quests[i].reward=8000;
-          /* 보급상점 +3P 자동 적립 */
-          Promise.resolve().then(async()=>{
-            try{
-              await addPoints(3);
-              await _savePxPointLog(date||selDate,'협동작전 보너스',3);
-              showToast('🎉 협동 성공! +3,000원 자동 지급 (총 8,000원) · 보급상점 +3P');
-            }catch(e){}
-          });
-          /* Firebase에 bonusClaimed 저장 */
-          if(_fbDb&&MY_UID) _fbDb.ref(_questPath(MY_UID,date)).set(quests);
+        if(q && q.mode==='coop' && q.completed && q.partnerCertified && !q.bonusClaimed){
+          quests[i].bonusClaimed = true;
+          quests[i].reward = 8000;
+          _coopAutoUpdated = true;
+          showToast('🎉 협동 성공! +3,000원 추가 (총 8,000원)');
         }
       });
+      if(_coopAutoUpdated){
+        if(_fbDb && MY_UID) _fbDb.ref(_questPath(MY_UID, date)).set(quests);
+      }
       renderQ();updateHUD();
     }
   });
@@ -7698,7 +7685,6 @@ function renderDayTabs(){
       renderDayTabs();
       renderQ();
       reloadMorningRoll();
-      showCat(curCat,document.querySelector('.ctab.active'));
       updateHUD();
       /* 날짜 바뀌면 상대 구독 갱신 */
       if(partnerData&&partnerData.uid) setTimeout(subscribePartnerOps,50);
@@ -7744,6 +7730,26 @@ function _isBlackoutHour(){
 }
 function _assertNotBlackout(){
   return false; /* 야간 잠금 비활성화 */
+}
+
+/* ── P2: 인증 가능 시각 판단 헬퍼 ──────────────────────────────
+   certAvailableAt 체크가 6곳에 중복되던 것을 단일화.
+   반환값:
+     canCert   {boolean} — 지금 인증 가능한지
+     waitLabel {string}  — 버튼/토스트에 쓸 대기 문구
+     rem       {number}  — 남은 분 (canCert=true 이면 0)
+   date: selDate 를 넘길 것. q.questDate 는 사용하지 않음.
+──────────────────────────────────────────────────────────────── */
+function _certTimeState(q, date){
+  const now    = _virtualNow();
+  const ca     = q.certAvailableAt || 0;
+  const canCert = now >= ca;
+  const rem    = canCert ? 0 : Math.ceil((ca - now) / 60000);
+  const d04    = new Date(date + 'T04:00:00').getTime();
+  /* certAvailableAt 이 당일 04:00~06:00 사이 → 예약 활성화 안내 */
+  const is04Reserve = !canCert && ca >= d04 && ca < d04 + 7200000;
+  const waitLabel   = is04Reserve ? '📋 04시 예약 활성화' : `⏱ ${rem}분 후 인증`;
+  return { canCert, waitLabel, rem, is04Reserve };
 }
 /* 야간 잠금 배너 항상 숨김 */
 function _renderBlackoutBanner(){
@@ -7829,7 +7835,7 @@ function renderQ(){
     /* ── 상태 카드: 응원메시지 + (협동이면 협동배지/인증) + 개인이면 응원요청/인증 ── */
     /* isCoop 여부와 무관하게 항상 soloCheerHtml 로직으로 렌더링하고,
        협동작전이면 버튼 행에 협동배지+협동인증버튼을 대신 삽입 */
-    let coopStatusHtml=''; /* 미사용 — 하위 호환용 빈값 유지 */
+    /* P4: coopStatusHtml 제거 (미사용 변수) */
 
     /* 개인모드 — 상태 카드: 응원메시지 표시 + 응원요청/협동배지 + 인증버튼 */
     let soloCheerHtml='';
@@ -7837,14 +7843,8 @@ function renderQ(){
       const _sMyNick = myNickname||'나';
       const _sIsMyCheer = q.cheerFromNick && (q.cheerFromNick===_sMyNick || q.cheerFromNick===myNickname);
       const _sCertNow = _virtualNow();
-      const _sCa = q.certAvailableAt||0;
-      const _sCanCert = _sCertNow >= _sCa;
-      const _sRem = _sCanCert ? 0 : Math.ceil((_sCa - _sCertNow)/60000);
-      /* 04시 예약 여부: certAvailableAt이 당일 04:00~04:59 사이면 "04시 예약 활성화" 표시 */
-      const _s04ms = new Date((q.questDate||selDate)+'T04:00:00').getTime();
-      const _s05ms = new Date((q.questDate||selDate)+'T05:00:00').getTime();
-      const _sIs04Reserve = !_sCanCert && (_sCa >= _s04ms) && (_sCa < _s05ms + 3600000);
-      const _sWaitLabel = _sIs04Reserve ? '📋 04시 예약 활성화' : `⏱ ${_sRem}분 후 인증`;
+      /* P2: _certTimeState 헬퍼로 통합 */
+      const { canCert: _sCanCert, waitLabel: _sWaitLabel, rem: _sRem } = _certTimeState(q, selDate);
 
       /* 작전별 응원 메시지 박스 제거됨 (단일 응원 구조) */
       let cheerBox='';
@@ -7894,10 +7894,8 @@ function renderQ(){
         if(isCoop){
           const partnerCertified = q.partnerCertified || false;
           completedExtra = q.bonusClaimed
-            ? `<div style="margin-top:8px;padding:8px 10px;background:rgba(127,191,106,.1);border:1px solid rgba(127,191,106,.3);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.8);text-align:center;font-weight:700;">✅ 협동 완료 · 보너스 +3,000원 적립</div>`
-            : (partnerCertified && !q.bonusClaimed)
-              ? `<div style="margin-top:8px;"><button class="qbtn coop-bonus-btn" style="width:100%;font-size:11px;padding:10px 12px;background:rgba(180,90,20,.18);border:2px solid rgba(200,110,30,.60);color:rgba(220,110,30,.95);font-weight:800;">🎁 보상받기 +3,000원</button></div>`
-              : `<div style="margin-top:8px;padding:8px 10px;background:rgba(42,77,181,.10);border:1px dashed rgba(42,77,181,.35);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(80,130,240,.85);text-align:center;font-weight:700;">🤝 협동 인증 완료 · 상대방 인증 대기중 (+3,000원 예정)</div>`;
+            ? `<div style="margin-top:8px;padding:8px 10px;background:rgba(127,191,106,.1);border:1px solid rgba(127,191,106,.3);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.8);text-align:center;font-weight:700;">✅ 협동 완료 (+3,000원)</div>`
+            : `<div style="margin-top:8px;padding:8px 10px;background:rgba(42,77,181,.10);border:1px dashed rgba(42,77,181,.35);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(80,130,240,.85);text-align:center;font-weight:700;">🤝 협동 인증 완료 · 상대방 인증 대기중</div>`;
         }
         /* 완료 상태: cheerBox/받기버튼 제거 (C안: 수신 즉시 자동 +2P) */
         soloCheerHtml = completedExtra ? `<div class="solo-status-area" style="margin-top:10px;position:relative;z-index:5;">${completedExtra}</div>` : '';
@@ -8035,7 +8033,6 @@ function renderQ(){
           })()}
         </div>
         ${soloCheerHtml}
-        ${coopStatusHtml}
         ${cumHtml}
       </div>
     `;
@@ -8062,7 +8059,6 @@ function renderQ(){
           }
           /* 그 외 칸 클릭은 무시 */
           saveQ();renderQ();updateHUD();
-          showCat(curCat,document.querySelector('.ctab.active'));
         });
       });
     }
@@ -8070,14 +8066,9 @@ function renderQ(){
     const soloCompleteBtn=div.querySelector('.solo-complete-btn');
     if(soloCompleteBtn){
       soloCompleteBtn.addEventListener('click',()=>{
-        const now2=_virtualNow();
-        if(now2<(quests[oi].certAvailableAt||0)){
-          const _ca2=quests[oi].certAvailableAt||0;
-          const _d04=new Date(selDate+'T04:00:00').getTime();
-          if(_ca2>=_d04 && _ca2<_d04+7200000){ showToast('📋 04시 예약 활성화 — 05시부터 인증 가능합니다'); return; }
-          const remain=Math.ceil((_ca2-now2)/60000);
-          showToast('⏱ 인증 가능까지 '+remain+'분 남았습니다');return;
-        }
+        /* P2: _certTimeState 헬퍼로 통합 */
+        const { canCert: _c2, waitLabel: _w2 } = _certTimeState(quests[oi], selDate);
+        if(!_c2){ showToast('⏱ 인증 가능까지 ' + _w2.replace('⏱ ','') + ' — 잠시 후 시도해주세요'); return; }
         openCertPopup(oi);
       });
     }
@@ -8135,8 +8126,7 @@ function renderQ(){
 
     
     /* 협동 보너스 버튼 */
-    const coopBonusBtn=div.querySelector('.coop-bonus-btn');
-    if(coopBonusBtn){coopBonusBtn.addEventListener('click',()=>{claimCoopBonus(oi);});}
+    /* coop-bonus-btn 제거 — 자동지급으로 전환 */
     /* 응원포인트 받기 버튼 */
     /* 응원포인트 받기 버튼 제거됨 (C안: 수신 즉시 자동 +2P) */
     /* 철회 버튼 */
@@ -8147,7 +8137,6 @@ function renderQ(){
         /* reward=0으로 처리된 것을 기본값으로 복구 (재인증 시 다시 한도 체크) */
         if(!quests[oi].reward) quests[oi].reward = quests[oi].mode==='coop'&&quests[oi].bonusClaimed?8000:5000;
         saveQ();renderQ();updateHUD();
-        showCat(curCat,document.querySelector('.ctab.active'));
       });
     }
     if(!q.completed || q.stamped){
@@ -8181,7 +8170,6 @@ function renderQ(){
             }catch(e){}
           }
           quests.splice(oi,1);saveQ();renderQ();updateHUD();
-          showCat(curCat,document.querySelector('.ctab.active'));
         });
       });
       list.appendChild(div); /* 슬롯 배치는 아래 _slotCursor 루프에서 처리 */
@@ -8199,7 +8187,6 @@ function renderQ(){
         e.stopPropagation();
         if(!confirm('이 작전을 제거하시겠습니까?\n"' + (q.name||'작전') + '"')) return;
         quests.splice(oi,1);saveQ();renderQ();updateHUD();
-        showCat(curCat,document.querySelector('.ctab.active'));
       });
       hlist.appendChild(div);
     }
@@ -8713,12 +8700,8 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
   slotEl.onclick=null;
 
   /* 인증 버튼 계산 (rightHtml은 협동작전 전용으로만 사용) */
-  const _sNow=_virtualNow(), _sCa=q.certAvailableAt||0, _sCanCert=_sNow>=_sCa;
-  const _sRem=_sCanCert?0:Math.ceil((_sCa-_sNow)/60000);
-  /* 04시 예약 활성화 표시: certAvailableAt이 당일 04:00 기준이면 분 대신 안내 문구 */
-  const _s04msSlot = new Date(selDate+'T04:00:00').getTime();
-  const _sIs04ResSlot = !_sCanCert && _sCa >= _s04msSlot && _sCa < _s04msSlot + 7200000;
-  const _sWaitLabelSlot = _sIs04ResSlot ? '📋 04시 예약 활성화' : `⏱ ${_sRem}분 후 인증`;
+  /* P2: _certTimeState 헬퍼로 통합 */
+  const { canCert: _sCanCert, waitLabel: _sWaitLabelSlot } = _certTimeState(q, selDate);
   let rightHtml='';
 
   /* 응원 있든 없든 무조건 버튼 수령 완료 후에만 도장 표시 */
@@ -8775,7 +8758,14 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
         soloCheerSlotHtml = `<div style="margin-top:8px;">${_cheerBox}<div style="display:flex;gap:8px;">${coopBadge}${_certBtn}</div>${pCertStatus}</div>`;
       }
     } else if(!_sStamped && q.completed){
-      soloCheerSlotHtml = _cheerBox ? `<div style="margin-top:8px;">${_cheerBox}</div>` : '';
+      /* P3: coop 완료 시 수동 보너스버튼 표시 (_fillSlot에 누락됐던 것 추가) */
+      let _coopBonusHtml = '';
+      if(isCoop){
+        _coopBonusHtml = q.bonusClaimed
+          ? `<div style="margin-top:6px;padding:8px 10px;background:rgba(127,191,106,.10);border:1px solid rgba(127,191,106,.30);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.80);text-align:center;font-weight:700;">✅ 협동 완료 (+3,000원)</div>`
+          : `<div style="margin-top:6px;padding:8px 10px;background:rgba(42,77,181,.10);border:1px dashed rgba(42,77,181,.35);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(80,130,240,.85);text-align:center;font-weight:700;">🤝 협동 인증 완료 · 상대방 인증 대기중</div>`;
+      }
+      soloCheerSlotHtml = `${_cheerBox ? `<div style="margin-top:8px;">${_cheerBox}</div>` : ''}${_coopBonusHtml}`;
     } else if(_sStamped){
       /* stamped: 응원 있든 없든 무조건 버튼 먼저 → 누르면 도장 */
       if(!_cheerPointClaimedForStamp){
@@ -8821,7 +8811,10 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
     e.stopPropagation();
     if(_isNotYetActive){showToast('⏳ 오전 4시에 활성화됩니다');return;}
     if(_isFailed){showToast('❌ 임무실패 — 인증불가');return;}
-    const n=_virtualNow();if(n<(quests[oi].certAvailableAt||0)){const _ca3=quests[oi].certAvailableAt||0;const _d04s=new Date(selDate+'T04:00:00').getTime();if(_ca3>=_d04s&&_ca3<_d04s+7200000){showToast('📋 04시 예약 활성화 — 05시부터 인증 가능합니다');return;}showToast('⏱ 인증 가능까지 '+Math.ceil((_ca3-n)/60000)+'분 남았습니다');return;}openCertPopup(oi);
+    /* P2: _certTimeState 헬퍼로 통합 */
+    const { canCert: _c4, waitLabel: _w4 } = _certTimeState(quests[oi], selDate);
+    if(!_c4){ showToast(_w4 + ' — 잠시 후 시도해주세요'); return; }
+    openCertPopup(oi);
   });}
   /* 인증보기 버튼 — 슬롯 내 */
   const slotCertViewBtn=slotEl.querySelector('.slot-cert-view-btn');
@@ -8855,8 +8848,7 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
   }
   const coopCertBtn=slotEl.querySelector('.coop-cert-btn');
   if(coopCertBtn){coopCertBtn.addEventListener('click',e=>{e.stopPropagation();openCertPopup(oi);});}
-  const coopBonusBtn=slotEl.querySelector('.coop-bonus-btn');
-  if(coopBonusBtn){coopBonusBtn.addEventListener('click',e=>{e.stopPropagation();claimCoopBonus(oi);});}
+  /* coop-bonus-btn 제거 — 자동지급으로 전환 */
   /* 슬롯 내 응원포인트 받기 버튼 */
   /* 내일 예약 버튼 */
   const reserveBtn=slotEl.querySelector('.tomorrow-reserve-btn');
@@ -8938,7 +8930,6 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
       const _slotTodayResKey=`reserved_${MY_UID}_${selDate}_${encodeURIComponent(q.name||'').slice(0,20)}`;
       if(_getFlag(_slotTodayResKey)) _unsetFlag(_slotTodayResKey);
       quests.splice(oi,1);saveQ();renderQ();updateHUD();
-      showCat(curCat,document.querySelector('.ctab.active'));
     });
   });
 }
@@ -9464,13 +9455,9 @@ async function certifyCoopQuest(qi, _fromSubmit){
   const now=_virtualNow();
   /* _fromSubmit=true 이면 submitCert에서 이미 시간체크/stamp/save를 했으므로 건너뜀 */
   if(!_fromSubmit){
-    if(now<(q.certAvailableAt||0)){
-      const _ca4=q.certAvailableAt||0;
-      const _d04c=new Date(selDate+'T04:00:00').getTime();
-      if(_ca4>=_d04c&&_ca4<_d04c+7200000){ showToast('📋 04시 예약 활성화 — 05시부터 인증 가능합니다');return; }
-      const remain=Math.ceil((_ca4-now)/60000);
-      showToast('⏱ 인증 가능까지 '+remain+'분 남았습니다');return;
-    }
+    /* P2: _certTimeState 헬퍼로 통합 */
+    const { canCert: _c6, waitLabel: _w6 } = _certTimeState(q, selDate);
+    if(!_c6){ showToast(_w6 + ' — 05시부터 인증 가능합니다'); return; }
     quests[qi].stamped=true;
     quests[qi].completed=true;
     quests[qi].certifiedAt=now;
@@ -9488,7 +9475,11 @@ async function certifyCoopQuest(qi, _fromSubmit){
         const snap=await _fbGet(oppPath);
         if(snap.exists()){
           const arr=snap.val()||[];
-          const oi=arr.findIndex(oq=>oq.mode==='coop'&&oq.name===q.name&&oq.together===MY_UID);
+          /* P1 수정: qid 기준 매칭 (qid 없는 구버전 데이터는 name+together 폴백) */
+          const oi=arr.findIndex(oq=>{
+            if(q.qid && oq.qid) return oq.qid===q.qid;
+            return oq.mode==='coop' && oq.name===q.name && oq.together===MY_UID;
+          });
           if(oi>=0){arr[oi].partnerCertified=true;await _fbSet(oppPath,arr);}
         }
       }catch(e){}
@@ -9496,23 +9487,7 @@ async function certifyCoopQuest(qi, _fromSubmit){
   }
 }
 
-/* 협동 보너스 청구 */
-async function claimCoopBonus(qi){
-  if(_assertNotBlackout()) return;
-  if(!quests[qi]) return;
-  const q=quests[qi];
-  if(q.bonusClaimed){showToast('이미 보너스를 받았습니다');return;}
-  if(!q.completed||!q.partnerCertified){showToast('⚠ 둘 다 인증 완료 후 보너스를 받을 수 있습니다');return;}
-  quests[qi].bonusClaimed=true;
-  quests[qi].reward=8000; /* 협동 보너스 포함: 5000+3000 */
-  saveQ();renderQ();updateHUD();
-  /* 협동 보너스 보급상점 포인트 적립 (기존 누락 수정) */
-  try{
-    await addPoints(3);
-    await _savePxPointLog(selDate, '협동작전 보너스', 3);
-  }catch(e){}
-  showToast('🎉 협동 성공! +3,000원 추가 (총 8,000원) · 보급상점 +3P');
-}
+/* claimCoopBonus 제거 — 자동지급(A방식)으로 전환, 버튼 없음 */
 
 /* 응원 메시지 전송 */
 async function sendCheerMsg(toUid,questDate,questIdx,msg){
@@ -9535,15 +9510,16 @@ async function sendCheerMsg(toUid,questDate,questIdx,msg){
 }
 
 /* 협동포인트 제거 — 보급상점으로 통합 */
-async function _addCoopPoint(n,reason){ /* no-op: 삭제됨 */ }
+/* P4: _addCoopPoint 제거 (no-op) */
 
 /* ══ dayPoints/coopPoints 제거됨 — 보급상점(pxPoints)으로 통합 ══ */
 /* 하위 호환용 빈 객체 — 참조 코드가 남아 있어 제거 시 오류 방지 */
-let _myDayPoints = {};
-let _partnerDayPoints = {};
-let _myCertDayPoints = {};
+/* P4: _myDayPoints — 팀작전에서 참조하므로 빈 객체로 유지 */
+const _myDayPoints = {};
+/* P4: _partnerDayPoints 제거 */
+/* P4: _myCertDayPoints 제거 */
 
-async function _loadDayPoints(){ /* no-op */ }
+/* P4: _loadDayPoints 제거 (no-op) */
 function _getMyDayPts(){ return 0; }
 function _getMyCertDayPts(){ return 0; }
 function _getPartnerDayPts(){ return 0; }
@@ -9554,10 +9530,10 @@ async function _addMyDayPt(date, n){
 }
 
 /* 파트너 구독 stubs — no-op */
-let _partnerDayPtUnsub = null;
-function _subscribePartnerDayPoints(){ /* no-op */ }
-let _partnerCoopPtUnsub = null;
-function _subscribePartnerCoopPoints(){ /* no-op */ }
+/* P4: _partnerDayPtUnsub 제거 */
+/* P4: _subscribePartnerDayPoints 제거 (no-op) */
+/* P4: _partnerCoopPtUnsub 제거 */
+/* P4: _subscribePartnerCoopPoints 제거 (no-op) */
 
 /* ── 위생 관련 금지 키워드 ── */
 const BANNED_HYGIENE = ['씻','양치','세수','샤워','목욕','세안','면도','손씻','발씻',
@@ -10136,7 +10112,7 @@ function _handleDeepLink(url) {
 /* ── 앱 업데이트 감지 & 실행 ── */
 let _pendingSWReg = null;
 
-const APP_VERSION = '6.25.15.12';
+const APP_VERSION = '06.25.21.36';
 const _VERCEL_URL='https://special-forces-diary.vercel.app/index.html';
 const _ETAG_STOR_KEY='sfDiary_lastETag';
 
@@ -10382,16 +10358,17 @@ async function acceptOpsTogether(){
     }
   } catch(e){}
 
-  /* 협동작전 활성화 시각 — 항상 해당날 04:00 기준
-     당일이면 당일 04:00, 미래날짜면 해당날 04:00
-     (00시~03시 사이 같이하기를 눌러도 즉시 60분이 아닌 04:00 활성화) */
+  /* X3: 협동작전 활성화 시각 — 항상 해당 작전 날짜 04:00 고정
+     25일에 27일 작전 같이하기 눌러도 → 27일 04:00 기준
+     당일 04:00이 이미 지난 경우만 now 사용 */
   const _coopTargetDate = n.questDate || _today;
   const _coopDay04 = new Date(_coopTargetDate + 'T04:00:00').getTime();
-  /* 04:00이 이미 지났으면 즉시 활성화(now), 아직이면 04:00 대기 */
-  const _coopActivateAt = (now >= _coopDay04) ? now : _coopDay04;
+  /* 해당 날짜 04:00 기준 — now가 아닌 questDate 기준 */
+  const _coopActivateAt = (_coopTargetDate === _today && now >= _coopDay04) ? now : _coopDay04;
+  /* X1: 수락자(나)의 certAvailableAt = 수락시각+1h (원본 등록자 값 덮어쓰지 않음) */
   const _myRegisteredAt = _coopActivateAt;
-  const _myCertAvail = _coopActivateAt + (60*60*1000); /* 협동작전: 등록 후 60분 후 인증 가능 */
-  /* syncedRegisteredAt/syncedCertAvail = 내가 쓸 registeredAt/certAvailableAt */
+  const _myCertAvail = _coopActivateAt + (60*60*1000); /* 수락 기준 04:00+1h = 05:00 */
+  /* syncedRegisteredAt/syncedCertAvail = 수락자(나)만 적용 */
   const syncedCertAvail = _myCertAvail;
   const syncedRegisteredAt = _myRegisteredAt;
 
@@ -10418,9 +10395,7 @@ async function acceptOpsTogether(){
           arr[n.questIdx].together = MY_UID;
           arr[n.questIdx].togetherAcceptedAt = now;
           arr[n.questIdx].mode = 'coop';
-          /* 항상 04:00 기준 활성화 — 당일/미래 모두 */
-          arr[n.questIdx].registeredAt = _coopActivateAt;
-          arr[n.questIdx].certAvailableAt = _coopActivateAt;
+          /* X1: 원본 등록자 registeredAt/certAvailableAt 유지 — 덮어쓰지 않음 */
           if(_coopActivateAt > now) arr[n.questIdx].reserved = true;
           await _fbSet(path, arr);
         }
@@ -10479,9 +10454,7 @@ async function acceptOpsTogether(){
           arr[n.questIdx].together = MY_UID;
           arr[n.questIdx].togetherAcceptedAt = now;
           arr[n.questIdx].mode = 'coop';
-          /* 항상 04:00 기준 활성화 — 당일/미래 모두 */
-          arr[n.questIdx].registeredAt = _coopActivateAt;
-          arr[n.questIdx].certAvailableAt = _coopActivateAt;
+          /* X1: 원본 등록자 registeredAt/certAvailableAt 유지 — 덮어쓰지 않음 */
           if(_coopActivateAt > now) arr[n.questIdx].reserved = true;
           /* cheerMsg/cheerFromNick 절대 건드리지 않음 — 기존 값 완전 보존 */
           await _fbSet(path, arr);
@@ -10714,14 +10687,9 @@ async function submitCert(){
   const isCoop = quests[qi] && quests[qi].mode==='coop';
   const now = _virtualNow();
 
-  if(now<(quests[qi].certAvailableAt||0)){
-    const _ca5=quests[qi].certAvailableAt||0;
-    const _d04p=new Date(selDate+'T04:00:00').getTime();
-    if(_ca5>=_d04p&&_ca5<_d04p+7200000){ showToast('📋 04시 예약 활성화 — 05시부터 인증 가능합니다'); return; }
-    const remain=Math.ceil((_ca5-now)/60000);
-    showToast('⏱ 인증 가능까지 '+remain+'분 남았습니다');
-    return;
-  }
+  /* P2: _certTimeState 헬퍼로 통합 */
+  const { canCert: _c5, waitLabel: _w5 } = _certTimeState(quests[qi], selDate);
+  if(!_c5){ showToast(_w5 + ' — 05시부터 인증 가능합니다'); return; }
 
   /* BUG-15: check 모드는 포인트 없이 완료만 처리 */
   if(_certMode==='check'){
@@ -10956,7 +10924,6 @@ function shiftVirtualTime(minutes){
     _subscribedPartnerPath = ''; _subscribedPartnerMrPath='';
     if(typeof subscribePartnerOps==='function') subscribePartnerOps();
     if(typeof subscribeMyOps==='function') subscribeMyOps();
-    if(typeof _subscribePartnerDayPoints==='function') _subscribePartnerDayPoints();
     /* 날짜 변경 시 아침점호 재구독 */
     _mrCurrentDate = null;
     if(typeof reloadMorningRoll==='function') reloadMorningRoll();
@@ -10996,7 +10963,6 @@ function resetVirtualTime(){
     _subscribedPartnerPath = ''; _subscribedPartnerMrPath='';
     if(typeof subscribePartnerOps==='function') subscribePartnerOps();
     if(typeof subscribeMyOps==='function') subscribeMyOps();
-    if(typeof _subscribePartnerDayPoints==='function') _subscribePartnerDayPoints();
     /* 날짜 변경 시 아침점호 재구독 */
     _mrCurrentDate = null;
     if(typeof reloadMorningRoll==='function') reloadMorningRoll();
@@ -11300,8 +11266,7 @@ function subscribePartnerOps(){
     _partnerMorningUnsub = ()=>{ _fbDb.ref(mrPath).off('value'); _partnerMorningRoll=null; _subscribedPartnerMrPath=''; };
   }
   subscribeMyOps();
-  _subscribePartnerDayPoints();
-  _subscribePartnerCoopPoints();
+  /* P4: _subscribePartnerDayPoints / _subscribePartnerCoopPoints 호출 제거 (no-op) */
   /* 상대 예약 알림 수신 */
   if(partnerData&&partnerData.uid){
     const _rNotifPath=`reserveNotif/${MY_UID}`;
@@ -11385,9 +11350,11 @@ function renderPartnerOps(){
     const isCompleted = q.completed;
     const isCoop = q.mode==='coop';
 
-    const myCoopMatch = (quests||[]).find(mq=>
-      mq.mode==='coop' && mq.together===partnerData.uid && mq.name===q.name
-    );
+    /* P1 수정: qid 기준 매칭 (qid 없는 구버전 데이터는 name+together 폴백) */
+    const myCoopMatch = (quests||[]).find(mq=>{
+      if(q.qid && mq.qid) return mq.qid===q.qid && mq.mode==='coop';
+      return mq.mode==='coop' && mq.together===partnerData.uid && mq.name===q.name;
+    });
     /* 아침점호: 내 morningRoll에 together===partnerData.uid 이거나
        내 quests에 해당 협동작전 있으면 alreadyTogether */
     const _mrAlreadyTogether = q._isMorning && _mrData && _mrData.together === partnerData.uid;
@@ -11417,6 +11384,12 @@ function renderPartnerOps(){
       : isCoop
         ? `<span style="padding:2px 8px;background:rgba(82,212,164,.18);border:1px solid rgba(82,212,164,.45);border-radius:8px;font-family:var(--orb);font-size:9px;color:rgba(82,212,164,.9);letter-spacing:.5px;font-weight:700;">협동</span>`
         : `<span style="padding:2px 8px;background:rgba(155,120,212,.18);border:1px solid rgba(155,120,212,.40);border-radius:8px;font-family:var(--orb);font-size:9px;color:rgba(200,168,255,.8);letter-spacing:.5px;font-weight:700;">개인</span>`;
+    /* X2: 예약 작전 배지 — reserved=true이고 아직 04:00 전이면 표시 */
+    const _pNow = _virtualNow();
+    const _pDay04 = new Date((q.questDate||selDate)+'T04:00:00').getTime();
+    const reservedBadge = (q.reserved && _pNow < _pDay04 && !isCompleted)
+      ? `<span style="padding:2px 8px;background:rgba(42,77,181,.15);border:1px solid rgba(42,77,181,.40);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(100,140,255,.90);font-weight:700;">🕓 04:00 예약</span>`
+      : ``;
 
     let html = `
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
@@ -11425,6 +11398,7 @@ function renderPartnerOps(){
             <span style="font-size:13px;">${catEmoji}</span>
             <span style="font-family:var(--kr);font-size:9px;font-weight:700;color:${q._isMorning?'rgba(255,165,80,.70)':'rgba(200,168,255,.65)'};">${catLabel}</span>
             ${typeBadge}
+            ${reservedBadge}
             ${isCompleted?(q._isMorning && q.certifiedAt ? `<span style="font-size:12px;">✅</span><span style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(255,165,80,.75);margin-left:2px;">${String(new Date(q.certifiedAt).getHours()).padStart(2,'0')}:${String(new Date(q.certifiedAt).getMinutes()).padStart(2,'0')} 인증</span>` : '<span style="font-size:12px;">✅</span>'):''}
           </div>
           <div style="font-family:var(--kr);font-size:13px;font-weight:900;color:${q._isMorning?(isCompleted?'rgba(255,165,80,.45)':'#FFD4A0'):(isCompleted?'rgba(200,168,255,.55)':'rgba(230,215,255,.95)')};line-height:1.3;word-break:keep-all;">
@@ -11752,9 +11726,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
 
 /* addTemplate 호환 stub */
-function addTemplate(){
-  addOpsToday();
-}
+/* P4: addTemplate 제거 (addOpsToday 직접 사용) */
 
 
 
@@ -12517,7 +12489,6 @@ function copyYesterday(){
     reserved: selDate > dateStr(new Date(_virtualNow())),
   }));
   saveQ();renderQ();renderDayTabs();updateHUD();
-  showCat(curCat,document.querySelector('.ctab.active'));
   showToast('📋 어제 작전 '+quests.length+'개를 복사했습니다');
 }
 
@@ -12530,12 +12501,10 @@ document.getElementById('hiddenBtn').addEventListener('click',()=>{
 document.getElementById('selCancelBtn').addEventListener('click',()=>{
   selHiddenIdx.forEach(i=>{if(quests[i]) quests[i].completed=false;});
   selHiddenIdx=[];saveQ();renderQ();updateHUD();
-  showCat(curCat,document.querySelector('.ctab.active'));
 });
 document.getElementById('allCancelBtn').addEventListener('click',()=>{
   quests.forEach(q=>q.completed=false);selHiddenIdx=[];
   saveQ();renderQ();updateHUD();
-  showCat(curCat,document.querySelector('.ctab.active'));
 });
 document.querySelectorAll('.wdbtn').forEach(btn=>{
   btn.addEventListener('click',()=>{
@@ -12546,7 +12515,7 @@ document.querySelectorAll('.wdbtn').forEach(btn=>{
 });
 
 /* ── 작전분류 토글 (stub — 새 시스템은 팝업 사용) ── */
-function toggleCatCard(){ /* no-op */ }
+/* P4: toggleCatCard 제거 (no-op) */
 function openCatAndScroll(){ openOpsRegPopup(); }
 
 /* ── 초기화 ── */
@@ -13260,10 +13229,10 @@ function navDate(delta){
     _fbGet(_questPath(MY_UID,selDate)).then(snap=>{
       allData[selDate]=snap.exists()?(snap.val()||[]):[];
       quests=allData[selDate];
-      renderDayTabs();renderQ();showCat(curCat,document.querySelector('.ctab.active'));updateHUD();
+      renderDayTabs();renderQ();updateHUD();
     });
   } else {
-    renderDayTabs();renderQ();showCat(curCat,document.querySelector('.ctab.active'));updateHUD();
+    renderDayTabs();renderQ();updateHUD();
   }
   /* 상대방 작전 섹션 날짜 갱신 */
   setTimeout(()=>{ if(typeof subscribePartnerOps==='function') subscribePartnerOps(); }, 100);
@@ -13275,7 +13244,7 @@ function navToToday(){
   const sd2=new Date(selDate);
   calYear=sd2.getFullYear(); calMonth=sd2.getMonth();
   reloadMorningRoll();
-  renderDayTabs();renderQ();showCat(curCat,document.querySelector('.ctab.active'));
+  renderDayTabs();renderQ();
   updateHUD();
   setTimeout(()=>{ if(typeof subscribePartnerOps==='function') subscribePartnerOps(); }, 100);
 }
@@ -17819,7 +17788,7 @@ function _mrSendCheerReq(){
 /* _mrClaimPoints 제거됨 (C안: 수신 즉시 자동 +2P) */
 
 /* ── 아침점호 인증 완료 직후 보급상자 팝업 — 제거됨 (야구게임으로 통합) ── */
-async function _mrShowSupplyBox(){ /* 더 이상 사용하지 않음 */ }
+/* P4: _mrShowSupplyBox 제거 (no-op) */
 
 function _mrSpawnParticles(parent){
   const emojis = ['✨','🪙','💰','⭐','🌟'];
