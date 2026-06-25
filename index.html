@@ -7893,9 +7893,11 @@ function renderQ(){
         let completedExtra = '';
         if(isCoop){
           const partnerCertified = q.partnerCertified || false;
-          completedExtra = (partnerCertified && !q.bonusClaimed)
-            ? `<div style="margin-top:8px;"><button class="qbtn coop-bonus-btn" style="width:100%;font-size:11px;padding:10px 12px;background:rgba(180,90,20,.18);border:2px solid rgba(200,110,30,.60);color:rgba(220,110,30,.95);font-weight:800;">🎁 보상받기 +3,000원</button></div>`
-            : q.bonusClaimed ? `<div style="margin-top:8px;padding:8px 10px;background:rgba(127,191,106,.1);border:1px solid rgba(127,191,106,.3);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.8);text-align:center;font-weight:700;">✅ 협동 보너스 수령 완료</div>` : '';
+          completedExtra = q.bonusClaimed
+            ? `<div style="margin-top:8px;padding:8px 10px;background:rgba(127,191,106,.1);border:1px solid rgba(127,191,106,.3);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.8);text-align:center;font-weight:700;">✅ 협동 완료 · 보너스 +3,000원 적립</div>`
+            : (partnerCertified && !q.bonusClaimed)
+              ? `<div style="margin-top:8px;"><button class="qbtn coop-bonus-btn" style="width:100%;font-size:11px;padding:10px 12px;background:rgba(180,90,20,.18);border:2px solid rgba(200,110,30,.60);color:rgba(220,110,30,.95);font-weight:800;">🎁 보상받기 +3,000원</button></div>`
+              : `<div style="margin-top:8px;padding:8px 10px;background:rgba(42,77,181,.10);border:1px dashed rgba(42,77,181,.35);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(80,130,240,.85);text-align:center;font-weight:700;">🤝 협동 인증 완료 · 상대방 인증 대기중 (+3,000원 예정)</div>`;
         }
         /* 완료 상태: cheerBox/받기버튼 제거 (C안: 수신 즉시 자동 +2P) */
         soloCheerHtml = completedExtra ? `<div class="solo-status-area" style="margin-top:10px;position:relative;z-index:5;">${completedExtra}</div>` : '';
@@ -9455,40 +9457,43 @@ async function acceptCoopInvite(fromUid,questDate,questIdx,notifKey){
 }
 
 /* 협동 작전 인증 완료 처리 */
-async function certifyCoopQuest(qi){
+async function certifyCoopQuest(qi, _fromSubmit){
   if(_assertNotBlackout()) return;
   if(!quests[qi]) return;
   const q=quests[qi];
   const now=_virtualNow();
-  if(now<(q.certAvailableAt||0)){
-    const _ca4=q.certAvailableAt||0;
-    const _d04c=new Date(selDate+'T04:00:00').getTime();
-    if(_ca4>=_d04c&&_ca4<_d04c+7200000){ showToast('📋 04시 예약 활성화 — 05시부터 인증 가능합니다');return; }
-    const remain=Math.ceil((_ca4-now)/60000);
-    showToast('⏱ 인증 가능까지 '+remain+'분 남았습니다');return;
+  /* _fromSubmit=true 이면 submitCert에서 이미 시간체크/stamp/save를 했으므로 건너뜀 */
+  if(!_fromSubmit){
+    if(now<(q.certAvailableAt||0)){
+      const _ca4=q.certAvailableAt||0;
+      const _d04c=new Date(selDate+'T04:00:00').getTime();
+      if(_ca4>=_d04c&&_ca4<_d04c+7200000){ showToast('📋 04시 예약 활성화 — 05시부터 인증 가능합니다');return; }
+      const remain=Math.ceil((_ca4-now)/60000);
+      showToast('⏱ 인증 가능까지 '+remain+'분 남았습니다');return;
+    }
+    quests[qi].stamped=true;
+    quests[qi].completed=true;
+    quests[qi].certifiedAt=now;
+    saveQ();
+    renderQ();updateHUD();
+    _sendEmpathyRequestNotif(qi);
   }
-  quests[qi].stamped=true;
-  quests[qi].completed=true;
-  quests[qi].certifiedAt=now;
-  saveQ();
-  /* 상대(협동모드)에게 내 인증 완료 알림 */
+  /* 상대 Firebase에 내 partnerCertified=true 업데이트 */
   if(q.mode==='coop'&&q.together){
-    /* 아침점호 협동 — morningRoll 경로에 partnerCertified 업데이트 */
     if(q.name&&q.name.includes('아침점호')){
       try{ await _fbUpdate(`users/${q.together}/morningRoll/${selDate}`, {partnerCertified:true}); }catch(e){}
     } else {
-      const oppPath=_questPath(q.together,selDate);
-      const snap=await _fbGet(oppPath);
-      if(snap.exists()){
-        const arr=snap.val()||[];
-        const oi=arr.findIndex(oq=>oq.mode==='coop'&&oq.name===q.name&&oq.together===MY_UID);
-        if(oi>=0){arr[oi].partnerCertified=true;await _fbSet(oppPath,arr);}
-      }
+      try{
+        const oppPath=_questPath(q.together,selDate);
+        const snap=await _fbGet(oppPath);
+        if(snap.exists()){
+          const arr=snap.val()||[];
+          const oi=arr.findIndex(oq=>oq.mode==='coop'&&oq.name===q.name&&oq.together===MY_UID);
+          if(oi>=0){arr[oi].partnerCertified=true;await _fbSet(oppPath,arr);}
+        }
+      }catch(e){}
     }
   }
-  renderQ();updateHUD();
-  /* 파트너에게 수고했어 요청 알림 전송 */
-  _sendEmpathyRequestNotif(qi);
 }
 
 /* 협동 보너스 청구 */
@@ -10729,10 +10734,10 @@ async function submitCert(){
     const _rawBeforeC = Object.values(getCycleData()).reduce((sum,items)=>
       sum+(items||[]).filter(q=>q.completed&&q!==quests[qi]).reduce((s,q)=>s+(q.reward||5000),0),0);
     if(_rawBeforeC >= _capChkC.personalCap) quests[qi].reward = 0;
-    if(isCoop && quests[qi].together) certifyCoopQuest(qi);
+    if(isCoop && quests[qi].together) certifyCoopQuest(qi, true);
     saveQ();renderQ();updateHUD();
     closeCertPopup();
-    showToast('✅ 체크 완료!');
+    showToast(isCoop && quests[qi].together ? '🤝 협동 인증 완료! +5,000원 · 상대 인증 대기중 (+3,000원 예정)' : '✅ 체크 완료!');
     _sendEmpathyRequestNotif(qi);
     renderCal&&renderCal();
     renderHist&&renderHist();
@@ -10781,17 +10786,25 @@ async function submitCert(){
   }
 
   if(isCoop && quests[qi].together){
-    certifyCoopQuest(qi);
+    certifyCoopQuest(qi, true);
   }
-
   saveQ();renderQ();updateHUD();
   closeCertPopup();
   const _earnedNow = quests[qi].reward||0;
-  const _toastMsg = (_hasPhoto && _hasMemo)
-    ? (_earnedNow>0?`📸📝 메모+사진 인증! +${_earnedNow.toLocaleString()}원`:'📸📝 인증 완료 (포인트 적립 중)')
-    : certPhotoUrl
-      ? (_earnedNow>0?`📸 사진 인증 완료! +${_earnedNow.toLocaleString()}원`:'📸 인증 완료 (포인트 적립 중)')
-      : (_earnedNow>0?`✅ 인증 완료! +${_earnedNow.toLocaleString()}원`:'✅ 인증 완료 (포인트 적립 중)');
+  let _toastMsg;
+  if(isCoop && quests[qi].together){
+    _toastMsg = (_hasPhoto && _hasMemo)
+      ? `📸📝 협동 인증 완료! +${(_earnedNow||5000).toLocaleString()}원 · 상대 인증 대기중 (+3,000원 예정)`
+      : certPhotoUrl
+        ? `📸 협동 인증 완료! +${(_earnedNow||5000).toLocaleString()}원 · 상대 인증 대기중 (+3,000원 예정)`
+        : `🤝 협동 인증 완료! +${(_earnedNow||5000).toLocaleString()}원 · 상대 인증 대기중 (+3,000원 예정)`;
+  } else {
+    _toastMsg = (_hasPhoto && _hasMemo)
+      ? (_earnedNow>0?`📸📝 메모+사진 인증! +${_earnedNow.toLocaleString()}원`:'📸📝 인증 완료 (포인트 적립 중)')
+      : certPhotoUrl
+        ? (_earnedNow>0?`📸 사진 인증 완료! +${_earnedNow.toLocaleString()}원`:'📸 인증 완료 (포인트 적립 중)')
+        : (_earnedNow>0?`✅ 인증 완료! +${_earnedNow.toLocaleString()}원`:'✅ 인증 완료 (포인트 적립 중)');
+  }
   showToast(_toastMsg);
   /* 한도 달성 후 포인트 적립 — _savedCertMode 기준 (check는 위에서 이미 return) */
   if(_savedCertMode==='number') _grantCertPoints('number');
