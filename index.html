@@ -7435,19 +7435,20 @@ function _subscribeQuests(uid,date){
     allData[date]=data;
     if(selDate===date){
       quests=data;
-      /* 협동작전 자동 완료 처리: 둘 다 인증 완료 시 reward=8000 자동 세팅 (포인트 없음) */
-      let _coopAutoUpdated = false;
+      /* 협동작전 자동 완료 처리: 둘 다 인증 완료 시 reward=8000 자동 세팅 (포인트 없음)
+         ★ race 방지: 전체 배열 set() 대신 해당 슬롯 필드만 update() */
       data.forEach((q,i)=>{
-        if(q && q.mode==='coop' && q.completed && q.partnerCertified && !q.bonusClaimed){
+        if(q && q.mode==='coop' && q.completed && q.partnerCertified && (!q.bonusClaimed || (q.reward||0)<8000)){
+          const _wasFirst = !q.bonusClaimed;
           quests[i].bonusClaimed = true;
           quests[i].reward = 8000;
-          _coopAutoUpdated = true;
-          showToast('🎉 협동 성공! +3,000원 추가 (총 8,000원)');
+          /* 해당 인덱스의 두 필드만 부분 업데이트 → 상대/내 write 충돌 없음 */
+          if(_fbDb && MY_UID){
+            try{ _fbDb.ref(_questPath(MY_UID, date)+'/'+i).update({bonusClaimed:true, reward:8000}); }catch(e){}
+          }
+          if(_wasFirst) showToast('🎉 협동 성공! +3,000원 추가 (총 8,000원)');
         }
       });
-      if(_coopAutoUpdated){
-        if(_fbDb && MY_UID) _fbDb.ref(_questPath(MY_UID, date)).set(quests);
-      }
       renderQ();updateHUD();
     }
   });
@@ -7569,6 +7570,14 @@ async function _loadTemplateData(){
 const saveTpl=()=>{ if(_fbDb&&MY_UID) _fbSet(`users/${MY_UID}/templateData`, tplData); };
 /* saveQ는 Firebase 기반으로 위에서 선언됨 */
 const reward=d=>5000; /* 작전당 기본 5,000원 고정 */
+/* 협동작전 보상 결정값: 둘 다 인증 완료(완료+상대인증) 시 항상 8,000원
+   — bonusClaimed 플래그 write가 늦어도(race) 즉시 8,000 반영 */
+function _qReward(q){
+  if(!q) return 0;
+  if(q.reward===0) return 0; /* 개인한도 초과로 명시적 0 처리된 건 유지 */
+  if(q.mode==='coop' && q.completed && q.partnerCertified) return 8000;
+  return q.reward || reward(q.difficulty);
+}
 
 function getLv(money){
   const t=[[0,'신병','RECRUIT'],[5000,'이병','PRIVATE'],[15000,'일병','PFC'],
@@ -7581,7 +7590,7 @@ function getLv(money){
   return{lv,eng,pct:Math.min(100,Math.round(((money-prev)/(next-prev))*100))};
 }
 function totalEarned(){
-  let s=0;Object.values(getCycleData()).forEach(d=>d.forEach(q=>{if(q.completed)s+=(q.reward||reward(q.difficulty));}));return s;
+  let s=0;Object.values(getCycleData()).forEach(d=>d.forEach(q=>{if(q.completed)s+=_qReward(q);}));return s;
 }
 /* ── 시계 (1초 동기화) ── */
 const clk=()=>{
@@ -7808,7 +7817,7 @@ function renderQ(){
   });
   sorted.forEach(q=>{
     const oi=quests.indexOf(q);
-    if(q.completed){money+=(q.reward||reward(q.difficulty));comp++;}
+    if(q.completed){money+=_qReward(q);comp++;}
     const rw=q.reward||reward(q.difficulty);
     const code = q.qid ? q.qid.slice(0,12) : `OP-${String(oi+1).padStart(3,'0')}`;
     const dlbl=q.difficulty==='hard'?'특수임무':q.difficulty==='medium'?'위험임무':'일반임무';
@@ -7892,13 +7901,21 @@ function renderQ(){
         /* 완료/도장 상태 */
         let completedExtra = '';
         if(isCoop){
-          const partnerCertified = q.partnerCertified || false;
-          completedExtra = q.bonusClaimed
+          const _coopDone = q.partnerCertified || q.bonusClaimed;
+          completedExtra = _coopDone
             ? `<div style="margin-top:8px;padding:8px 10px;background:rgba(127,191,106,.1);border:1px solid rgba(127,191,106,.3);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.8);text-align:center;font-weight:700;">✅ 협동 완료 (+3,000원)</div>`
             : `<div style="margin-top:8px;padding:8px 10px;background:rgba(42,77,181,.10);border:1px dashed rgba(42,77,181,.35);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(80,130,240,.85);text-align:center;font-weight:700;">🤝 협동 인증 완료 · 상대방 인증 대기중</div>`;
         }
+        /* 받은 수고했어 메시지 표시 (확인용 인박스) */
+        let _empInbox = '';
+        if(q.empathyMsg){
+          _empInbox = `<div style="margin-top:8px;padding:9px 11px;background:rgba(42,144,128,.10);border:1.5px solid rgba(42,144,128,.32);border-radius:10px;">
+            <div style="font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(42,144,128,.85);margin-bottom:3px;">👊 ${q.empathyFromNick||'파트너'}님의 수고했어</div>
+            <div style="font-family:var(--kr);font-size:11px;color:#1E3A34;font-weight:700;line-height:1.5;word-break:break-word;">${q.empathyMsg}</div>
+          </div>`;
+        }
         /* 완료 상태: cheerBox/받기버튼 제거 (C안: 수신 즉시 자동 +2P) */
-        soloCheerHtml = completedExtra ? `<div class="solo-status-area" style="margin-top:10px;position:relative;z-index:5;">${completedExtra}</div>` : '';
+        soloCheerHtml = (completedExtra||_empInbox) ? `<div class="solo-status-area" style="margin-top:10px;position:relative;z-index:5;">${completedExtra}${_empInbox}</div>` : '';
       }
     }
 
@@ -8234,7 +8251,13 @@ function renderQ(){
 }
 
 /* 작전수첩 패널 내 전투기록 — _renderHistInner 단일 날짜 블록과 동일 */
+/* ★ rAF 디바운스: 동일 프레임 내 다중 호출을 1회로 합침 (모바일 로드 끊김 방지) */
+let _diaryRAF=null, _partnerOpsRAF=null;
 function _renderDiaryDayRecord(){
+  if(_diaryRAF) return;
+  _diaryRAF = requestAnimationFrame(()=>{ _diaryRAF=null; try{ _renderDiaryDayRecordImpl(); }catch(e){} });
+}
+function _renderDiaryDayRecordImpl(){
   const wrap = document.getElementById('diaryDayRecord');
   const recordList = document.getElementById('diaryDayRecordList');
   const lblEl = document.getElementById('diaryDayRecordLabel');
@@ -8316,25 +8339,62 @@ function _renderDiaryDayRecord(){
     }
     futureHtml += '</div>';
 
-    /* ── 상대 카드 (미래날짜) ── */
+    /* ── 상대 카드 (미래날짜) — 예약 + 같이하기 버튼 항상 노출 (응원은 당일만) ── */
     if(partnerData && partnerData.uid){
       futureHtml += `<div style="padding:10px 12px;background:rgba(106,78,158,.05);border:1.5px solid rgba(106,78,158,.18);border-radius:12px;">
         <div style="font-family:var(--title);font-size:12px;font-weight:900;color:rgba(70,30,130,.70);margin-bottom:7px;">
           👤 상대 카드 <span style="font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(106,78,158,.55);">(${pName2})</span>
         </div>`;
-      if(_partnerResItems.length>0){
-        _partnerResItems.forEach(q=>{
-          futureHtml+=`<div style="padding:5px 0;border-bottom:1px solid rgba(106,78,158,.08);display:flex;align-items:center;gap:5px;">
-            <span style="font-size:10px;color:rgba(106,78,158,.55);">📋</span>
-            <span style="font-family:var(--kr);font-size:11px;font-weight:700;color:#3D3050;">${q.name||'작전'}</span>
-            ${q.mode==='coop'?'<span style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(42,77,181,.6);padding:1px 5px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.18);border-radius:4px;">협동</span>':''}</div>`;
+      /* 상대의 모든 작전(예약 포함) 표시 + 같이하기 버튼 */
+      const _hasMyCoopFut = (items_with_mr||[]).filter(q=>q&&q.mode==='coop').length>=1;
+      const _partnerShowItems = _partnerFutureItems.filter(q=>q && q.name);
+      if(_partnerShowItems.length>0){
+        _partnerShowItems.forEach(q=>{
+          const _fpqi=_partnerFutureItems.indexOf(q);
+          const _isCoopFut=q.mode==='coop';
+          const _alreadyCoopFut=(items_with_mr||[]).find(mq=>mq.mode==='coop'&&mq.name===q.name);
+          const _togBtnFut = _isCoopFut
+            ? `<div style="flex:1;padding:6px 9px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.22);border-radius:8px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(60,100,200,.7);text-align:center;">🤝 협동작전</div>`
+            : _alreadyCoopFut
+              ? `<div style="flex:1;padding:6px 9px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.22);border-radius:8px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(60,100,200,.7);text-align:center;">🤝 같이진행중</div>`
+              : _hasMyCoopFut
+                ? ''
+                : `<button class="diary-together-btn" data-pqi="${_fpqi}" data-date="${date}" data-name="${(q.name||'').replace(/"/g,'&quot;')}" data-reason="${(q.reason||'').replace(/"/g,'&quot;')}" style="flex:1;padding:6px 9px;background:rgba(30,80,60,.12);border:1px solid rgba(42,100,75,.35);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(30,80,55,.85);cursor:pointer;text-align:center;">🤝 같이하기</button>`;
+          futureHtml+=`<div style="padding:6px 0;border-bottom:1px solid rgba(106,78,158,.08);">
+            <div style="display:flex;align-items:center;gap:5px;margin-bottom:${_togBtnFut?'6':'0'}px;">
+              <span style="font-size:10px;color:rgba(106,78,158,.55);">${q.reserved?'📋':'○'}</span>
+              <span style="font-family:var(--kr);font-size:11px;font-weight:700;color:#3D3050;">${q.name||'작전'}</span>
+              ${_isCoopFut?'<span style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(42,77,181,.6);padding:1px 5px;background:rgba(42,77,181,.08);border:1px solid rgba(42,77,181,.18);border-radius:4px;">협동</span>':''}
+            </div>
+            ${_togBtnFut?`<div style="display:flex;gap:6px;">${_togBtnFut}</div>`:''}
+          </div>`;
         });
       } else {
-        futureHtml+=`<div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.30);padding:4px 0;">등록된 예약 없음</div>`;
+        futureHtml+=`<div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.30);padding:4px 0;">등록된 작전 없음</div>`;
       }
       futureHtml+='</div>';
     }
     recordList.innerHTML = futureHtml;
+    /* 미래 pane 같이하기 버튼 이벤트 연결 */
+    recordList.querySelectorAll('.diary-together-btn').forEach(btn=>{
+      btn.addEventListener('click',async()=>{
+        const pqi=parseInt(btn.dataset.pqi);
+        const d=btn.dataset.date||date;
+        const qName=btn.dataset.name||'';
+        const qReason=btn.dataset.reason||'';
+        const _arr=window['_partnerHist_'+date]||[];
+        const pq=_arr[pqi];
+        if(!pq&&!qName){ showToast('작전 정보를 불러오는 중입니다'); return; }
+        _pendingOpsNotif={
+          fromUid:partnerData.uid, fromNick:partnerData.nickname||'상대방',
+          questName:qName||pq?.name||'', questDate:d, questIdx:pqi,
+          questReason:qReason||pq?.reason||'', _isMorning:false,
+        };
+        btn.disabled=true; btn.textContent='처리 중...';
+        await acceptOpsTogether();
+        setTimeout(()=>{ _renderDiaryDayRecord(); renderQ(); }, 300);
+      });
+    });
     return;
   }
 
@@ -8442,6 +8502,19 @@ function _renderDiaryDayRecord(){
       </div>`;
     }
 
+    /* ── 상대 아침점호 (노출만, 버튼 없음) ── */
+    if(isToday && _partnerMorningRoll && _partnerMorningRoll.hour){
+      const _pmr=_partnerMorningRoll;
+      const _pmrDone=!!(_pmr.completed||_pmr.stamped);
+      html+=`<div style="padding:8px 0;border-bottom:1px solid rgba(106,78,158,.08);">
+        <div style="font-family:var(--kr);font-size:12px;font-weight:800;color:${_pmrDone?'#4A2A7A':'#3D3050'};display:flex;align-items:center;gap:5px;">
+          <span style="font-size:12px;color:${_pmrDone?'#5A3A8A':'#9CA49A'};">${_pmrDone?'✅':'○'}</span>아침점호 ☀️ ${_pmr.hour}시
+          <span style="font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(200,168,75,.7);padding:1px 6px;background:rgba(200,168,75,.10);border:1px solid rgba(200,168,75,.25);border-radius:5px;">점호</span>
+          <span style="margin-left:auto;font-family:var(--kr);font-size:9px;color:#9CA49A;">${_pmrDone?'완료':'대기중'}</span>
+        </div>
+      </div>`;
+    }
+
     /* ── 상대 협동 미션 ── */
     partnerCoopItems.forEach((q,_coopIdx)=>{
       const pqi=_pQArrDiary.indexOf(q); const _pqiSafe=pqi>=0?pqi:_coopIdx;
@@ -8461,7 +8534,7 @@ function _renderDiaryDayRecord(){
             :isDone
               ?`<button class="hist-opp-emp-btn" data-pqi="${_pqiSafe}" data-ck="${ckp}" data-date="${date}" style="flex:1;padding:7px 10px;background:rgba(106,78,158,.15);border:1px solid rgba(150,100,220,.45);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(80,30,140,.90);cursor:pointer;text-align:center;">👊 수고했어</button>`
               :`<div style="flex:1;padding:7px 10px;background:rgba(61,72,64,.06);border:1px solid rgba(61,72,64,.15);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(61,72,64,.40);text-align:center;">인증 후 가능</div>`}
-          <button class="hist-partner-cert-view-btn" data-pqi="${_pqiSafe}" data-ck="${ckp}" data-date="${date}" style="flex:1;padding:7px 10px;background:rgba(106,78,158,.08);border:1px solid rgba(106,78,158,.22);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(100,60,170,.85);cursor:pointer;text-align:center;">🔍 인증보기</button>
+          <button class="hist-partner-cert-view-btn" data-pqi="${_pqiSafe}" data-ck="${ckp}" data-date="${date}" style="flex:1;padding:7px 10px;background:${isDone?'rgba(127,191,106,.15)':'rgba(106,78,158,.08)'};border:1px solid ${isDone?'rgba(127,191,106,.45)':'rgba(106,78,158,.22)'};border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:700;color:${isDone?'rgba(60,140,70,.95)':'rgba(100,60,170,.85)'};cursor:pointer;text-align:center;">${isDone?'✅ 인증완료':'🔍 인증보기'}</button>
         </div>
       </div>`;
     });
@@ -8493,7 +8566,7 @@ function _renderDiaryDayRecord(){
             :isDone
               ?`<button class="hist-opp-emp-btn" data-pqi="${_pqiSafe}" data-ck="${ckp}" data-date="${date}" style="flex:1;padding:7px 10px;background:rgba(106,78,158,.15);border:1px solid rgba(150,100,220,.45);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:800;color:rgba(80,30,140,.90);cursor:pointer;text-align:center;">👊 수고했어</button>`
               :`<div style="flex:1;padding:7px 10px;background:rgba(61,72,64,.06);border:1px solid rgba(61,72,64,.15);border-radius:8px;font-family:var(--kr);font-size:9px;color:rgba(61,72,64,.40);text-align:center;">인증 후 가능</div>`}
-          <button class="hist-partner-cert-view-btn" data-pqi="${_pqiSafe}" data-ck="${ckp}" data-date="${date}" style="flex:1;padding:7px 10px;background:rgba(106,78,158,.08);border:1px solid rgba(106,78,158,.22);border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:700;color:rgba(100,60,170,.85);cursor:pointer;text-align:center;">🔍 인증보기</button>
+          <button class="hist-partner-cert-view-btn" data-pqi="${_pqiSafe}" data-ck="${ckp}" data-date="${date}" style="flex:1;padding:7px 10px;background:${isDone?'rgba(127,191,106,.15)':'rgba(106,78,158,.08)'};border:1px solid ${isDone?'rgba(127,191,106,.45)':'rgba(106,78,158,.22)'};border-radius:8px;font-family:var(--kr);font-size:10px;font-weight:700;color:${isDone?'rgba(60,140,70,.95)':'rgba(100,60,170,.85)'};cursor:pointer;text-align:center;">${isDone?'✅ 인증완료':'🔍 인증보기'}</button>
         </div>
       </div>`;
     });
@@ -8761,7 +8834,7 @@ function _fillSlot(slotEl,qitemDiv,q,oi){
       /* P3: coop 완료 시 수동 보너스버튼 표시 (_fillSlot에 누락됐던 것 추가) */
       let _coopBonusHtml = '';
       if(isCoop){
-        _coopBonusHtml = q.bonusClaimed
+        _coopBonusHtml = (q.partnerCertified||q.bonusClaimed)
           ? `<div style="margin-top:6px;padding:8px 10px;background:rgba(127,191,106,.10);border:1px solid rgba(127,191,106,.30);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(127,191,106,.80);text-align:center;font-weight:700;">✅ 협동 완료 (+3,000원)</div>`
           : `<div style="margin-top:6px;padding:8px 10px;background:rgba(42,77,181,.10);border:1px dashed rgba(42,77,181,.35);border-radius:8px;font-family:var(--kr);font-size:10px;color:rgba(80,130,240,.85);text-align:center;font-weight:700;">🤝 협동 인증 완료 · 상대방 인증 대기중</div>`;
       }
@@ -8985,7 +9058,7 @@ const CAP_ENCOURAGE_MSGS = [
 function _showCapReachedNotice(){
   const cap = calcRewardCap();
   const rawPersonal = Object.values(getCycleData()).reduce((sum,items)=>
-    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
+    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+_qReward(q),0),0
   );
   const encourage = CAP_ENCOURAGE_MSGS[Math.floor(Math.random()*CAP_ENCOURAGE_MSGS.length)];
 
@@ -9038,7 +9111,7 @@ function renderShopActivity(){
   });
   const cap = calcRewardCap();
   const rawPersonal = Object.values(getCycleData()).reduce((sum,items)=>
-    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
+    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+_qReward(q),0),0
   );
   const capReached = rawPersonal >= cap.personalCap;
   const encourage = CAP_ENCOURAGE_MSGS[Math.floor(Math.random()*CAP_ENCOURAGE_MSGS.length)];
@@ -9161,7 +9234,7 @@ async function _grantCertPoints(certMode){
 
   const cap = calcRewardCap();
   const rawPersonal = Object.values(getCycleData()).reduce((sum,items)=>
-    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||5000),0),0
+    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+_qReward(q),0),0
   );
   /* 메모/사진 1P는 15만원 달성 여부와 무관하게 항상 적립 */
   /* (rawPersonal < cap.personalCap 조건 제거됨) */
@@ -9195,7 +9268,7 @@ function updateHUD(){
   if(_wkndBanner) _wkndBanner.style.display = _isWeekend() ? 'block' : 'none';
 
   const qs=quests||[];
-  const m=qs.filter(q=>q.completed).reduce((s,q)=>s+(q.reward||5000),0);
+  const m=qs.filter(q=>q.completed).reduce((s,q)=>s+_qReward(q),0);
   const p=Math.min(100,Math.round((m/QUEST_MAX_REWARD_DAY)*100));
   document.getElementById('hudMoney').textContent=m.toLocaleString()+' 원';
   document.getElementById('hudPct').textContent=p+'%';
@@ -9278,7 +9351,7 @@ function _updateCapBanner(){
   if(!banner) return;
   const cap = calcRewardCap();
   const rawPersonal = Object.values(getCycleData()).reduce((sum,items)=>
-    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
+    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+_qReward(q),0),0
   );
   const capReached = rawPersonal >= cap.personalCap;
   if(!capReached){
@@ -9480,7 +9553,7 @@ async function certifyCoopQuest(qi, _fromSubmit){
             if(q.qid && oq.qid) return oq.qid===q.qid;
             return oq.mode==='coop' && oq.name===q.name && oq.together===MY_UID;
           });
-          if(oi>=0){arr[oi].partnerCertified=true;await _fbSet(oppPath,arr);}
+          if(oi>=0){ try{ await _fbDb.ref(oppPath+'/'+oi).update({partnerCertified:true}); }catch(e){ arr[oi].partnerCertified=true; await _fbSet(oppPath,arr); } }
         }
       }catch(e){}
     }
@@ -10112,7 +10185,7 @@ function _handleDeepLink(url) {
 /* ── 앱 업데이트 감지 & 실행 ── */
 let _pendingSWReg = null;
 
-const APP_VERSION = '06.25.21.36';
+const APP_VERSION = '06.25.22.47';
 const _VERCEL_URL='https://special-forces-diary.vercel.app/index.html';
 const _ETAG_STOR_KEY='sfDiary_lastETag';
 
@@ -11267,8 +11340,9 @@ function subscribePartnerOps(){
   }
   subscribeMyOps();
   /* P4: _subscribePartnerDayPoints / _subscribePartnerCoopPoints 호출 제거 (no-op) */
-  /* 상대 예약 알림 수신 */
-  if(partnerData&&partnerData.uid){
+  /* 상대 예약 알림 수신 — ★ 중복 리스너 방지 (한 번만 구독) */
+  if(partnerData&&partnerData.uid && !window._reserveNotifSubscribed){
+    window._reserveNotifSubscribed = true;
     const _rNotifPath=`reserveNotif/${MY_UID}`;
     _fbDb.ref(_rNotifPath).on('child_added',snap=>{
       if(!snap.exists())return;
@@ -11287,6 +11361,10 @@ function subscribePartnerOps(){
 
 /* 상대방 작전 섹션 렌더 */
 function renderPartnerOps(){
+  if(_partnerOpsRAF) return;
+  _partnerOpsRAF = requestAnimationFrame(()=>{ _partnerOpsRAF=null; try{ renderPartnerOpsImpl(); }catch(e){} });
+}
+function renderPartnerOpsImpl(){
   _applyClaimedFlags();
   const section = document.getElementById('partnerOpsSection');
   const list = document.getElementById('partnerOpsList');
@@ -11791,7 +11869,7 @@ function renderCal(){
     const _mrCalCache = (key===todayStr) ? _mrData : (window['_mrHistCache_'+key]||null);
     const _mrCalItem = _mrCalCache&&_mrCalCache.hour ? _mrCalCache : null;
     const items_cal = _mrCalItem ? [_mrCalItem, ...items] : items;
-    items_cal.forEach(q=>{if(q.completed){accM+=(q.reward||reward(q.difficulty||'easy'));accC++;}});
+    items_cal.forEach(q=>{if(q.completed){accM+=_qReward(q);accC++;}});
     const cr=items_cal.filter(q=>q.completed).length;
     const tr=items_cal.length;
     const pct=tr===0?0:Math.round((cr/tr)*100);
@@ -12076,6 +12154,8 @@ function _openEmpathyPopup(item, listIdx, _extCk, _extBtn){
       /* 카카오톡 공유 버튼 표시 */
       _showKakaoShareBtn('empathy', item.name||'작전', myNickname||'나');
       renderHist&&renderHist();
+      /* ★ 즉시 반영: 다이어리 상대카드(완료 배지) 바로 갱신 — FB 라운드트립 대기 없음 */
+      if(typeof _renderDiaryDayRecord==='function') _renderDiaryDayRecord();
     }catch(e){
       sendBtn.disabled=false; sendBtn.textContent='👊 수고했어 전송 +1p';
       showToast('⚠ 전송 실패: '+e.message);
@@ -12138,7 +12218,7 @@ function _renderHistInner(){
       return;
     }
     const comp=items_with_mr.filter(q=>q.completed||q.stamped);
-    const mon=comp.reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0);
+    const mon=comp.reduce((s,q)=>s+_qReward(q),0);
 
     const myNick=myNickname||'나';
     const pName=(partnerData&&partnerData.nickname)||'파트너';
@@ -12573,7 +12653,7 @@ function calcTotalPersonalMoney(){
   /* 현재 사이클 범위만 합산 (raw) */
   const cycleData = getCycleData();
   const raw = Object.values(cycleData).reduce((sum,items)=>
-    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
+    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+_qReward(q),0),0
   );
   /* 개인임무 상한 적용 — 개인작전(solo/coop)은 150,000원 cap */
   const cap = calcRewardCap();
@@ -12616,7 +12696,7 @@ function calcMrRaw(){
 function calcQuestCapped(){
   const cycleData = getCycleData();
   const raw = Object.values(cycleData).reduce((sum,items)=>
-    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
+    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+_qReward(q),0),0
   );
   const cap = calcRewardCap();
   return Math.min(raw, cap.personalCap);
