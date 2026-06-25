@@ -846,6 +846,48 @@ html,body{
   background:rgba(196,169,106,.08)!important;
   box-shadow:0 0 6px rgba(196,169,106,.20)!important;
 }
+/* 범위 선택 — 시작·끝·중간 */
+.cday.range-start{
+  background:rgba(47,74,54,.70)!important;
+  border-color:rgba(47,74,54,.85)!important;
+  color:#F0E8D8!important;
+  border-radius:7px 2px 2px 7px!important;
+  margin-right:-1px;
+  z-index:1;
+  position:relative;
+}
+.cday.range-end{
+  background:rgba(47,74,54,.70)!important;
+  border-color:rgba(47,74,54,.85)!important;
+  color:#F0E8D8!important;
+  border-radius:2px 7px 7px 2px!important;
+  margin-left:-1px;
+  z-index:1;
+  position:relative;
+}
+.cday.range-mid{
+  background:rgba(47,74,54,.22)!important;
+  border-color:rgba(47,74,54,.28)!important;
+  border-radius:0!important;
+  color:#1E2D24!important;
+  margin-left:-1px;
+  margin-right:-1px;
+}
+/* 시작점 선택 대기 pulse */
+.cday.range-anchor{
+  background:rgba(47,74,54,.55)!important;
+  border-color:rgba(47,74,54,.80)!important;
+  color:#F0E8D8!important;
+  border-radius:7px!important;
+  box-shadow:0 0 0 2px rgba(47,74,54,.50)!important;
+  animation:rangeAnchorPulse 1.2s ease-in-out infinite;
+}
+@keyframes rangeAnchorPulse{
+  0%,100%{box-shadow:0 0 0 2px rgba(47,74,54,.50);}
+  50%{box-shadow:0 0 0 4px rgba(47,74,54,.25);}
+}
+/* 완료 개수 배지 */
+.cday-cnt{font-size:9px;font-weight:900;margin-top:1px;line-height:1;}
 /* ── 작전기록 완료 영역 ── */
 .hidden-sec{display:none;margin-top:12px;}
 .cancel-row{display:flex;gap:6px;margin-bottom:9px;}
@@ -2481,7 +2523,16 @@ function updateGemBoxes(){
   const oppMoneyEl=document.getElementById('teamOppMoney');
   if(oppMoneyEl) oppMoneyEl.textContent=oppM.toLocaleString()+'원';
   const myMoneyEl=document.getElementById('teamMyMoney');
-  if(myMoneyEl) myMoneyEl.textContent=myM.toLocaleString()+'원';
+  /* teamMyMoney: 퀘스트 cap 금액만 표시 (아침점호 별도) */
+  const _myQuestDisp = window.calcQuestCapped ? calcQuestCapped() : myM;
+  if(myMoneyEl) myMoneyEl.textContent=_myQuestDisp.toLocaleString()+'원';
+  /* 아침점호 금액 팝업 표시 */
+  const _myMrDisp = window.calcMrRaw ? calcMrRaw() : 0;
+  const myMrDispEl = document.getElementById('teamMyMrMoney');
+  if(myMrDispEl){
+    myMrDispEl.style.display = _myMrDisp > 0 ? 'block' : 'none';
+    myMrDispEl.textContent = '+'+_myMrDisp.toLocaleString()+'원';
+  }
 
   /* 협동포인트 표시 갱신 — shopPoints 비동기 로드로 vsMyCoopPts 업데이트됨 (위 참조) */
   const oppCoopPtsEl=document.getElementById('vsOppCoopPts');
@@ -2608,18 +2659,34 @@ function updateGemBoxes(){
     }
   }
 
-  /* VS 프로그레스바 업데이트 (수정 10) */
-  const MAX_MONEY = 150000;
-  const myPct = Math.min(100, Math.round(myM/MAX_MONEY*100));
-  const oppPct = Math.min(100, Math.round(oppM/MAX_MONEY*100));
+  /* VS 프로그레스바 업데이트 — 35만 기준, 15만까지 퀘스트(초록), 이후 아침점호(황금) */
+  const BAR_MAX = 350000; /* 진행바 기준 최대 35만원 */
+  const CAP_QUEST = 150000; /* 퀘스트 cap */
+  /* 내 퀘스트·아침점호 분리 */
+  const myQuestAmt = window.calcQuestCapped ? calcQuestCapped() : Math.min(myM, CAP_QUEST);
+  const myMrAmt    = window.calcMrRaw ? calcMrRaw() : Math.max(0, myM - myQuestAmt);
+  const myTotal    = myQuestAmt + myMrAmt;
+  /* 상대는 partnerData.money 그대로 (분리 정보 없음) */
+  const oppTotal   = oppM;
+  /* 퍼센트 계산 */
+  const myQuestPct = Math.min(100, Math.round(myQuestAmt / BAR_MAX * 100));
+  const myMrPct    = Math.min(100 - myQuestPct, Math.round(myMrAmt / BAR_MAX * 100));
+  const oppPct     = Math.min(100, Math.round(oppTotal / BAR_MAX * 100));
+  /* 내 바: 퀘스트 세그먼트 + 아침점호 세그먼트 */
   const myBarEl = document.getElementById('vsMyBar');
+  const myBarMrEl = document.getElementById('vsMyBarMr');
   const oppBarEl = document.getElementById('vsOppBar');
   const myPctEl = document.getElementById('vsMyPct');
   const oppPctEl = document.getElementById('vsOppPct');
-  if(myBarEl) myBarEl.style.width = myPct+'%';
+  if(myBarEl) myBarEl.style.width = myQuestPct+'%';
+  if(myBarMrEl) myBarMrEl.style.width = myMrPct+'%';
   if(oppBarEl) oppBarEl.style.width = oppPct+'%';
-  if(myPctEl) myPctEl.textContent = myPct+'%';
+  if(myPctEl) myPctEl.textContent = Math.round(myTotal/BAR_MAX*100)+'%';
   if(oppPctEl) oppPctEl.textContent = oppPct+'%';
+  /* 아침점호 금액 표시 */
+  const myMrAmtEl = document.getElementById('vsMyMrAmt');
+  if(myMrAmtEl) myMrAmtEl.style.display = myMrAmt > 0 ? 'block' : 'none';
+  if(myMrAmtEl) myMrAmtEl.textContent = '+'+myMrAmt.toLocaleString()+'원 (아침점호)';
 
   /* 스페셜 5DAY 진행바 업데이트 */
   updateSpecialDayBar();
@@ -6043,7 +6110,7 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div id="bbCertTimeLabel" style="font-family:var(--orb);font-size:11px;font-weight:900;color:rgba(82,212,164,.85);text-align:center;margin-bottom:2px;"></div>
           <!-- 회차 표시 -->
           <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:4px;">
-            <span id="bbRoundLabel" style="font-family:var(--orb);font-size:10px;font-weight:900;color:rgba(200,168,75,.85);letter-spacing:.5px;"></span>
+            <span id="bbRoundLabel" style="font-family:var(--orb);font-size:10px;font-weight:900;color:rgba(20,40,100,.90);letter-spacing:.5px;"></span>
           </div>
           <div style="font-family:var(--kr);font-size:9px;color:rgba(255,255,255,.35);text-align:center;margin-bottom:14px;">4자리(1~9, 중복없음) · 하루 1번 도전</div>
 
@@ -6597,27 +6664,31 @@ document.addEventListener('DOMContentLoaded',()=>{
       <!-- ③ VS 현황 (연결 후만 표시) — 틸 테마 -->
       <div class="card" id="teamVsCard" style="display:none;padding:16px;background:linear-gradient(145deg,rgba(2,18,20,.97),rgba(1,12,14,.98));border-color:rgba(42,144,128,.20);box-shadow:0 6px 28px rgba(0,0,0,.75),0 0 12px rgba(42,144,128,.07) inset;">
         <div class="card-title" style="margin-bottom:12px;color:var(--teal-dim);display:flex;align-items:center;justify-content:space-between;"><span>📊 전투 현황</span><span id="vsCycleDayBadge" style="font-family:var(--orb);font-size:9px;color:rgba(78,176,216,.95);background:rgba(4,20,36,.7);border:1px solid rgba(46,127,168,.3);border-radius:8px;padding:3px 9px;font-weight:700;"></span></div>
-        <!-- 수정 10: 나(%) --- 프로그레스바 --- 상대(%) 레이아웃 -->
+        <!-- 진행바: 내 바=퀘스트(초록)+아침점호(황금) / 상대 바=보라 / 기준 35만원 -->
         <div id="vsProgressRow" style="margin-bottom:10px;">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
             <div id="vsMyNick" style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(127,191,106,.8);min-width:40px;">나</div>
             <div id="vsMyPct" style="font-family:var(--orb);font-size:10px;font-weight:700;color:var(--green);min-width:36px;">0%</div>
-            <div style="flex:1;height:6px;background:rgba(30,50,30,.6);border-radius:4px;overflow:hidden;">
-              <div id="vsMyBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--green),var(--green-dim));transition:width .5s;border-radius:4px;"></div>
+            <div style="flex:1;height:7px;background:rgba(30,50,30,.6);border-radius:4px;overflow:hidden;display:flex;">
+              <div id="vsMyBar" style="height:100%;width:0%;background:linear-gradient(90deg,rgba(82,212,164,.9),rgba(42,144,100,.85));transition:width .5s;"></div>
+              <div id="vsMyBarMr" style="height:100%;width:0%;background:linear-gradient(90deg,rgba(251,191,36,.85),rgba(200,140,20,.8));transition:width .5s;"></div>
             </div>
           </div>
+          <div id="vsMyMrAmt" style="display:none;text-align:right;font-family:var(--orb);font-size:8px;color:rgba(251,191,36,.80);margin-bottom:4px;padding-right:4px;"></div>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
             <div id="vsOppNick" style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(180,150,220,.8);min-width:40px;">상대</div>
             <div id="vsOppPct" style="font-family:var(--orb);font-size:10px;font-weight:700;color:rgba(180,150,220,.85);min-width:36px;">0%</div>
-            <div style="flex:1;height:6px;background:rgba(20,15,40,.6);border-radius:4px;overflow:hidden;">
+            <div style="flex:1;height:7px;background:rgba(20,15,40,.6);border-radius:4px;overflow:hidden;">
               <div id="vsOppBar" style="height:100%;width:0%;background:linear-gradient(90deg,rgba(140,100,220,.7),rgba(180,140,255,.85));transition:width .5s;border-radius:4px;"></div>
             </div>
           </div>
+          <div style="display:flex;justify-content:flex-end;font-family:var(--orb);font-size:7px;color:rgba(255,255,255,.22);margin-top:2px;padding-right:4px;">기준 350,000원</div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:10px 12px;background:rgba(0,0,0,.25);border-radius:10px;border:1px solid rgba(200,168,75,.15);">
           <div style="text-align:center;flex:1;">
             <div style="font-family:var(--kr);font-size:9px;font-weight:700;color:rgba(127,191,106,.7);margin-bottom:4px;" id="vsMyNickLabel">나</div>
             <div style="font-family:var(--orb);font-size:12px;font-weight:900;color:#ffffff;" id="teamMyMoney">0원</div>
+            <div id="teamMyMrMoney" style="display:none;font-family:var(--orb);font-size:9px;font-weight:700;color:rgba(251,191,36,.80);margin-top:1px;"></div>
             <div style="font-family:var(--orb);font-size:10px;font-weight:700;color:rgba(200,255,200,.75);margin-top:2px;" id="vsMyCoopPts">0P</div>
           </div>
           <div style="font-family:var(--orb);font-size:14px;color:rgba(200,168,75,.90);font-weight:900;">⚔</div>
@@ -10289,7 +10360,7 @@ async function acceptOpsTogether(){
   /* 04:00이 이미 지났으면 즉시 활성화(now), 아직이면 04:00 대기 */
   const _coopActivateAt = (now >= _coopDay04) ? now : _coopDay04;
   const _myRegisteredAt = _coopActivateAt;
-  const _myCertAvail = _coopActivateAt;
+  const _myCertAvail = _coopActivateAt + (60*60*1000); /* 협동작전: 등록 후 60분 후 인증 가능 */
   /* syncedRegisteredAt/syncedCertAvail = 내가 쓸 registeredAt/certAvailableAt */
   const syncedCertAvail = _myCertAvail;
   const syncedRegisteredAt = _myRegisteredAt;
@@ -11661,12 +11732,26 @@ function shiftCalMonth(dir){
   calMonth+=dir;
   if(calMonth>11){calMonth=0;calYear++;}
   if(calMonth<0){calMonth=11;calYear--;}
+  /* 월 이동 시 범위 선택 초기화 */
+  _calDetailRange=[];
+  const _det=document.getElementById('calInlineDetail');
+  if(_det){ _det.style.display='none'; _det.innerHTML=''; }
   renderCal();
 }
 
 function renderCal(){
   const grid=document.getElementById('calGrid');grid.innerHTML='';
   updateCalMonthLbl();
+  /* 현재 표시 월과 범위 선택 날짜 월이 다르면 초기화 */
+  if(_calDetailRange.length>0){
+    const _rangeMonth=_calDetailRange[0].substring(0,7); /* YYYY-MM */
+    const _calMonthStr=calYear+'-'+String(calMonth+1).padStart(2,'0');
+    if(_rangeMonth!==_calMonthStr){
+      _calDetailRange=[];
+      const _det=document.getElementById('calInlineDetail');
+      if(_det){ _det.style.display='none'; _det.innerHTML=''; }
+    }
+  }
   // 해당 월의 마지막 날 계산
   const days=new Date(calYear,calMonth+1,0).getDate();
   // 1일 시작 요일(0=일)만큼 빈 셀 추가
@@ -11704,14 +11789,24 @@ function renderCal(){
     let st=items.length===0?'':perfect?'success':pct>0?'partial':'fail';
     const el=document.createElement('div');
     const isCycleStart = _isCycleStartMonth && (d.getDate()===_sd);
-    el.className=`cday ${st} ${key===todayStr?'today':''} ${key===selDate?'sel-d':''} ${isCycleStart?'cycle-start':''}`;
-    el.innerHTML=`<div style="font-size:10px;${isCycleStart?'font-weight:900;color:rgba(139,108,58,1);':''}">${d.getDate()}</div>`;
+    /* 범위 클래스 결정 */
+    let rangeCls='';
+    if(_calDetailRange.length===1 && key===_calDetailRange[0]) rangeCls='range-anchor';
+    else if(_calDetailRange.length===2){
+      const [_rs,_re]=_calDetailRange;
+      if(key===_rs) rangeCls='range-start';
+      else if(key===_re) rangeCls='range-end';
+      else if(key>_rs&&key<_re) rangeCls='range-mid';
+    }
+    el.className=`cday ${st} ${key===todayStr?'today':''} ${isCycleStart?'cycle-start':''} ${rangeCls}`.trim();
+    /* 완료 개수 배지 */
+    const _cntColor=st==='success'?'rgba(47,74,54,.85)':st==='partial'?'rgba(139,108,58,.80)':st==='fail'?'rgba(139,26,26,.60)':'rgba(61,72,64,.45)';
+    const _cntHtml=cr>0?`<div class="cday-cnt" style="color:${rangeCls&&rangeCls!=='range-mid'?'rgba(240,232,216,.90)':_cntColor};">✓${cr}</div>`:(tr>0?`<div class="cday-cnt" style="color:rgba(139,26,26,.45);">✗</div>`:'');
+    el.innerHTML=`<div style="font-size:10px;${isCycleStart?'font-weight:900;color:rgba(139,108,58,1);':''}">${d.getDate()}</div>${_cntHtml}`;
     el.addEventListener('click',()=>{
-      /* 이슈12: 캘린더 날짜 클릭 시 작전수첩으로 이동하지 않고 인라인으로 그날 기록 표시 */
-      /* 기존 sel-d 클래스 제거 */
-      grid.querySelectorAll('.sel-d').forEach(c=>c.classList.remove('sel-d'));
-      el.classList.add('sel-d');
       _renderCalInlineDetail(key);
+      /* 범위 반영 위해 그리드 전체 재렌더 */
+      _applyCalRangeClasses(grid,days,startDow);
     });
     grid.appendChild(el);
   }
@@ -11726,6 +11821,37 @@ function renderCal(){
   if(_cdEl) _cdEl.textContent='매월 '+(missionCycleDay||1)+'일';
 }
 
+/* 그리드 셀 전체를 순회하며 현재 _calDetailRange에 맞게 범위 클래스 갱신 */
+function _applyCalRangeClasses(grid, days, startDow){
+  if(!grid) return;
+  const cells=grid.querySelectorAll('.cday');
+  cells.forEach((el,idx)=>{
+    const dayNum=idx+1; /* startDow 오프셋 없이 셀 순서 = 날짜 */
+    const d=new Date(calYear,calMonth,dayNum);
+    const key=dateStr(d);
+    /* 범위 클래스만 제거 후 재적용 */
+    el.classList.remove('range-start','range-end','range-mid','range-anchor');
+    if(_calDetailRange.length===1 && key===_calDetailRange[0]){
+      el.classList.add('range-anchor');
+    } else if(_calDetailRange.length===2){
+      const [_rs,_re]=_calDetailRange;
+      if(key===_rs) el.classList.add('range-start');
+      else if(key===_re) el.classList.add('range-end');
+      else if(key>_rs&&key<_re) el.classList.add('range-mid');
+    }
+    /* 완료 개수 배지 색 갱신 (range-start/end 진한 배경이면 밝은 색으로) */
+    const cntEl=el.querySelector('.cday-cnt');
+    if(cntEl){
+      const isRangeDark=el.classList.contains('range-start')||el.classList.contains('range-end')||el.classList.contains('range-anchor');
+      if(isRangeDark) cntEl.style.color='rgba(240,232,216,.90)';
+      else {
+        const st=el.classList.contains('success')?'success':el.classList.contains('partial')?'partial':el.classList.contains('fail')?'fail':'';
+        cntEl.style.color=st==='success'?'rgba(47,74,54,.85)':st==='partial'?'rgba(139,108,58,.80)':st==='fail'?'rgba(139,26,26,.60)':'rgba(61,72,64,.45)';
+      }
+    }
+  });
+}
+
 /* ── 캘린더 인라인 기록 표시 (이슈12) ── */
 let _calDetailRange = []; /* [startDate, endDate] 범위 선택용 */
 function _renderCalInlineDetail(key){
@@ -11738,7 +11864,7 @@ function _renderCalInlineDetail(key){
   } else if(_calDetailRange.length===1){
     const [s] = _calDetailRange;
     if(key===s){
-      /* 같은 날 클릭: 초기화 */
+      /* 같은 날 재클릭: 초기화 */
       _calDetailRange=[];
       detailEl.style.display='none';
       return;
@@ -11747,48 +11873,71 @@ function _renderCalInlineDetail(key){
     const start=s<key?s:key, end=s<key?key:s;
     _calDetailRange=[start,end];
   } else {
-    /* 새 시작점 */
+    /* 이미 범위 확정 상태 → 새 시작점 */
     _calDetailRange=[key];
   }
 
   /* 날짜 범위 수집 */
-  const [startD, endD] = _calDetailRange.length===2 ? _calDetailRange : [_calDetailRange[0], _calDetailRange[0]];
-  const rangeLabel = startD===endD ? startD : `${startD} ~ ${endD}`;
+  const [startD, endD] = _calDetailRange.length===2
+    ? _calDetailRange
+    : [_calDetailRange[0], _calDetailRange[0]];
 
-  /* 해당 날짜 작전 수집 */
-  let html = `<div style="font-family:var(--kr);font-size:11px;font-weight:900;color:#3D4840;margin-bottom:8px;">📅 ${rangeLabel} 기록</div>`;
-  let hasAny = false;
-  let totalMoney = 0;
-  /* 날짜 순회 */
+  /* ── 첫 번째 클릭: 시작점 선택 안내만 표시 ── */
+  if(_calDetailRange.length===1){
+    const _mm=startD.slice(5).replace('-','/');
+    detailEl.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(47,74,54,.08);border:1.5px dashed rgba(47,74,54,.35);border-radius:9px;">
+        <span style="font-size:14px;">📍</span>
+        <div>
+          <div style="font-family:var(--kr);font-size:11px;font-weight:900;color:#2F4A36;">${_mm} 시작 — 끝 날짜를 탭하세요</div>
+          <div style="font-family:var(--kr);font-size:9px;color:rgba(47,74,54,.60);margin-top:2px;">같은 날을 다시 탭하면 취소됩니다</div>
+        </div>
+      </div>`;
+    detailEl.style.display='block';
+    return;
+  }
+
+  /* ── 범위 확정: 기록 표시 ── */
+  const rangeLabel=startD===endD ? startD : `${startD.slice(5).replace('-','/')} ~ ${endD.slice(5).replace('-','/')}`;
+  let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+    <div style="font-family:var(--kr);font-size:11px;font-weight:900;color:#3D4840;">📅 ${rangeLabel} 기록</div>
+    <button onclick="_calDetailRange=[];document.getElementById('calInlineDetail').style.display='none';_applyCalRangeClasses(document.getElementById('calGrid'),null,null);" style="background:transparent;border:none;font-size:12px;cursor:pointer;color:rgba(61,72,64,.50);padding:0 2px;">✕</button>
+  </div>`;
+  let hasAny=false, totalMoney=0, totalCount=0;
   const _dates=[];
   const _s=new Date(startD+'T12:00:00'), _e=new Date(endD+'T12:00:00');
   for(let d=new Date(_s);d<=_e;d.setDate(d.getDate()+1)) _dates.push(dateStr(new Date(d)));
 
   _dates.forEach(dt=>{
-    const _items=(allData[dt]||[]).filter(q=>q.completed||q.stamped);
-    if(!_items.length) return;
+    /* 아침점호 포함 */
+    const _mrC=(dt===todayStr)?_mrData:(window['_mrHistCache_'+dt]||null);
+    const _mrItem=_mrC&&_mrC.hour&&_mrC.completed?_mrC:null;
+    const _qItems=(allData[dt]||[]).filter(q=>q.completed||q.stamped);
+    const _allItems=_mrItem?[_mrItem,..._qItems]:_qItems;
+    if(!_allItems.length) return;
     hasAny=true;
-    if(_dates.length>1) html+=`<div style="font-family:var(--orb);font-size:9px;color:rgba(61,72,64,.55);letter-spacing:1px;margin-top:6px;margin-bottom:3px;">${dt}</div>`;
-    _items.forEach(q=>{
-      const rew=q.reward||5000;
-      totalMoney+=rew;
-      const catEmoji={health:'🏃',knowledge:'📚',life:'🏠',morning:'☀️'}[q.category||'health']||'📋';
-      html+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:rgba(47,74,54,.06);border:1px solid rgba(47,74,54,.12);border-radius:7px;margin-bottom:3px;">
+    const _dm=dt.slice(5).replace('-','/');
+    if(_dates.length>1) html+=`<div style="font-family:var(--orb);font-size:9px;color:rgba(61,72,64,.50);letter-spacing:1px;margin-top:8px;margin-bottom:3px;border-top:1px solid rgba(61,72,64,.10);padding-top:6px;">${_dm}</div>`;
+    _allItems.forEach(q=>{
+      const rew=q.reward||(q.hour?2000:5000);
+      totalMoney+=rew; totalCount++;
+      const catEmoji=q.hour?'☀️':({health:'🏃',knowledge:'📚',life:'🏠'}[q.category||'health']||'📋');
+      const isCoop=q.mode==='coop';
+      html+=`<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(47,74,54,.06);border:1px solid rgba(47,74,54,${isCoop?'.25':'.10'});border-radius:7px;margin-bottom:3px;${isCoop?'border-left:3px solid rgba(42,77,181,.50);':''}">
         <span style="font-size:11px;">${catEmoji}</span>
-        <span style="font-family:var(--kr);font-size:10px;font-weight:700;color:#1A1F1C;flex:1;">${q.name}</span>
+        <span style="font-family:var(--kr);font-size:10px;font-weight:700;color:#1A1F1C;flex:1;">${q.name||'아침점호'}</span>
         <span style="font-family:var(--orb);font-size:9px;color:rgba(47,74,54,.75);">+${rew.toLocaleString()}원</span>
       </div>`;
     });
   });
 
   if(!hasAny){
-    html+=`<div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.45);text-align:center;padding:10px 0;">기록이 없습니다</div>`;
-  } else if(_dates.length>1){
-    html+=`<div style="font-family:var(--orb);font-size:9px;color:rgba(47,74,54,.8);text-align:right;margin-top:6px;font-weight:700;">누적: +${totalMoney.toLocaleString()}원</div>`;
-  }
-
-  if(_calDetailRange.length===1){
-    html+=`<div style="font-family:var(--kr);font-size:9px;color:rgba(78,130,220,.7);text-align:center;margin-top:6px;">다른 날짜를 탭하면 기간 기록을 확인할 수 있습니다</div>`;
+    html+=`<div style="font-family:var(--kr);font-size:10px;color:rgba(61,72,64,.45);text-align:center;padding:12px 0;">기록이 없습니다</div>`;
+  } else {
+    html+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:7px;border-top:1px solid rgba(47,74,54,.18);">
+      <span style="font-family:var(--kr);font-size:9px;color:rgba(61,72,64,.55);">${_dates.length}일간 ${totalCount}개 완료</span>
+      <span style="font-family:var(--orb);font-size:10px;font-weight:900;color:rgba(47,74,54,.90);">+${totalMoney.toLocaleString()}원</span>
+    </div>`;
   }
 
   detailEl.innerHTML=html;
@@ -12419,13 +12568,16 @@ function calcTotalPersonalMoney(){
   const raw = Object.values(cycleData).reduce((sum,items)=>
     sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
   );
-  /* 아침점호 완료 보상 (+2,000원/일) — 사이클 범위 내 날짜만 */
+  /* 개인임무 상한 적용 — 개인작전(solo/coop)은 150,000원 cap */
+  const cap = calcRewardCap();
+  const rawCapped = Math.min(raw, cap.personalCap);
+
+  /* 아침점호 완료 보상 (+2,000원/일) — 사이클 범위 내 날짜만
+     15만원 cap 달성 후에도 아침점호 2,000원은 cap 위에 별도 누적 */
   const {start,end} = getCycleRange();
   let mrRaw = 0;
   if(typeof _mrData !== 'undefined'){
-    /* 오늘 아침점호 */
     if(_mrData && _mrData.completed && selDate>=start && selDate<=end) mrRaw += 2000;
-    /* 과거 날짜 캐시 */
     Object.keys(window).filter(k=>k.startsWith('_mrHistCache_')).forEach(k=>{
       const d = k.replace('_mrHistCache_','');
       if(d>=start && d<=end && d!==selDate){
@@ -12434,9 +12586,33 @@ function calcTotalPersonalMoney(){
       }
     });
   }
-  /* 개인임무 상한 적용 */
+  return rawCapped + mrRaw;
+}
+
+/* ── 아침점호 누적액만 반환 ── */
+function calcMrRaw(){
+  const {start,end} = getCycleRange();
+  let mrRaw = 0;
+  if(typeof _mrData !== 'undefined'){
+    if(_mrData && _mrData.completed && selDate>=start && selDate<=end) mrRaw += 2000;
+    Object.keys(window).filter(k=>k.startsWith('_mrHistCache_')).forEach(k=>{
+      const d = k.replace('_mrHistCache_','');
+      if(d>=start && d<=end && d!==selDate){
+        const mr = window[k];
+        if(mr && mr.completed) mrRaw += 2000;
+      }
+    });
+  }
+  return mrRaw;
+}
+/* ── 퀘스트 cap 적용 금액만 반환 (아침점호 제외) ── */
+function calcQuestCapped(){
+  const cycleData = getCycleData();
+  const raw = Object.values(cycleData).reduce((sum,items)=>
+    sum+(items||[]).filter(q=>q.completed).reduce((s,q)=>s+(q.reward||reward(q.difficulty)),0),0
+  );
   const cap = calcRewardCap();
-  return Math.min(raw + mrRaw, cap.personalCap);
+  return Math.min(raw, cap.personalCap);
 }
 
 /* renderTeamPanel — Firebase 모듈에서 window.renderTeamPanel로 재정의됨. fallback */
@@ -13082,10 +13258,8 @@ function calcTeamRewardMoney(){
       sum+=(td['gem'+n+'Reward']||0);
     }
   }
-  /* 스페셜: 완료 일수 × 2만원 (구 방식) */
-  sum+=(td['specialUsed']||0)*SPECIAL_DAY_REWARD;
-  /* HQ 특수임무 1~4 보상 포함 (새 방식) */
-  for(let n=1;n<=4;n++){
+  /* HQ 특수임무 1~3 보상 포함 */
+  for(let n=1;n<=3;n++){
     const rwd = window['tmMyReward'+n]||0;
     /* completedMissions에 이미 반영된 경우 중복 방지 */
     const alreadyCounted = td.completedMissions && td.completedMissions.some(m=>m.n===n);
@@ -13101,9 +13275,9 @@ function calcTeamRewardMoney(){
 function _refreshLockCards(){
   const personal = window.calcTotalPersonalMoney ? calcTotalPersonalMoney() : 0;
   const oppMoney = window.partnerData ? (window.partnerData.money||0) : 0;
-  const thresholds = [20000,40000,60000,80000];
+  const thresholds = [60000,120000]; /* 특수임무1: 6만, 특수임무2: 12만 */
 
-  /* 특수작전 1~4 잠금카드 */
+  /* 특수작전 1~2 잠금카드 */
   thresholds.forEach((th, i)=>{
     const n = i+1;
     const bar  = document.getElementById('lock'+n+'Bar');
@@ -13155,7 +13329,7 @@ function renderStatsRevenueCard(){
   const personal=calcTotalPersonalMoney();
   const teamRew=calcTeamRewardMoney();
   const totalAll=personal+teamRew;
-  const MAX_TOTAL=300000;
+  const MAX_TOTAL=310000; /* 개인 190,000 + 특수임무 80,000 + 스페셜A 40,000 */
 
   /* ── 리워드 한도 계산 ── */
   const cap = calcRewardCap();
@@ -13172,7 +13346,7 @@ function renderStatsRevenueCard(){
         personalCapEl.textContent='150,000원';
         personalCapEl.style.color='rgba(127,191,106,.9)';
       }
-      if(personalCapNote) personalCapNote.textContent=`기본 15만원 · 특별임무 완료 후 추가금 확정 (현재 ${doneCount}/2 완료)`;
+      if(personalCapNote) personalCapNote.textContent=`기본 15만원 · 특수임무 완료 후 추가금 확정 (현재 ${doneCount}/2 완료) · 아침점호 2천원은 cap 후에도 별도 누적`;
     } else if(cap.specialBonus <= 0){
       personalCapInfo.style.background='rgba(10,25,12,.5)';
       personalCapInfo.style.borderColor='rgba(90,158,72,.15)';
@@ -13180,7 +13354,7 @@ function renderStatsRevenueCard(){
         personalCapEl.textContent='150,000원';
         personalCapEl.style.color='rgba(127,191,106,.9)';
       }
-      if(personalCapNote) personalCapNote.textContent=`특별임무 합계 ${cap.specialTotal.toLocaleString()}원 ≥ 10만원 → 추가금 없음`;
+      if(personalCapNote) personalCapNote.textContent=`특수임무 합계 ${cap.specialTotal.toLocaleString()}원 ≥ 8만원 → 추가금 없음 · 아침점호 2천원은 cap 후에도 별도 누적`;
     } else {
       personalCapInfo.style.background='rgba(50,35,4,.5)';
       personalCapInfo.style.borderColor='rgba(255,184,71,.25)';
@@ -13188,7 +13362,7 @@ function renderStatsRevenueCard(){
         personalCapEl.textContent=cap.personalCap.toLocaleString()+'원';
         personalCapEl.style.color='rgba(255,184,71,.9)';
       }
-      if(personalCapNote) personalCapNote.textContent=`기본 15만원 + 추가금 ${cap.specialBonus.toLocaleString()}원 (10만 - 특별임무 ${cap.specialTotal.toLocaleString()}원) = 총 ${cap.personalCap.toLocaleString()}원`;
+      if(personalCapNote) personalCapNote.textContent=`기본 15만원 + 추가금 ${cap.specialBonus.toLocaleString()}원 (8만 - 특수임무 ${cap.specialTotal.toLocaleString()}원) = 총 ${cap.personalCap.toLocaleString()}원 · 아침점호 별도 누적`;
     }
   }
 
@@ -13243,7 +13417,7 @@ function renderStatsRevenueCard(){
 
   /* ── 잠금 1~4 (특수작전, 2만원 단위) — 양쪽 금액 모두 충족해야 해방 ── */
   const oppMoney = window.partnerData ? (window.partnerData.money||0) : 0;
-  const lockThresholds=[30000,70000];
+  const lockThresholds=[60000,120000]; /* 특수임무1: 6만원, 특수임무2: 12만원 */
   lockThresholds.forEach((th,i)=>{
     const n=i+1;
     const bar=document.getElementById('lock'+n+'Bar');
@@ -15059,7 +15233,22 @@ function teamQAOnConnect(){
   if(wrap) wrap.style.display='none';
   [1,2,3].forEach(n=>{
     window['tmSub'+n]=false;
-    window['tmUnlockToasted'+n]=false;
+    /* 스페셜임무A(n===3): 이미 보물상자 픽 완료 시 토스트 플래그 리셋 안 함 */
+    if(n===3){
+      const _rpPath=_tmRewardPath(3);
+      if(_rpPath){
+        _fbGet(_rpPath).then(s=>{
+          const _d=s&&s.exists()?s.val():null;
+          const _mk=_tmMK();
+          const _alreadyPicked=_d&&_d[_mk+'_pick']!==undefined;
+          if(!_alreadyPicked) window['tmUnlockToasted3']=false;
+        }).catch(()=>{ window['tmUnlockToasted3']=false; });
+      } else {
+        window['tmUnlockToasted3']=false;
+      }
+    } else {
+      window['tmUnlockToasted'+n]=false;
+    }
     window['_tmOppPickToasted'+n]=false;
     tmBuildCard(n);
     tmSubscribe(n);
@@ -15087,7 +15276,11 @@ function teamQAOnDisconnect(){
   if(wrap) wrap.style.display='none';
   const hq=document.getElementById('tmHQWrap');
   if(hq) hq.style.display='none';
-  [1,2,3].forEach(n=>{ window['tmSub'+n]=false; window['tmUnlockToasted'+n]=false; window['_tmOppPickToasted'+n]=false; });
+  /* 스페셜임무A(n===3): 이미 픽 완료 시 tmUnlockToasted3 리셋 안 함 (알림 반복 방지) */
+  [1,2].forEach(n=>{ window['tmSub'+n]=false; window['tmUnlockToasted'+n]=false; window['_tmOppPickToasted'+n]=false; });
+  window['tmSub3']=false;
+  window['_tmOppPickToasted3']=false;
+  /* tmUnlockToasted3는 OnConnect에서 픽 여부 확인 후 처리하므로 여기서 건드리지 않음 */
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -15576,42 +15769,42 @@ async function tmHQDayCompleteTester(){
 ═══════════════════════════════════════════════════════ */
 function calcRewardCap(){
   /*
-   * 새 금액 구조 (v24):
-   * 개인작전: 1일 최대 15,000원 (solo 5,000×2 + coop 5,000), 한도 150,000원
-   * 특별임무A: 나+상대 모두 30,000원 달성 시 해금 → 보물상자 3/4/5만원 중 랜덤
-   * 특별임무B: 나+상대 모두 70,000원 달성 시 해금 → 보물상자 3/4/5만원 중 랜덤
-   * 특별임무 합계: 최소 6만~최대 10만
-   * 특별임무 합계 < 10만 → 부족분만큼 개인한도 확장 (150,000 → 최대 190,000)
-   * 스페셜임무: 20p 달성 시 A·B 동시 해금, 각 5만원 고정
+   * 보상 구조 (현행):
+   * 개인작전: 슬롯1 5,000원 + 슬롯2 5,000원 + 협동작전 8,000원(기본5+보너스3)
+   *   → 하루 최대 15,000원, 사이클 누적 한도 150,000원
+   *   → 15만 달성 후에는 개인작전 보상=0, 아침점호 2,000원/일만 계속 누적
+   * 아침점호: 2,000원/일 (cap과 무관하게 항상 누적)
+   * 특수임무1: 나+상대 각 60,000원 달성 시 해금 → 보물상자 2/3/4만원 랜덤
+   * 특수임무2: 나+상대 각 120,000원 달성 시 해금 → 보물상자 2/3/4만원 랜덤
+   * 스페셜임무A: 야구점호 첫 4S 달성 시 해금 → 보물상자 3개 중 택1 (2/3/4만원)
    */
-  const s1 = window['tmMyReward1']||0; /* 특별임무A 보물상자 금액 */
-  const s2 = window['tmMyReward2']||0; /* 특별임무B 보물상자 금액 */
+  const s1 = window['tmMyReward1']||0; /* 특수임무1 보물상자 금액 */
+  const s2 = window['tmMyReward2']||0; /* 특수임무2 보물상자 금액 */
   const d1 = window['tmRewardDone1']||false;
   const d2 = window['tmRewardDone2']||false;
   const allSpecialDone = d1 && d2;
   const specialTotal = s1 + s2;
 
-  /* 스페셜임무 (포인트 해금) */
-
   /*
    * 개인임무 한도:
    * - 기본: 150,000원
-   * - 특별임무 A+B 모두 완료 후 합계가 10만 미만이면 추가한도 부여
-   *   추가금 = max(0, 100,000 - specialTotal)
-   *   예) 특별임무 합계 6만 → 추가금 4만 → 개인한도 19만
+   * - 특수임무 1+2 모두 완료 후 합계가 8만 미만이면 추가한도 부여
+   *   추가금 = max(0, 80,000 - specialTotal)
+   *   예) 특수임무 합계 4만 → 추가금 4만 → 개인한도 19만
    */
-  const specialBonus = allSpecialDone ? Math.max(0, 100000 - specialTotal) : 0;
+  const specialBonus = allSpecialDone ? Math.max(0, 80000 - specialTotal) : 0;
   const personalCap = 150000 + specialBonus;
 
   const specialOp3 = window['tmMyReward3']||0; /* 스페셜임무A */
   const specialOpTotal = specialOp3;
+  /* 이론적 최대: 개인 190,000 + 특수 80,000 + 스페셜A 40,000 = 310,000 */
   return {
     specialTotal,
     specialBonus,
     specialOp: specialOpTotal,
     allSpecialDone,
     personalCap,
-    total: Math.min(400000, specialTotal + specialOpTotal + personalCap)
+    total: Math.min(310000, specialTotal + specialOpTotal + personalCap)
   };
 }
 
@@ -17236,7 +17429,7 @@ function _renderMorningSlot(){
   const _bbSolvedCount = (window._bbCacheData && window._bbCacheData.solvedCount) ? window._bbCacheData.solvedCount : 0;
   const _bbCurrentRound = _bbSolvedCount + 1; /* 현재 진행 회차 */
   const _bbRoundLabel = _bbSolvedCount > 0
-    ? `${_bbSolvedCount}회차 종료 · ${_bbCurrentRound}회차 진행`
+    ? `${_bbSolvedCount}회차 종료`
     : `${_bbCurrentRound}회차 진행`;
 
   /* 버튼 영역 */
@@ -17299,7 +17492,7 @@ function _renderMorningSlot(){
         <div style="font-family:var(--kr);font-size:14px;font-weight:900;color:#3A2C08;line-height:1.35;flex:1;min-width:0;">
           ☀️ 아침점호 ${h}시
           <span style="font-family:var(--kr);font-size:10px;font-weight:600;color:rgba(100,70,10,.55);margin-left:4px;">(인증 ${String(h).padStart(2,'0')}:00~${String(h).padStart(2,'0')}:59)</span>
-          <span style="display:inline-block;margin-left:6px;padding:1px 7px;background:rgba(42,144,128,.12);border:1px solid rgba(42,144,128,.35);border-radius:8px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(30,100,70,.80);">${_bbRoundLabel}</span>
+          <span style="display:inline-block;margin-left:6px;padding:1px 7px;background:rgba(20,40,120,.10);border:1px solid rgba(20,40,120,.30);border-radius:8px;font-family:var(--kr);font-size:9px;font-weight:800;color:rgba(20,40,100,.90);">${_bbRoundLabel}</span>
         </div>
         ${_mrXBtn}
       </div>
@@ -17778,7 +17971,7 @@ async function _bbRefreshUI(){
   if(_roundEl){
     const _solvedCnt = (data.solvedCount||0);
     const _round = _solvedCnt + 1;
-    _roundEl.textContent = _solvedCnt > 0 ? `${_solvedCnt}회차 종료 · ${_round}회차 진행` : `${_round}회차 진행`;
+    _roundEl.textContent = _solvedCnt > 0 ? `${_solvedCnt}회차 종료` : `${_round}회차 진행`;
   }
 
   /* ── 이전 날짜 차단: lastSolvedDate 이후 날짜부터만 새 게임 가능 ──
